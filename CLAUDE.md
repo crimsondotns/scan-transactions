@@ -14,6 +14,7 @@ Key rules from it: white canvas / black ink, neutral surfaces only, semantic col
 - All UI text goes through `t()` in `src/i18n.tsx` (Thai key + English pair). No literal Thai in `.tsx`.
 - No `px` font-size in CSS; use `--size-*` tokens. No gradients.
 - Icons only via `components/Icon.tsx`.
+- No native `<select>`; every dropdown uses `components/Dropdown.tsx` (pill trigger + floating 12px panel).
 
 ## Commands
 

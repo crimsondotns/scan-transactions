@@ -5,6 +5,7 @@ import { buildUrl, hasPlaceholder } from '../feed';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
+import { Dropdown } from './Dropdown';
 
 const SAMPLE: Record<Family, string> = { evm: '0x0000000000000000000000000000000000000000', sol: '11111111111111111111111111111111' };
 const FAMILIES: Family[] = ['evm', 'sol'];
@@ -72,16 +73,10 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               <input id="ep-name" name="name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('settings.namePh')} autoComplete="off" maxLength={40} />
             </div>
             <div className="field" style={{ flex: '0 0 140px' }}>
-              <label className="label" htmlFor="ep-family">
+              <span className="label" id="ep-family-l">
                 {t('settings.family')}
-              </label>
-              <select id="ep-family" className="select" value={family} onChange={(e) => setFamily(e.target.value as Family)}>
-                {FAMILIES.map((f) => (
-                  <option key={f} value={f}>
-                    {t(`family.${f}`)}
-                  </option>
-                ))}
-              </select>
+              </span>
+              <Dropdown value={family} onChange={setFamily} label={t('settings.family')} options={FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))} className="dd-block" />
             </div>
           </div>
           <div className="field">

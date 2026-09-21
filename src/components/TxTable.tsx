@@ -5,6 +5,7 @@ import type { TxRow, TxType } from '../feed';
 import { formatAmount, formatDate, formatUsd, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
+import { Dropdown } from './Dropdown';
 
 const TYPES: TxType[] = ['swap', 'send', 'receive', 'approve', 'contract'];
 
@@ -46,39 +47,14 @@ export function TxTable({ rows, wallets }: { rows: TxRow[]; wallets: Wallet[] })
           {t('tx.search')}
         </label>
         <input id="tx-q" name="q" type="search" className="input search mono" placeholder={t('tx.search')} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" spellCheck={false} />
-        <label className="sr-only" htmlFor="tx-wallet">
-          {t('tx.col.wallet')}
-        </label>
-        <select id="tx-wallet" className="select" value={wallet} onChange={(e) => setWallet(e.target.value)}>
-          <option value="">{t('tx.allWallets')}</option>
-          {wallets.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.label}
-            </option>
-          ))}
-        </select>
-        <label className="sr-only" htmlFor="tx-chain">
-          {t('tx.col.chain')}
-        </label>
-        <select id="tx-chain" className="select" value={chain} onChange={(e) => setChain(e.target.value)}>
-          <option value="">{t('tx.allChains')}</option>
-          {chains.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-        <label className="sr-only" htmlFor="tx-type">
-          {t('tx.col.type')}
-        </label>
-        <select id="tx-type" className="select" value={type} onChange={(e) => setType(e.target.value)}>
-          <option value="">{t('tx.allTypes')}</option>
-          {TYPES.map((k) => (
-            <option key={k} value={k}>
-              {t(`tx.type.${k}`)}
-            </option>
-          ))}
-        </select>
+        <Dropdown
+          value={wallet}
+          onChange={setWallet}
+          label={t('tx.col.wallet')}
+          options={[{ value: '', label: t('tx.allWallets') }, ...wallets.map((w) => ({ value: w.id, label: w.label }))]}
+        />
+        <Dropdown value={chain} onChange={setChain} label={t('tx.col.chain')} options={[{ value: '', label: t('tx.allChains') }, ...chains.map((c) => ({ value: c, label: c }))]} />
+        <Dropdown value={type} onChange={setType} label={t('tx.col.type')} options={[{ value: '', label: t('tx.allTypes') }, ...TYPES.map((k) => ({ value: k, label: t(`tx.type.${k}`) }))]} />
         <span className="count" aria-live="polite">
           {t('tx.count', { n: filtered.length })}
         </span>

@@ -118,7 +118,7 @@ export function Dropdown<V extends string>({ value, options, onChange, label, di
               >
                 <span className="dd-item-text">{o.label}</span>
                 {o.meta !== undefined && <small>{o.meta}</small>}
-                {o.value === value && <Icon name="check" className="dd-check" />}
+                <Icon name="check" className="dd-check" />
               </button>
             </li>
           ))}

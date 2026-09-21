@@ -236,6 +236,7 @@ select {
   min-width: 0;
   min-height: var(--input-h);
   padding: 0 var(--space-4);
+  max-width: 480px;
   background: var(--color-bg);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-pill);
@@ -393,13 +394,11 @@ input[type='file'].input::file-selector-button {
 }
 .toolbar .input {
   width: auto;
-  min-width: 150px;
-  min-height: var(--control-h);
-  font-size: var(--size-body);
-  border-radius: var(--radius-pill);
+  min-width: 140px;
+  max-width: 360px;
 }
 .toolbar .dd-btn {
-  min-height: var(--control-h);
+  min-height: var(--input-h);
   font-size: var(--size-body);
   font-weight: 400;
 }
@@ -408,7 +407,7 @@ input[type='file'].input::file-selector-button {
   margin-right: var(--space-2);
 }
 .toolbar .search {
-  flex: 1 1 220px;
+  flex: 1 1 200px;
 }
 .count {
   color: var(--color-muted);
@@ -594,11 +593,14 @@ dialog.dlg {
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-soft);
   padding: var(--space-6);
-  width: min(600px, calc(100vw - 2 * var(--space-4)));
+  width: min(520px, calc(100vw - 2 * var(--space-4)));
   max-height: calc(100dvh - 2 * var(--space-4));
 }
 dialog.dlg::backdrop {
   background: rgba(0, 0, 0, 0.5);
+}
+.dlg .input {
+  max-width: none;
 }
 .dlg form,
 .dlg .stack {
@@ -718,6 +720,7 @@ dialog.dlg::backdrop {
 }
 .dd-btn.btn-sm {
   min-height: 36px;
+  padding: 0 var(--space-3);
 }
 .dd-text {
   overflow: hidden;
@@ -737,11 +740,11 @@ dialog.dlg::backdrop {
   top: calc(100% + var(--space-2));
   left: 0;
   right: auto;
-  min-width: max(100%, 200px);
+  min-width: max(100%, 160px);
   max-height: 320px;
   overflow-y: auto;
   margin: 0;
-  padding: var(--space-2);
+  padding: var(--space-1);
   list-style: none;
   background: var(--color-bg);
   border: 1px solid var(--color-line);
@@ -769,8 +772,8 @@ dialog.dlg::backdrop {
   align-items: center;
   gap: var(--space-3);
   width: 100%;
-  min-height: 40px;
-  padding: 0 var(--space-3);
+  min-height: 36px;
+  padding: 0 var(--space-2) 0 var(--space-3);
   border: 0;
   border-radius: var(--radius-md);
   background: transparent;
@@ -797,11 +800,16 @@ dialog.dlg::backdrop {
 .dd-item small {
   color: var(--color-tertiary);
   font-size: var(--size-caption);
+  margin-left: var(--space-2);
 }
 .dd-check {
   width: 16px;
   height: 16px;
   flex: none;
+  visibility: hidden;
+}
+.dd-item[aria-selected='true'] .dd-check {
+  visibility: visible;
 }
 
 /* ---------- toast ---------- */

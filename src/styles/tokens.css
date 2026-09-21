@@ -29,7 +29,7 @@
   --size-heading-md: 1.5rem;
   --size-heading-sm: 1.25rem;
   --size-body-lg: 1.0625rem;
-  --size-input: 1rem;
+  --size-input: 0.9375rem;
   --size-body: 0.9375rem;
   --size-label: 0.875rem;
   --size-caption: 0.8125rem;
@@ -62,7 +62,8 @@
   --layout-gutter: clamp(20px, 3vw, 48px);
 
   --control-h: 44px;
-  --input-h: 48px;
+  /* ผู้ใช้กำหนดให้ช่องกรอกเล็กกว่าสเปก 48px — 40px ยังคง pill และแตะได้สบาย */
+  --input-h: 40px;
 }
 
 /*

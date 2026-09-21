@@ -109,7 +109,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           </div>
         </form>
 
-        <div className="field" style={{ maxWidth: 160 }}>
+        <div className="field" style={{ maxWidth: 120 }}>
           <label className="label" htmlFor="set-page">
             {t('settings.pageSize')}
           </label>

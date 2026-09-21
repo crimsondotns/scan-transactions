@@ -34,11 +34,6 @@ export function formatAmountFull(v: number): string {
   return v.toLocaleString(locale, { maximumFractionDigits: 20 });
 }
 
-export function formatUsdFull(v: number | null | undefined): string {
-  if (v === null || v === undefined || !Number.isFinite(v)) return '—';
-  return `${v < 0 ? '-' : ''}$${Math.abs(v).toLocaleString(locale, { maximumFractionDigits: 20 })}`;
-}
-
 export function formatDate(unixSeconds: number): { date: string; time: string } {
   const d = new Date(unixSeconds * 1000);
   return {

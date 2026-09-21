@@ -518,6 +518,7 @@ input[type='file'].input::file-selector-button {
 }
 .tx {
   width: 100%;
+  table-layout: auto;
   /* separate: เส้นคั่นเป็นของเซลล์เอง วาดทับพื้น hover เสมอ (collapse จะซ่อนเส้นใต้แถบสี) */
   border-collapse: separate;
   border-spacing: 0;
@@ -565,8 +566,8 @@ input[type='file'].input::file-selector-button {
 }
 /* ตัวเลขมูลค่า/ยอด ขนาดเท่าข้อความหลักของแถว น้ำหนัก Medium */
 .tx td.num {
-  font-size: var(--size-body-lg);
-  font-weight: var(--weight-medium);
+  font-size: var(--size-body);
+  font-weight: var(--weight-regular);
 }
 .tx th.num {
   font-size: var(--size-caption);
@@ -710,6 +711,89 @@ th[aria-sort='descending'] .th-btn {
 }
 .tx .num[data-sign='neg'] {
   color: var(--color-muted);
+}
+
+/* ---------- เซลล์กิจกรรม (ไอคอนโทเคน + ชนิด/ชื่อ) ---------- */
+
+.act {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.act-icon {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.act-icon .pair {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+.act-icon .pair .logo {
+  position: absolute;
+  box-shadow: 0 0 0 2px var(--color-bg);
+}
+.act-icon .pair .logo:first-child {
+  left: 0;
+  top: 0;
+}
+.act-icon .pair .logo:last-child {
+  right: 0;
+  bottom: 0;
+}
+.act-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.act-title {
+  font-weight: var(--weight-medium);
+  white-space: nowrap;
+}
+.act-sub {
+  color: var(--color-muted);
+  font-size: var(--size-caption);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.amts,
+.fee {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+.amt-in {
+  font-weight: var(--weight-medium);
+}
+.amt-out {
+  color: var(--color-muted);
+  font-weight: var(--weight-regular);
+  font-size: var(--size-caption);
+}
+.hash-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-muted);
+  font-size: var(--size-caption);
+  font-weight: var(--weight-regular);
+}
+.hash-link svg {
+  width: 14px;
+  height: 14px;
+}
+a.hash-link:hover {
+  color: var(--color-ink);
+  text-decoration: none;
 }
 
 /* ---------- โลโก้ ---------- */
@@ -1278,8 +1362,8 @@ dialog.dlg::backdrop {
   .tx {
     min-width: 520px;
   }
-  .tx th:nth-child(5),
-  .tx td:nth-child(5) {
+  .tx th:nth-child(4),
+  .tx td:nth-child(4) {
     display: none;
   }
   /* โมดัล = bottom sheet เต็มจอ */

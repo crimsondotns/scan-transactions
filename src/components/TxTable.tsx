@@ -2,14 +2,14 @@ import { useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useStore, type Wallet } from '../store';
 import type { TxRow, TxType } from '../feed';
-import { formatAmount, formatDate, formatUsd, shortHash } from '../format';
+import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative, shortHash } from '../format';
 import { Icon } from './Icon';
 import { Dropdown } from './Dropdown';
-import { Logo, TokenLogo } from './Logo';
+import { Logo } from './Logo';
 import type { ChainMap } from '../chains';
 
 const TYPES: TxType[] = ['swap', 'send', 'receive', 'approve', 'contract'];
-type SortKey = 'tx' | 'type' | 'date' | 'value' | 'balance';
+type SortKey = 'type' | 'date' | 'amount' | 'fee';
 
 /**
  * มูลค่าของแถว (USD) — "เงินที่เคลื่อน" ไม่ใช่ผลต่างสุทธิ
@@ -70,16 +70,14 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
     const dir = sort.dir === 'asc' ? 1 : -1;
     const key = (r: TxRow): string | number => {
       switch (sort.key) {
-        case 'tx':
-          return `${labels.get(r.walletId) ?? ''} ${r.hash}`;
         case 'type':
           return r.failed ? 'zz' : r.type;
-        case 'value': {
+        case 'amount': {
           const v = rowValue(r);
           return v ? (v.sign === '−' ? -v.value : v.value) : Number.NEGATIVE_INFINITY;
         }
-        case 'balance':
-          return mainMove(r)?.amount ?? Number.NEGATIVE_INFINITY;
+        case 'fee':
+          return r.gasUsd ?? Number.NEGATIVE_INFINITY;
         default:
           return r.time;
       }
@@ -93,7 +91,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
   }, [rows, q, wallet, chain, type, sort, labels, hideScam]);
 
   function toggleSort(key: SortKey) {
-    setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'date' || key === 'value' ? 'desc' : 'asc' }));
+    setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'type' ? 'asc' : 'desc' }));
   }
 
   const Head = ({ k, label, num }: { k: SortKey; label: string; num?: boolean }) => (
@@ -133,18 +131,24 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
           <table className="tx">
             <thead>
               <tr>
-                <Head k="tx" label={t('tx.col.tx')} />
                 <Head k="type" label={t('tx.col.type')} />
-                <Head k="date" label={t('tx.col.date')} />
-                <Head k="value" label={t('tx.col.value')} num />
-                <Head k="balance" label={t('tx.col.balance')} num />
+                <Head k="date" label={t('tx.col.submitted')} num />
+                <Head k="amount" label={t('tx.col.amount')} num />
+                <Head k="fee" label={t('tx.col.fee')} num />
               </tr>
             </thead>
             <tbody>
               {filtered.map((r) => {
-                const d = formatDate(r.time);
-                const v = rowValue(r);
-                const m = mainMove(r);
+                const real = r.moves.filter((m) => m.amount !== 0);
+                const ins = real.filter((m) => m.dir === 'in');
+                const outs = real.filter((m) => m.dir === 'out');
+                const isSwap = ins.length > 0 && outs.length > 0;
+                const primary = mainMove(r);
+                const chainLogo = chainInfo.get(r.chain)?.logo ?? r.chainLogo ?? null;
+                const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
+                const subtitle = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || (r.counterpartyName ?? '');
+                const native = chainInfo.get(r.chain)?.symbol ?? r.chain.toUpperCase();
+                const host = chainInfo.get(r.chain)?.explorer?.replace(/\/$/, '');
                 const isSel = r.key === selected;
                 return (
                   <tr
@@ -161,42 +165,65 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                     }}
                   >
                     <td>
-                      <span className="tx-id">
-                        {m ? <TokenLogo token={m.logo} tokenName={m.symbol} chain={chainInfo.get(r.chain)?.logo ?? r.chainLogo ?? null} chainName={r.chain} /> : <Logo src={chainInfo.get(r.chain)?.logo ?? r.chainLogo ?? null} name={r.chain} size={28} />}
-                        <span className="tx-id-text">
-                          <span className="tx-wallet">{labels.get(r.walletId) ?? '—'}</span>
-                          <span className="tx-hash mono" title={chainInfo.get(r.chain)?.name ?? r.chain}>
-                            {shortHash(r.hash)}
+                      <span className="act">
+                        <span className="act-icon">
+                          {isSwap ? (
+                            <span className="pair">
+                              <Logo src={outs[0]!.logo} name={outs[0]!.symbol} size={28} />
+                              <Logo src={ins[0]!.logo} name={ins[0]!.symbol} size={28} />
+                            </span>
+                          ) : (
+                            <Logo src={primary?.logo ?? null} name={primary?.symbol ?? r.chain} size={40} />
+                          )}
+                          <span className="logo-badge">
+                            <Logo src={chainLogo} name={r.chain} size={16} />
+                          </span>
+                        </span>
+                        <span className="act-text">
+                          <span className="act-title">
+                            {title}
+                            {r.flagged && (
+                              <span className="flag" title={t('tx.scam')}>
+                                <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} />
+                              </span>
+                            )}
+                          </span>
+                          <span className="act-sub">
+                            <span className="act-wallet">{labels.get(r.walletId) ?? '—'}</span>
+                            {subtitle && <span> · {subtitle}</span>}
                           </span>
                         </span>
                       </span>
                     </td>
-                    <td>
-                      <span className="chip" data-failed={r.failed}>
-                        {r.failed ? t('tx.failed') : t(`tx.type.${r.type}`)}
+                    <td className="num cell-time">{formatRelative(r.time, t)}</td>
+                    <td className="num">
+                      <span className="amts">
+                        {ins.map((m, i) => (
+                          <span key={`i${i}`} className="amt-in">
+                            +{formatAmount(m.amount)} {m.symbol}
+                          </span>
+                        ))}
+                        {outs.map((m, i) => (
+                          <span key={`o${i}`} className="amt-out">
+                            −{formatAmount(m.amount)} {m.symbol}
+                          </span>
+                        ))}
+                        {real.length === 0 && <span className="amt-out">—</span>}
                       </span>
-                      {r.flagged && (
-                        <span className="flag" title={t('tx.scam')}>
-                          <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} />
-                        </span>
-                      )}
-                    </td>
-                    <td className="cell-time">
-                      {d.date}
-                      <small>{d.time}</small>
-                    </td>
-                    <td className="num" data-sign={v === null ? undefined : v.sign === '−' ? 'neg' : 'pos'}>
-                      {v === null ? '—' : `${v.sign}${formatUsd(v.value)}`}
                     </td>
                     <td className="num">
-                      {m ? (
-                        <>
-                          {m.dir === 'in' ? '+' : '−'}
-                          {formatAmount(m.amount)} {m.symbol}
-                        </>
-                      ) : (
-                        '—'
-                      )}
+                      <span className="fee">
+                        <span>{formatFeeUsd(r.gasUsd)}</span>
+                        {r.gasNative !== null && <span className="amt-out">{formatFeeNative(r.gasNative, native)}</span>}
+                        {host ? (
+                          <a className="hash-link" href={`${host}/tx/${r.hash}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                            {shortHash(r.hash)}
+                            <Icon name="external" />
+                          </a>
+                        ) : (
+                          <span className="hash-link">{shortHash(r.hash)}</span>
+                        )}
+                      </span>
                     </td>
                   </tr>
                 );

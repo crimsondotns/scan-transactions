@@ -11,12 +11,14 @@ import { Identicon } from './Identicon';
 /**
  * แผงกระเป๋า — ไม่พับ คลิกแถว = สลับกระเป๋าที่ดู (คลิกซ้ำ = ดูทุกกระเป๋า)
  * ไอคอนตา = ซ่อน/แสดงข้อมูลของกระเป๋านั้นในตาราง (hiddenWallets เก็บใน store เป็น enabled=false)
+ * chevron ที่หัว = ย่อ/ขยายเนื้อแผง (.row-actions + .wallets) หัวแผงยังอยู่เสมอ
  */
 export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Record<string, WalletFeed>; activeId: string | null; onSwitch: (id: string | null) => void; onRemove: (id: string) => void }) {
   const { t } = useI18n();
   const { wallets, removeWallet, toggleWallet, clearWallets } = useStore();
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [expandPanel, setExpandPanel] = useState(true);
   const hiddenWallets = new Set(wallets.filter((w) => !w.enabled).map((w) => w.id));
   const activeWallet = wallets.find((w) => w.id === activeId) ?? null;
 
@@ -42,7 +44,11 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
           {activeWallet ? activeWallet.label : t('wallets.title')}
         </h2>
         <span className="hint">{activeWallet ? shortAddr(activeWallet.address) : t('wallets.count', { n: wallets.length })}</span>
+        <button type="button" className="btn btn-icon panel-chevron" aria-expanded={expandPanel} aria-controls="wallets-body" onClick={() => setExpandPanel((o) => !o)} aria-label={t(expandPanel ? 'wallets.collapse' : 'wallets.expand')} title={t(expandPanel ? 'wallets.collapse' : 'wallets.expand')}>
+          <Icon name="chevronDown" className="chev" />
+        </button>
       </div>
+      <div id="wallets-body" className="panel-body" hidden={!expandPanel}>
       <div className="row-actions">
         <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
           <Icon name="upload" />
@@ -95,6 +101,8 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
           })}
         </ul>
       )}
+
+      </div>
 
       <AddWalletDialog open={adding} onClose={() => setAdding(false)} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} />

@@ -721,12 +721,13 @@ th[aria-sort='descending'] .th-btn {
 }
 .logo-badge {
   position: absolute;
-  right: -3px;
-  bottom: -3px;
+  right: -4px;
+  bottom: -4px;
   display: inline-flex;
   border-radius: var(--radius-pill);
   background: var(--color-bg);
-  padding: 1px;
+  padding: 2px;
+  box-shadow: 0 0 0 1px var(--color-line-subtle);
 }
 .with-logo {
   display: inline-flex;

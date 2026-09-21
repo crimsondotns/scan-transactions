@@ -118,8 +118,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
           <Row label={t('tx.col.chain')}>
             <span className="with-logo">
               <Logo src={chainLogo} name={row.chain} size={20} />
-              <span className="chip">{row.chain}</span>
-              {chain && chain.name !== row.chain && <span>{chain.name}</span>}
+              <span>{chain?.name ?? row.chain}</span>
             </span>
           </Row>
           {row.name && <Row label={t('detail.method')}>{row.name}</Row>}

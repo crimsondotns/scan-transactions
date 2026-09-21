@@ -18,12 +18,12 @@ export function Logo({ src, name, size = 20 }: { src: string | null; name: strin
 }
 
 /** โทเคนซ้อนบนเชน (มุมขวาล่าง) */
-export function TokenLogo({ token, tokenName, chain, chainName, size = 24 }: { token: string | null; tokenName: string; chain: string | null; chainName: string; size?: number }) {
+export function TokenLogo({ token, tokenName, chain, chainName, size = 28 }: { token: string | null; tokenName: string; chain: string | null; chainName: string; size?: number }) {
   return (
     <span className="logo-stack" style={{ width: size, height: size }}>
       <Logo src={token} name={tokenName} size={size} />
       <span className="logo-badge">
-        <Logo src={chain} name={chainName} size={Math.round(size * 0.5)} />
+        <Logo src={chain} name={chainName} size={Math.round(size * 0.57)} />
       </span>
     </span>
   );

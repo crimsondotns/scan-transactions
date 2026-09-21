@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCsv } from '../src/importWallets.ts';
 import { detectEndpoint, parseAddress } from '../src/store.ts';
-import { buildUrl, fetchPage, toTemplate } from '../src/feed.ts';
+import { buildUrl, fetchPage, lookalike, toTemplate } from '../src/feed.ts';
 
 const ME = '0x42a8000000000000000000000000000000000000';
 const fixture = {
@@ -102,4 +102,10 @@ test('base URL without placeholders gets the query composed', () => {
   assert.equal(toTemplate('https://a.invalid/h?x=1'), 'https://a.invalid/h?x=1&id={address}&start_time={start}&page_count={count}');
   assert.equal(toTemplate('https://a.invalid/h?id={address}'), 'https://a.invalid/h?id={address}');
   assert.equal(buildUrl('https://a.invalid/v1/history?', '0xAB', null, 20), 'https://a.invalid/v1/history?id=0xAB&start_time=0&page_count=20');
+});
+
+test('lookalike symbols (non-ASCII homoglyphs) are flagged', () => {
+  assert.equal(lookalike('HYPE'), false);
+  assert.equal(lookalike('H\u1EF4PE'), true);
+  assert.equal(lookalike('USDC'), false);
 });

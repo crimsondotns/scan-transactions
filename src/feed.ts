@@ -106,6 +106,8 @@ const isObj = (v: unknown): v is Dict => typeof v === 'object' && v !== null && 
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
 const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
 /** รับเฉพาะ https รูปภาพจากแหล่งข้อมูล — กัน javascript:/data: ที่อาจแทรกมา */
+/** symbol ที่มีอักษรนอก ASCII (เช่น Ỵ แทน Y) = ชื่อเลียนแบบ ให้ติดธงน่าสงสัยเอง */
+export const lookalike = (symbol: string): boolean => /[^\x20-\x7E]/.test(symbol);
 const httpUrl = (v: unknown): string | null => (typeof v === 'string' && /^https:\/\//i.test(v) ? v : null);
 
 function normalize(body: unknown, walletId: string, address: string): Page {
@@ -137,12 +139,13 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
         const tok = isObj(tokens[tokenId]) ? (tokens[tokenId] as Dict) : {};
         const amount = num(m.amount) ?? 0;
         const price = num(m.price) ?? num(tok.price);
-        const bad = tok.is_scam === true || tok.is_suspicious === true;
+        const symbol = str(tok.optimized_symbol) ?? str(tok.display_symbol) ?? str(tok.symbol) ?? shortId(tokenId);
+        const bad = tok.is_scam === true || tok.is_suspicious === true || lookalike(symbol);
         if (bad) flagged = true;
         moves.push({
           dir,
           amount,
-          symbol: str(tok.optimized_symbol) ?? str(tok.display_symbol) ?? str(tok.symbol) ?? shortId(tokenId),
+          symbol,
           usd: price !== null ? amount * price : null,
           flagged: bad,
           logo: httpUrl(tok.logo_url),
@@ -202,7 +205,7 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
     const amount = str(item.tokenDecimal) || raw > 1e15 ? raw / 10 ** decimals : raw;
     const out = from === address;
     const symbol = str(item.tokenSymbol) ?? str(item.symbol) ?? '';
-    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, usd: null, flagged: false, logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) }] : [];
+    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, usd: null, flagged: lookalike(symbol), logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) }] : [];
     const gasPrice = num(item.gasPrice);
     const gasUsed = num(item.gasUsed);
     rows.push({
@@ -215,7 +218,7 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
       type: moves.length ? (out ? 'send' : 'receive') : 'contract',
       name: str(item.functionName)?.split('(')[0] ?? str(item.name) ?? '',
       failed: str(item.isError) === '1' || num(item.status) === 0,
-      flagged: false,
+      flagged: moves.some((m) => m.flagged),
       moves,
       counterparty: out ? to || null : from || null,
       counterpartyName: null,
@@ -246,7 +249,8 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
         const dir: Move['dir'] = from === address ? 'out' : 'in';
         other ??= dir === 'out' ? to || null : from || null;
         const amount = native ? (num(m.amount) ?? 0) / 1e9 : (num(m.tokenAmount) ?? num(m.amount) ?? 0);
-        moves.push({ dir, amount, symbol: native ? 'SOL' : (str(m.symbol) ?? shortId(str(m.mint) ?? '')), usd: num(m.usd), flagged: false, logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
+        const symbol = native ? 'SOL' : (str(m.symbol) ?? shortId(str(m.mint) ?? ''));
+        moves.push({ dir, amount, symbol, usd: num(m.usd), flagged: lookalike(symbol), logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
       }
     };
     push(item.nativeTransfers, true);
@@ -266,7 +270,7 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
       type,
       name: kind && kind !== 'unknown' ? kind : (str(item.source) ?? ''),
       failed: item.transactionError !== null && item.transactionError !== undefined && item.transactionError !== false,
-      flagged: false,
+      flagged: moves.some((m) => m.flagged),
       moves,
       counterparty: other,
       counterpartyName: null,

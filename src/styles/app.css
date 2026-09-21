@@ -499,12 +499,13 @@ input[type='file'].input::file-selector-button {
 }
 
 .table-wrap {
-  /* ไม่มีกรอบรอบนอก — แยกแถวด้วยเส้น hairline ภายในเท่านั้น
-     จอกว้าง: ไม่สร้าง scroll container เพื่อให้ sticky header ยึดกับหน้าเว็บ
+  /* ไม่มีเส้นขอบ/เส้นคั่น — ตารางเป็นพื้นผิวเดียว ล้อมด้วยเงาอ่อนที่พอดีกล่อง
+     overflow: clip (ไม่ใช่ hidden) ตัดมุมโค้งโดยไม่สร้าง scroll container → sticky header ยังยึดหน้าเว็บ
      จอเล็ก (ตารางกว้างกว่าจอ): เลื่อนแนวนอนในตัวเอง */
   border: 0;
-  border-radius: 0;
-  overflow: visible;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-soft), 0 0 0 1px var(--color-line-subtle);
+  overflow: clip;
   background: var(--color-bg);
 }
 @media (max-width: 1024px) {
@@ -535,24 +536,19 @@ input[type='file'].input::file-selector-button {
   font-weight: var(--weight-medium);
   color: var(--color-muted);
   padding: var(--space-3) var(--space-3);
-  border-bottom: 1px solid var(--color-line);
   white-space: nowrap;
 }
 .tx td {
   padding: var(--space-3) var(--space-3);
-  border-bottom: 1px solid var(--color-line-subtle);
   vertical-align: top;
 }
 .tx td:first-child,
 .tx th:first-child {
-  padding-left: 0;
+  padding-left: var(--space-4);
 }
 .tx td:last-child,
 .tx th:last-child {
-  padding-right: 0;
-}
-.tx tbody tr:last-child td {
-  border-bottom: 1px solid var(--color-line-subtle);
+  padding-right: var(--space-4);
 }
 /* ไฮไลต์วาดบนเซลล์ (ไม่ใช่ tr) — ขอบซ้าย/ขวาโค้งและอยู่ในกล่องตารางพอดี ไม่ล้นออก */
 .tx tbody td {
@@ -560,12 +556,6 @@ input[type='file'].input::file-selector-button {
 }
 .tx tbody tr:hover td {
   background: var(--color-hover);
-}
-.tx tbody td:first-child {
-  border-radius: var(--radius-md) 0 0 var(--radius-md);
-}
-.tx tbody td:last-child {
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 .tx .num {
   text-align: right;

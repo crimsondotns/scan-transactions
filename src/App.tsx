@@ -93,7 +93,7 @@ export function App() {
               <div className="toolbar">
                 <h1 className="panel-title">{t('tx.title')}</h1>
                 <span className="top-spacer" />
-                <button type="button" className="btn btn-sm" disabled={anyLoading || !active.length} onClick={() => void loadMany(active, 'reset')}>
+                <button type="button" className="btn" disabled={anyLoading || !active.length} onClick={() => void loadMany(active, 'reset')}>
                   <Icon name="refresh" />
                   {anyLoading ? t('wallets.loading') : t('tx.loadAll')}
                 </button>

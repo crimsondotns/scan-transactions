@@ -10,6 +10,12 @@ Key rules from it: white canvas / black ink, neutral surfaces only, semantic col
 
 Dark theme: same tokens with neutrals inverted (`:root[data-theme='dark']` in `tokens.css`); never use raw colours in components so both themes stay in sync.
 
+## Before every delivery — mandatory audit
+
+1. Re-read `docs/design-system.md` (must be byte-identical to `/Users/Kakachi/Downloads/DesignSystem/OpenAI/openai.com-design-system.md`; `diff -q` them).
+2. Audit every screen and state — default, hover, focus-visible, active/selected, disabled, error, empty, loading — against the file **exactly**: colours from tokens only, type scale/weights, spacing steps, radii (pill controls, 12px cards, 16px large surfaces), hairline borders, shadow only on floating panels, 44px primary controls / 48px inputs, 2px focus outline, motion 120/180/280ms standard easing, sentence case.
+3. Any mismatch = fix first, then re-run `pnpm typecheck && pnpm check && pnpm test && pnpm build`. Never skip, never deliver with a known deviation.
+
 ## Hard rules
 
 - Never hardcode or name any external history source in code, comments, docs or tests — the user pastes URLs at runtime. `pnpm check` enforces this.

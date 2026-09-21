@@ -185,14 +185,13 @@ select {
 .btn-primary {
   background: var(--color-ink);
   color: var(--color-bg);
-  border-color: var(--color-ink);
+  border: 0;
 }
 .btn-primary:hover {
   opacity: 0.85;
 }
 .btn-primary:disabled {
   background: var(--color-soft);
-  border-color: var(--color-soft);
   color: var(--color-disabled);
 }
 .btn-sm {
@@ -236,7 +235,7 @@ select {
   border: 1px solid var(--color-line);
   border-radius: var(--radius-pill);
   color: var(--color-ink);
-  font-size: var(--size-body-lg);
+  font: 400 var(--size-input) / 1.4 var(--font-sans);
   transition: border-color var(--motion-base) var(--easing-standard);
 }
 .input::placeholder {

@@ -34,16 +34,16 @@ export function WalletPanel({ feeds, onRemove }: { feeds: Record<string, WalletF
         <span className="hint">{t('wallets.count', { n: wallets.length })}</span>
       </div>
       <div className="row-actions">
-        <button type="button" className="btn btn-sm btn-primary" onClick={() => setImporting(true)}>
+        <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
           <Icon name="upload" />
           {t('wallets.import')}
         </button>
-        <button type="button" className="btn btn-sm" onClick={() => setAdding(true)}>
+        <button type="button" className="btn" onClick={() => setAdding(true)}>
           <Icon name="plus" />
           {t('wallets.add')}
         </button>
         {wallets.length > 0 && (
-          <button type="button" className="btn btn-sm" onClick={clear}>
+          <button type="button" className="btn" onClick={clear}>
             {t('wallets.clear')}
           </button>
         )}

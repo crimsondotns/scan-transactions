@@ -14,6 +14,8 @@ export interface Move {
   usd: number | null;
   /** ราคาต่อหน่วย (USD) ณ เวลานั้น ถ้าแหล่งข้อมูลให้มา */
   price: number | null;
+  /** ที่อยู่สัญญาโทเคน (null = เหรียญพื้นเมืองของเชน) */
+  tokenId: string | null;
   flagged: boolean;
   /** โลโก้โทเคนจากแหล่งข้อมูล (ถ้ามี) — ไม่มีก็ใช้ตัวอักษรแทน */
   logo: string | null;
@@ -150,6 +152,7 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
           symbol,
           usd: price !== null ? amount * price : null,
           price,
+          tokenId: tokenId.startsWith('0x') || tokenId.length > 20 ? tokenId : null,
           flagged: bad,
           logo: httpUrl(tok.logo_url),
         });
@@ -163,7 +166,7 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
     const type: TxType = approve ? 'approve' : moves.some((m) => m.dir === 'in') && moves.some((m) => m.dir === 'out') ? 'swap' : moves.some((m) => m.dir === 'out') ? 'send' : moves.some((m) => m.dir === 'in') ? 'receive' : 'contract';
     if (approve) {
       const tok = isObj(tokens[str(approve.token_id) ?? '']) ? (tokens[str(approve.token_id) ?? ''] as Dict) : {};
-      moves.push({ dir: 'out', amount: num(approve.value) ?? 0, symbol: str(tok.optimized_symbol) ?? str(tok.symbol) ?? '', usd: null, price: num(tok.price), flagged: false, logo: httpUrl(tok.logo_url) });
+      moves.push({ dir: 'out', amount: num(approve.value) ?? 0, symbol: str(tok.optimized_symbol) ?? str(tok.symbol) ?? '', usd: null, price: num(tok.price), tokenId: str(approve.token_id)?.startsWith('0x') ? str(approve.token_id) : null, flagged: false, logo: httpUrl(tok.logo_url) });
     }
 
     const projectId = str(item.project_id);
@@ -207,7 +210,7 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
     const amount = str(item.tokenDecimal) || raw > 1e15 ? raw / 10 ** decimals : raw;
     const out = from === address;
     const symbol = str(item.tokenSymbol) ?? str(item.symbol) ?? '';
-    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, usd: null, price: num(item.price) ?? num(item.tokenPrice), flagged: lookalike(symbol), logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) }] : [];
+    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, usd: null, price: num(item.price) ?? num(item.tokenPrice), tokenId: str(item.contractAddress) ?? str(item.token_id), flagged: lookalike(symbol), logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) }] : [];
     const gasPrice = num(item.gasPrice);
     const gasUsed = num(item.gasUsed);
     rows.push({
@@ -252,7 +255,7 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
         other ??= dir === 'out' ? to || null : from || null;
         const amount = native ? (num(m.amount) ?? 0) / 1e9 : (num(m.tokenAmount) ?? num(m.amount) ?? 0);
         const symbol = native ? 'SOL' : (str(m.symbol) ?? shortId(str(m.mint) ?? ''));
-        moves.push({ dir, amount, symbol, usd: num(m.usd), price: num(m.price) ?? num(m.priceUsd), flagged: lookalike(symbol), logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
+        moves.push({ dir, amount, symbol, usd: num(m.usd), price: num(m.price) ?? num(m.priceUsd), tokenId: native ? null : str(m.mint), flagged: lookalike(symbol), logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
       }
     };
     push(item.nativeTransfers, true);

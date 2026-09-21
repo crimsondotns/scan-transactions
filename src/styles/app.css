@@ -843,11 +843,18 @@ th[aria-sort='descending'] .th-btn {
   gap: var(--space-1);
   flex-wrap: wrap;
 }
-.dt-row dd .btn-icon {
+.dt-actions {
+  display: inline-flex;
+  gap: 2px;
+  flex: none;
+}
+.dt-row dd .btn-icon,
+.dt-moves .btn-icon {
   min-height: 24px;
   min-width: 24px;
 }
-.dt-row dd .btn-icon svg {
+.dt-row dd .btn-icon svg,
+.dt-moves .btn-icon svg {
   width: 14px;
   height: 14px;
 }
@@ -885,6 +892,7 @@ th[aria-sort='descending'] .th-btn {
 }
 .dt-moves .move-right {
   flex: none;
+  margin-left: auto;
   display: flex;
   flex-direction: column;
   align-items: flex-end;

@@ -16,9 +16,10 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* clip ไม่ใช่ hidden — hidden ทำให้ body กลายเป็น scroll container แล้ว sticky ทุกตัวหยุดทำงาน */
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 body {
@@ -498,11 +499,21 @@ input[type='file'].input::file-selector-button {
 }
 
 .table-wrap {
-  /* ไม่มีกรอบรอบนอก — แยกแถวด้วยเส้น hairline ภายในเท่านั้น */
+  /* ไม่มีกรอบรอบนอก — แยกแถวด้วยเส้น hairline ภายในเท่านั้น
+     จอกว้าง: ไม่สร้าง scroll container เพื่อให้ sticky header ยึดกับหน้าเว็บ
+     จอเล็ก (ตารางกว้างกว่าจอ): เลื่อนแนวนอนในตัวเอง */
   border: 0;
   border-radius: 0;
-  overflow-x: auto;
+  overflow: visible;
   background: var(--color-bg);
+}
+@media (max-width: 1024px) {
+  .table-wrap {
+    overflow-x: auto;
+  }
+  .tx th {
+    top: 0;
+  }
 }
 .tx {
   width: 100%;
@@ -511,15 +522,18 @@ input[type='file'].input::file-selector-button {
   min-width: 640px;
 }
 .tx th {
+  /* หัวตารางติดใต้หัวเว็บ (64px) เมื่อเลื่อนหน้า — เส้นล่างใช้ box-shadow เพราะ border ของ th
+     ใน border-collapse ไม่ติดตามไปกับ sticky */
   position: sticky;
-  top: 0;
+  top: 64px;
+  z-index: 2;
   background: var(--color-bg);
   text-align: left;
   font-size: var(--size-caption);
   font-weight: var(--weight-medium);
   color: var(--color-muted);
   padding: var(--space-3) var(--space-3);
-  border-bottom: 1px solid var(--color-line);
+  box-shadow: inset 0 -1px 0 var(--color-line);
   white-space: nowrap;
 }
 .tx td {

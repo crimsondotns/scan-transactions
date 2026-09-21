@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
-import type { Wallet } from '../store';
+import { useStore, type Wallet } from '../store';
 import type { TxRow, TxType } from '../feed';
 import { formatAmount, formatDate, formatUsd, shortHash } from '../format';
 import { Icon } from './Icon';
@@ -46,6 +46,8 @@ function mainMove(r: TxRow) {
 
 export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void }) {
   const { t } = useI18n();
+  const { settings, setHideScam } = useStore();
+  const hideScam = settings.hideScam;
   const [q, setQ] = useState('');
   const [wallet, setWallet] = useState('');
   const [chain, setChain] = useState('');
@@ -61,6 +63,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
       if (wallet && r.walletId !== wallet) return false;
       if (chain && r.chain !== chain) return false;
       if (type && r.type !== type) return false;
+      if (hideScam && r.flagged) return false;
       if (!needle) return true;
       return r.hash.toLowerCase().includes(needle) || (r.counterparty ?? '').toLowerCase().includes(needle) || (r.counterpartyName ?? '').toLowerCase().includes(needle) || r.name.toLowerCase().includes(needle) || r.moves.some((m) => m.symbol.toLowerCase().includes(needle));
     });
@@ -87,7 +90,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
       const c = typeof ka === 'number' && typeof kb === 'number' ? ka - kb : String(ka).localeCompare(String(kb));
       return c * dir || b.time - a.time;
     });
-  }, [rows, q, wallet, chain, type, sort, labels]);
+  }, [rows, q, wallet, chain, type, sort, labels, hideScam]);
 
   function toggleSort(key: SortKey) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'date' || key === 'value' ? 'desc' : 'asc' }));
@@ -112,6 +115,10 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
         <Dropdown value={wallet} onChange={setWallet} label={t('tx.col.wallet')} options={[{ value: '', label: t('tx.allWallets') }, ...wallets.map((w) => ({ value: w.id, label: w.label }))]} />
         <Dropdown value={chain} onChange={setChain} label={t('tx.col.chain')} options={[{ value: '', label: t('tx.allChains') }, ...chains.map((c) => ({ value: c, label: chainInfo.get(c)?.name ?? c }))]} />
         <Dropdown value={type} onChange={setType} label={t('tx.col.type')} options={[{ value: '', label: t('tx.allTypes') }, ...TYPES.map((k) => ({ value: k, label: t(`tx.type.${k}`) }))]} />
+        <button type="button" className="btn toggle" aria-pressed={hideScam} onClick={() => setHideScam(!hideScam)}>
+          <Icon name="eyeOff" />
+          {t('tx.hideScam')}
+        </button>
         <span className="count" aria-live="polite">
           {t('tx.count', { n: filtered.length })}
         </span>

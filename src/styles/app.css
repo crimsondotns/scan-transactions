@@ -504,7 +504,7 @@ input[type='file'].input::file-selector-button {
      จอเล็ก (ตารางกว้างกว่าจอ): เลื่อนแนวนอนในตัวเอง */
   border: 0;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft), 0 0 0 1px var(--color-line-subtle);
+  box-shadow: var(--shadow-soft);
   overflow: clip;
   background: var(--color-bg);
 }
@@ -1059,6 +1059,17 @@ dialog.dlg::backdrop {
     justify-content: center;
     padding: 0;
   }
+}
+
+/* ปุ่มสลับแบบ pill (เช่น ซ่อนรายการน่าสงสัย) */
+.toggle[aria-pressed='true'] {
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-color: var(--color-ink);
+}
+.toggle[aria-pressed='true']:hover {
+  background: var(--color-ink-hover);
+  border-color: var(--color-ink-hover);
 }
 
 /* ---------- Dropdown panel ---------- */

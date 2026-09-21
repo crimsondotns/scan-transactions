@@ -28,6 +28,8 @@ export interface Settings {
   pageSize: number;
   /** URL รายชื่อเชน (ชื่อ/โลโก้/explorer) ที่ผู้ใช้วางเอง — ว่าง = ใช้ <origin>/v1/chain/list ของแต่ละแหล่ง */
   chainListUrl: string;
+  /** ซ่อนแถวที่ติดธงน่าสงสัย/หลอกลวง */
+  hideScam: boolean;
 }
 
 interface State {
@@ -37,7 +39,7 @@ interface State {
 }
 
 const KEY = 'xcap.scan.v1';
-const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '' } };
+const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', hideScam: false } };
 
 export const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
 export const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -65,7 +67,7 @@ function load(): State {
         const p = w && typeof w.address === 'string' ? parseAddress(w.address) : null;
         return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false }] : [];
       }),
-      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '' },
+      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '', hideScam: s.hideScam === true },
     };
   } catch {
     return DEFAULT;
@@ -141,7 +143,8 @@ export function useStore() {
     commit({ ...state, settings: { ...state.settings, endpoints: state.settings.endpoints.filter((e) => e.id !== id) } });
   }, []);
   const setChainListUrl = useCallback((chainListUrl: string) => commit({ ...state, settings: { ...state.settings, chainListUrl: chainListUrl.trim() } }), []);
+  const setHideScam = useCallback((hideScam: boolean) => commit({ ...state, settings: { ...state.settings, hideScam } }), []);
   const setPageSize = useCallback((pageSize: number) => commit({ ...state, settings: { ...state.settings, pageSize } }), []);
 
-  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, toggleWallet, clearWallets, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl };
+  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, toggleWallet, clearWallets, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl, setHideScam };
 }

@@ -384,9 +384,7 @@ input[type='file'].input::file-selector-button {
 }
 .panel .wallets {
   margin-top: var(--space-2);
-}
-.panel .wallet:first-child {
-  border-top: 0;
+  gap: 2px;
 }
 .panel-title {
   font-size: var(--size-heading-sm);
@@ -412,7 +410,18 @@ input[type='file'].input::file-selector-button {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-1);
-  border-top: 1px solid var(--color-line-subtle);
+  padding-right: var(--space-2);
+  margin-inline: calc(-1 * var(--space-2));
+  border-radius: var(--radius-md);
+  border-top: 0;
+  transition: background-color var(--motion-fast) var(--easing-standard);
+}
+/* ไฮไลต์ hover/เลือก ครอบทั้งแถวรวมปุ่มตา/ถังขยะ */
+.wallet:hover {
+  background: var(--color-hover);
+}
+.wallet[data-active='true'] {
+  background: var(--color-soft);
 }
 /* ย่อ/ขยายเนื้อแผง */
 .panel-body {
@@ -457,20 +466,16 @@ input[type='file'].input::file-selector-button {
   width: 100%;
   min-width: 0;
   padding: var(--space-2) var(--space-2);
-  margin-left: calc(-1 * var(--space-2));
   border: 0;
   border-radius: var(--radius-md);
   background: transparent;
   color: inherit;
   text-align: left;
   cursor: pointer;
-  transition: background-color var(--motion-fast) var(--easing-standard);
 }
-.wallet-switch:hover {
-  background: var(--color-hover);
-}
-.wallet[data-active='true'] .wallet-switch {
-  background: var(--color-soft);
+.wallet-switch:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: -2px;
 }
 .wallet[data-hidden='true'] .wallet-meta,
 .wallet[data-hidden='true'] .identicon {

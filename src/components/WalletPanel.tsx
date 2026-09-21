@@ -80,9 +80,7 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
                   <Identicon value={w.address} size={40} />
                   <span className="wallet-meta">
                     <span className="wallet-label">{w.label}</span>
-                    <span className="wallet-addr">
-                      <span className="chip">{t(`family.${w.family}`)}</span> {shortAddr(w.address)}
-                    </span>
+                    <span className="wallet-addr">{shortAddr(w.address)}</span>
                   </span>
                   <span className="wallet-state" data-state={state} aria-live="polite">
                     {state === 'ok' ? t('wallets.state.ok', { n: f?.rows.length ?? 0 }) : t(`wallets.state.${state}`)}

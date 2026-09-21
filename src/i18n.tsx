@@ -151,6 +151,14 @@ const th = {
   'confirm.deleteTitle': 'ลบกระเป๋า',
   'confirm.deleteMsg': 'ลบ {label} ออกจากเครื่องนี้? ธุรกรรมที่โหลดไว้จะหายไปด้วย',
   'confirm.clearTitle': 'ล้างกระเป๋าทั้งหมด',
+  'confirm.selectedTitle': 'ลบกระเป๋าที่เลือก',
+  'confirm.selectedMsg': 'ลบ {n} กระเป๋าที่เลือกออกจากเครื่องนี้?',
+  'wallets.selectAll': 'เลือกทั้งหมด',
+  'wallets.deselectAll': 'ยกเลิกเลือก',
+  'wallets.selected': 'เลือก {n}',
+  'wallets.deleteSelected': 'ลบที่เลือก',
+  'wallets.select': 'เลือก {label}',
+  'wallets.drag': 'ลากเพื่อจัดลำดับ',
   'foot.local': 'ข้อมูลทั้งหมดอยู่ในเบราว์เซอร์นี้เท่านั้น',
 } as const;
 
@@ -297,6 +305,14 @@ const en: Record<MessageKey, string> = {
   'confirm.deleteTitle': 'Delete wallet',
   'confirm.deleteMsg': 'Remove {label} from this device? Its loaded transactions go with it.',
   'confirm.clearTitle': 'Clear all wallets',
+  'confirm.selectedTitle': 'Delete selected wallets',
+  'confirm.selectedMsg': 'Remove {n} selected wallets from this device?',
+  'wallets.selectAll': 'Select all',
+  'wallets.deselectAll': 'Deselect all',
+  'wallets.selected': '{n} selected',
+  'wallets.deleteSelected': 'Delete selected',
+  'wallets.select': 'Select {label}',
+  'wallets.drag': 'Drag to reorder',
   'foot.local': 'Everything stays in this browser',
 };
 

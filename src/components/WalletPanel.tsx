@@ -16,11 +16,14 @@ import { ConfirmDialog, type ConfirmState } from './ConfirmDialog';
  */
 export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Record<string, WalletFeed>; activeId: string | null; onSwitch: (id: string | null) => void; onRemove: (id: string) => void }) {
   const { t } = useI18n();
-  const { wallets, removeWallet, toggleWallet, clearWallets } = useStore();
+  const { wallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets } = useStore();
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [expandPanel, setExpandPanel] = useState(true);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmState | null>(null);
+  const [selectedWallets, setSelectedWallets] = useState<Set<string>>(new Set());
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
   const hiddenWallets = new Set(wallets.filter((w) => !w.enabled).map((w) => w.id));
   const activeWallet = wallets.find((w) => w.id === activeId) ?? null;
 
@@ -33,6 +36,19 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
     setConfirmDialog({ type: 'clearAll', title: t('confirm.clearTitle'), message: t('wallets.clearConfirm', { n: wallets.length }), walletId: null });
   }
 
+  function toggleSelect(id: string) {
+    setSelectedWallets((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function deleteSelected() {
+    if (!selectedWallets.size) return;
+    setConfirmDialog({ type: 'deleteSelected', title: t('confirm.selectedTitle'), message: t('confirm.selectedMsg', { n: selectedWallets.size }), walletId: null });
+  }
+
   /* ผู้ใช้กดยืนยัน → ทำจริง; ไม่มี dialog ค้าง → ไม่ทำอะไร */
   function confirmAction() {
     const c = confirmDialog;
@@ -42,6 +58,12 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
       removeWallet(c.walletId);
       onRemove(c.walletId);
       if (activeId === c.walletId) onSwitch(null);
+    } else if (c.type === 'deleteSelected') {
+      const ids = new Set(selectedWallets);
+      removeWallets(ids);
+      ids.forEach((id) => onRemove(id));
+      if (activeId && ids.has(activeId)) onSwitch(null);
+      setSelectedWallets(new Set());
     } else if (c.type === 'clearAll') {
       clearWallets();
       wallets.forEach((w) => onRemove(w.id));
@@ -82,16 +104,64 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
       {wallets.length === 0 ? (
         <p className="hint">{t('wallets.empty')}</p>
       ) : (
+        <>
+        <div className="wallets-tools">
+          <button type="button" className="btn-text" onClick={() => setSelectedWallets(new Set(wallets.map((w) => w.id)))}>
+            {t('wallets.selectAll')}
+          </button>
+          <button type="button" className="btn-text" onClick={() => setSelectedWallets(new Set())} disabled={selectedWallets.size === 0}>
+            {t('wallets.deselectAll')}
+          </button>
+        </div>
+        {selectedWallets.size > 0 && (
+          <div className="select-bar" role="status">
+            <span>{t('wallets.selected', { n: selectedWallets.size })}</span>
+            <button type="button" className="btn-text btn-text-danger" onClick={deleteSelected}>
+              <Icon name="trash" />
+              {t('wallets.deleteSelected')}
+            </button>
+          </div>
+        )}
         <ul className="wallets" role="listbox" aria-label={t('wallets.title')}>
-          {wallets.map((w) => {
+          {wallets.map((w, i) => {
             const f = feeds[w.id];
             const hidden = hiddenWallets.has(w.id);
             const active = activeId === w.id;
             const state = f?.loading ? 'loading' : f && Object.keys(f.errors).length ? 'error' : f?.loaded ? 'ok' : 'idle';
             return (
-              <li key={w.id} className="wallet" data-active={active} data-hidden={hidden}>
+              <li
+                key={w.id}
+                className="wallet"
+                data-active={active}
+                data-hidden={hidden}
+                data-selected={selectedWallets.has(w.id)}
+                data-dragover={dragOver === i && dragFrom !== i}
+                draggable
+                onDragStart={(e) => {
+                  setDragFrom(i);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOver !== i) setDragOver(i);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragFrom !== null) reorderWallets(dragFrom, i);
+                  setDragFrom(null);
+                  setDragOver(null);
+                }}
+                onDragEnd={() => {
+                  setDragFrom(null);
+                  setDragOver(null);
+                }}
+              >
+                <span className="wallet-grip" title={t('wallets.drag')} aria-hidden="true">
+                  <Icon name="grip" />
+                </span>
+                <input type="checkbox" className="wallet-select" checked={selectedWallets.has(w.id)} onChange={() => toggleSelect(w.id)} aria-label={t('wallets.select', { label: w.label })} />
                 <button type="button" className="wallet-switch" role="option" aria-selected={active} onClick={() => onSwitch(active ? null : w.id)} title={w.address}>
-                  <Identicon value={w.address} size={40} />
+                  <Identicon value={w.address} size={32} />
                   <span className="wallet-meta">
                     <span className="wallet-label">{w.label}</span>
                     <span className="wallet-addr">{shortAddr(w.address)}</span>
@@ -112,6 +182,7 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
             );
           })}
         </ul>
+        </>
       )}
 
       </div>

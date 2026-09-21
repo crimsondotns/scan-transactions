@@ -3,7 +3,7 @@ import { useI18n } from '../i18n';
 import { Dialog } from './Dialog';
 
 export interface ConfirmState {
-  type: 'deleteWallet' | 'clearAll';
+  type: 'deleteWallet' | 'deleteSelected' | 'clearAll';
   title: string;
   message: string;
   walletId: string | null;

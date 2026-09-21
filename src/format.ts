@@ -68,6 +68,12 @@ export function formatFeeNative(v: number | null | undefined, symbol: string): s
   return `${v.toLocaleString(locale, { maximumSignificantDigits: 4 })} ${symbol}`;
 }
 
+/** "Sep 21 2026 06:42" */
+export function formatStamp(unixSeconds: number): string {
+  const d = new Date(unixSeconds * 1000);
+  return `${d.toLocaleDateString(locale, { month: 'short', day: 'numeric', year: 'numeric' })} ${d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit', hour12: false })}`;
+}
+
 export function formatDate(unixSeconds: number): { date: string; time: string } {
   const d = new Date(unixSeconds * 1000);
   return {

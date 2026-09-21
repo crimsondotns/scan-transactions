@@ -872,21 +872,143 @@ th[aria-sort='descending'] .th-btn {
   flex-direction: column;
   gap: var(--space-6);
 }
-.dt-hero {
+.ev-head {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
+  gap: var(--space-1);
+  min-width: 0;
 }
-.dt-value {
-  font-size: var(--size-heading-lg);
+.ev-title {
+  font-size: var(--size-heading-md);
+}
+.ev-sub {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  color: var(--color-muted);
+  font-size: var(--size-caption);
+}
+.ev-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.ev-status svg {
+  width: 14px;
+  height: 14px;
+}
+.ev-status[data-failed='true'] {
+  color: var(--color-danger);
+}
+
+/* สินทรัพย์ (เดี่ยว / คู่สลับ) */
+.ev-asset {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.ev-asset-icon {
+  position: relative;
+  flex: none;
+  width: 40px;
+  height: 40px;
+}
+.ev-asset-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+.ev-symbol {
   font-weight: var(--weight-medium);
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
 }
-.dt-value[data-sign='neg'] {
+.ev-net {
+  color: var(--color-muted);
+  font-size: var(--size-caption);
+}
+.ev-amount {
+  font-size: var(--size-heading-sm);
+  font-weight: var(--weight-medium);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.ev-amount[data-dir='out'] {
   color: var(--color-muted);
 }
+.ev-pair {
+  display: flex;
+  flex-direction: column;
+}
+.ev-divider {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  margin-left: 20px;
+  position: relative;
+}
+.ev-divider::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-left: 1px dashed var(--color-line);
+}
+.ev-divider-icon {
+  position: relative;
+  left: -12px;
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--color-soft);
+  color: var(--color-muted);
+}
+.ev-divider-icon svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* แถวข้อมูล */
+.ev-rows {
+  display: flex;
+  flex-direction: column;
+}
+.ev-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 40px;
+  padding: var(--space-2) 0;
+}
+.ev-label {
+  color: var(--color-muted);
+  font-size: var(--size-body);
+  white-space: nowrap;
+}
+.ev-value {
+  text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.ev-addr {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.ev-addr .btn-icon {
+  min-height: 28px;
+  min-width: 28px;
+}
+.ev-addr .btn-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* ฟิลด์ดิบ */
 .dt {
   margin: 0;
   display: flex;
@@ -894,87 +1016,23 @@ th[aria-sort='descending'] .th-btn {
 }
 .dt-row {
   display: grid;
-  grid-template-columns: 120px minmax(0, 1fr);
+  grid-template-columns: 140px minmax(0, 1fr);
   gap: var(--space-3);
-  padding: var(--space-3) 0;
+  padding: var(--space-2) 0;
   border-top: 1px solid var(--color-line-subtle);
+  font-size: var(--size-caption);
 }
 .dt-row:first-child {
   border-top: 0;
-  padding-top: 0;
 }
 .dt-row dt {
   color: var(--color-muted);
-  font-size: var(--size-caption);
-  font-weight: var(--weight-medium);
   overflow-wrap: anywhere;
 }
 .dt-row dd {
   margin: 0;
   min-width: 0;
   overflow-wrap: anywhere;
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-1);
-  flex-wrap: wrap;
-}
-.dt-actions {
-  display: inline-flex;
-  gap: 2px;
-  flex: none;
-}
-.dt-row dd .btn-icon,
-.dt-moves .btn-icon {
-  min-height: 24px;
-  min-width: 24px;
-}
-.dt-row dd .btn-icon svg,
-.dt-moves .btn-icon svg {
-  width: 14px;
-  height: 14px;
-}
-.dt-sub {
-  font-size: var(--size-label);
-  font-weight: var(--weight-medium);
-  color: var(--color-muted);
-  margin-bottom: calc(-1 * var(--space-3));
-}
-.dt-moves {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-}
-.dt-moves .move {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
-  overflow-wrap: anywhere;
-  padding: var(--space-2) 0;
-  border-top: 1px solid var(--color-line-subtle);
-  font-size: var(--size-body);
-}
-.dt-moves .move:first-child {
-  border-top: 0;
-}
-.dt-moves .amt {
-  flex: 1 1 auto;
-  min-width: 0;
-  white-space: normal;
-  align-self: center;
-  flex-wrap: wrap;
-}
-.dt-moves .move-right {
-  flex: none;
-  margin-left: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 2px;
-  text-align: right;
-  white-space: nowrap;
 }
 .dt-raw summary {
   cursor: pointer;
@@ -989,11 +1047,6 @@ th[aria-sort='descending'] .th-btn {
 }
 .dt-raw .dt {
   margin-top: var(--space-2);
-}
-.dt-raw .dt-row {
-  grid-template-columns: 140px minmax(0, 1fr);
-  padding: var(--space-2) 0;
-  font-size: var(--size-caption);
 }
 
 /* ---------- สถานะว่าง ---------- */

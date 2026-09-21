@@ -38,6 +38,11 @@ export interface TxRow {
   moves: Move[];
   counterparty: string | null;
   counterpartyName: string | null;
+  /** ผู้ส่ง / ผู้รับ / สัญญาที่ถูกเรียก / nonce — ตามที่แหล่งข้อมูลให้ */
+  from: string | null;
+  to: string | null;
+  contract: string | null;
+  nonce: number | null;
   gasUsd: number | null;
   /** ค่าธรรมเนียมเป็นเหรียญพื้นเมืองของเชน (ถ้ามี) */
   gasNative: number | null;
@@ -193,6 +198,10 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
       moves,
       counterparty: other,
       counterpartyName: project ? str(project.name) : null,
+      from: str(tx.from_addr),
+      to: str(tx.to_addr),
+      contract: projectId || approve || type === 'swap' || type === 'contract' ? str(tx.to_addr) : null,
+      nonce: num(tx.nonce),
       gasUsd: num(tx.usd_gas_fee),
       gasNative: num(tx.eth_gas_fee),
       raw: item,
@@ -233,6 +242,10 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
       moves,
       counterparty: out ? to || null : from || null,
       counterpartyName: null,
+      from: from || null,
+      to: to || null,
+      contract: str(item.contractAddress),
+      nonce: num(item.nonce),
       gasUsd: gasPrice !== null && gasUsed !== null ? null : num(item.usd_gas_fee),
       gasNative: gasPrice !== null && gasUsed !== null ? (gasPrice * gasUsed) / 1e18 : null,
       raw: item,
@@ -286,6 +299,10 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
       moves,
       counterparty: other,
       counterpartyName: null,
+      from: str(item.feePayer),
+      to: other,
+      contract: str(item.source),
+      nonce: null,
       gasUsd: fee !== null && str(item.feePayer) === address ? num(item.feeUsd) : null,
       gasNative: fee !== null && str(item.feePayer) === address ? fee / 1e9 : null,
       raw: item,

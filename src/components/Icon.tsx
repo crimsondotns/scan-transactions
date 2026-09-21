@@ -44,6 +44,14 @@ const PATHS = {
     </>
   ),
   x: <path d="M18 6 6 18M6 6l12 12" />,
+  swap: (
+    <>
+      <path d="m16 3 4 4-4 4" />
+      <path d="M20 7H4" />
+      <path d="m8 21-4-4 4-4" />
+      <path d="M4 17h16" />
+    </>
+  ),
   external: (
     <>
       <path d="M15 3h6v6" />

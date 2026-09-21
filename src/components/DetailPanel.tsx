@@ -76,8 +76,10 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
     </div>
   );
 
+  const known = (a: string) => wallets.find((w) => w.address.toLowerCase() === a.toLowerCase())?.label;
   const AddrRow = ({ label, addr, short }: { label: ReactNode; addr: string; short?: string }) => {
     const url = addrUrl(addr);
+    short ??= known(addr);
     return (
       <Row label={label}>
         <span className="ev-addr">
@@ -138,7 +140,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
         ) : null}
 
         <div className="ev-rows">
-          {wallet && <AddrRow label={t('tx.col.wallet')} addr={wallet.address} />}
+          {wallet && <AddrRow label={t('tx.col.wallet')} addr={wallet.address} short={wallet.label} />}
           {isSwap && (
             <>
               <Row label={`1 ${ins[0]!.symbol}`}>

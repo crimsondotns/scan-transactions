@@ -32,7 +32,7 @@ test('history_list shape → rows, types, flags, cursor', async () => {
   assert.equal(page.rows[0]!.counterpartyName, 'Some DEX');
   assert.equal(page.rows[0]!.moves[1]!.usd, 1000);
   assert.equal(page.rows[0]!.moves[0]!.logo, 'https://img.invalid/eth.png');
-  assert.equal(page.rows[0]!.chainLogo, 'https://img.invalid/eth.png');
+  assert.equal(page.rows[0]!.chainLogo, null);
   assert.equal(page.rows[0]!.moves[1]!.logo, null);
   assert.equal(page.rows[1]!.flagged, true);
   assert.equal(page.rows[3]!.failed, true);

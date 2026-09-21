@@ -1,10 +1,10 @@
 /**
- * รายชื่อเชน (ชื่อ/โลโก้/explorer) — ต่อจาก origin ของแหล่งประวัติที่ผู้ใช้วางเอง
- * ที่ `<origin>/v1/chain/list` ไม่มี host ใดฝังในโค้ด; ล้มเหลวก็แค่ไม่มีโลโก้ (ใช้ตัวอักษรแทน)
+ * รายชื่อเชน (ชื่อ/โลโก้/explorer) — จาก URL ที่ผู้ใช้วางใน Settings ก่อน แล้ว fallback เป็น
+ * `<origin>/v1/chain/list` ของแหล่งประวัติแต่ละแหล่ง ไม่มี host ใดฝังในโค้ด; ล้มเหลวก็แค่ใช้ตัวอักษรแทน
  * cache ใน localStorage 24 ชม. ต่อ origin
  */
 import { useEffect, useState } from 'react';
-import type { Endpoint } from './store';
+import type { Settings } from './store';
 
 export interface ChainInfo {
   id: string;
@@ -47,16 +47,16 @@ function readCache(): Cache {
   }
 }
 
-async function fetchOrigin(origin: string): Promise<ChainInfo[]> {
+async function fetchList(url: string): Promise<ChainInfo[]> {
   const cache = readCache();
-  const hit = cache[origin];
+  const hit = cache[url];
   if (hit && Date.now() - hit.at < TTL && hit.chains.length) return hit.chains;
-  const res = await fetch(origin + PATH, { headers: { accept: 'application/json' } });
+  const res = await fetch(url, { headers: { accept: 'application/json' } });
   if (!res.ok) throw new Error(String(res.status));
   const chains = normalize(await res.json());
   if (chains.length) {
     try {
-      localStorage.setItem(KEY, JSON.stringify({ ...cache, [origin]: { at: Date.now(), chains } }));
+      localStorage.setItem(KEY, JSON.stringify({ ...cache, [url]: { at: Date.now(), chains } }));
     } catch {
       /* ignore */
     }
@@ -66,23 +66,31 @@ async function fetchOrigin(origin: string): Promise<ChainInfo[]> {
 
 export type ChainMap = Map<string, ChainInfo>;
 
-export function useChains(endpoints: Endpoint[]): ChainMap {
+/** URL ที่ผู้ใช้วางมาก่อน แล้วค่อย <origin>/v1/chain/list ของแต่ละแหล่ง */
+export function useChains(settings: Settings): ChainMap {
   const [map, setMap] = useState<ChainMap>(new Map());
-  const origins = [...new Set(endpoints.filter((e) => e.enabled).flatMap((e) => {
-    try {
-      return [new URL(e.url).origin];
-    } catch {
-      return [];
-    }
-  }))].join('|');
+  const urls = [
+    ...(/^https:\/\//i.test(settings.chainListUrl) ? [settings.chainListUrl] : []),
+    ...new Set(
+      settings.endpoints
+        .filter((e) => e.enabled)
+        .flatMap((e) => {
+          try {
+            return [new URL(e.url).origin + PATH];
+          } catch {
+            return [];
+          }
+        })
+    ),
+  ].join('|');
 
   useEffect(() => {
     let alive = true;
-    if (!origins) {
+    if (!urls) {
       setMap(new Map());
       return;
     }
-    void Promise.all(origins.split('|').map((o) => fetchOrigin(o).catch(() => [] as ChainInfo[]))).then((lists) => {
+    void Promise.all(urls.split('|').map((u) => fetchList(u).catch(() => [] as ChainInfo[]))).then((lists) => {
       if (!alive) return;
       const m: ChainMap = new Map();
       for (const list of lists) for (const c of list) if (!m.has(c.id)) m.set(c.id, c);
@@ -91,7 +99,7 @@ export function useChains(endpoints: Endpoint[]): ChainMap {
     return () => {
       alive = false;
     };
-  }, [origins]);
+  }, [urls]);
 
   return map;
 }

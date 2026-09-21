@@ -167,14 +167,13 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
     const project = projectId && isObj(projects[projectId]) ? (projects[projectId] as Dict) : null;
     const other = str(item.other_addr) ?? (str(tx.from_addr)?.toLowerCase() === address ? str(tx.to_addr) : str(tx.from_addr));
 
-    // โลโก้เชน: แหล่งข้อมูลบางแบบใส่ chain_logo_url มาให้ ไม่งั้นใช้โลโก้โทเคนพื้นเมือง (key = ชื่อเชน)
-    const native = isObj(tokens[chain]) ? (tokens[chain] as Dict) : {};
+    // โลโก้เชน: เฉพาะที่แหล่งข้อมูลระบุตรงๆ — โลโก้ native token ไม่ใช่โลโก้เชน (hood ใช้ ETH)
     rows.push({
       key: `${walletId}:${chain}:${hash}:${num(item.idx) ?? 0}`,
       hash,
       walletId,
       chain,
-      chainLogo: httpUrl(item.chain_logo_url) ?? httpUrl(native.logo_url),
+      chainLogo: httpUrl(item.chain_logo_url),
       time,
       type,
       name,

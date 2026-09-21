@@ -142,7 +142,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                   >
                     <td>
                       <span className="tx-id">
-                        {m ? <TokenLogo token={m.logo} tokenName={m.symbol} chain={r.chainLogo ?? chainInfo.get(r.chain)?.logo ?? null} chainName={r.chain} /> : <Logo src={r.chainLogo ?? chainInfo.get(r.chain)?.logo ?? null} name={r.chain} size={28} />}
+                        {m ? <TokenLogo token={m.logo} tokenName={m.symbol} chain={chainInfo.get(r.chain)?.logo ?? r.chainLogo ?? null} chainName={r.chain} /> : <Logo src={chainInfo.get(r.chain)?.logo ?? r.chainLogo ?? null} name={r.chain} size={28} />}
                         <span className="tx-id-text">
                           <span className="tx-wallet">{labels.get(r.walletId) ?? '—'}</span>
                           <span className="tx-hash mono" title={chainInfo.get(r.chain)?.name ?? r.chain}>

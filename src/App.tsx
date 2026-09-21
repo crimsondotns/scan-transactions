@@ -23,7 +23,7 @@ export function App() {
   const closeDetail = useCallback(() => setSelected(null), []);
 
   const enabledEps = settings.endpoints.filter((e) => e.enabled);
-  const chains = useChains(settings.endpoints);
+  const chains = useChains(settings);
   const hasEndpoint = enabledEps.length > 0;
   const active = useMemo(() => wallets.filter((w) => w.enabled), [wallets]);
 

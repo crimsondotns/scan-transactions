@@ -7,7 +7,7 @@ import { useToast } from './Toast';
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
-  const { settings, addEndpoint, updateEndpoint, removeEndpoint, setPageSize } = useStore();
+  const { settings, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl } = useStore();
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [err, setErr] = useState<string | null>(null);
@@ -87,6 +87,12 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           </div>
         </form>
 
+        <div className="field">
+          <label className="label" htmlFor="set-chains">
+            {t('settings.chainList')}
+          </label>
+          <input id="set-chains" name="chainList" type="url" inputMode="url" className="input mono" defaultValue={settings.chainListUrl} onBlur={(e) => setChainListUrl(e.target.value)} autoComplete="off" spellCheck={false} />
+        </div>
         <div className="field" style={{ maxWidth: 120 }}>
           <label className="label" htmlFor="set-page">
             {t('settings.pageSize')}

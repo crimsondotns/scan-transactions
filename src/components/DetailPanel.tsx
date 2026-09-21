@@ -39,7 +39,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   if (!row) return null;
   const wallet = wallets.find((w) => w.id === row.walletId);
   const chain = chains.get(row.chain);
-  const chainLogo = row.chainLogo ?? chain?.logo ?? null;
+  const chainLogo = chain?.logo ?? row.chainLogo ?? null;
   const explorer = chain?.explorer ? `${chain.explorer.replace(/\/$/, '')}/tx/${row.hash}` : null;
   const d = formatDate(row.time);
   const v = netUsd(row);

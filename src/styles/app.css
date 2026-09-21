@@ -777,8 +777,7 @@ th[aria-sort='descending'] .th-btn {
 }
 .amt-out {
   color: var(--color-muted);
-  font-weight: var(--weight-regular);
-  font-size: var(--size-caption);
+  font-weight: var(--weight-medium);
 }
 
 /* ---------- โลโก้ ---------- */

@@ -893,9 +893,14 @@ th[aria-sort='descending'] .th-btn {
   min-width: 0;
   white-space: normal;
 }
-.dt-moves .usd {
+.dt-moves .move-right {
   flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
   text-align: right;
+  white-space: nowrap;
 }
 .dt-raw summary {
   cursor: pointer;

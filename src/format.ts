@@ -34,6 +34,14 @@ export function formatAmountFull(v: number): string {
   return v.toLocaleString(locale, { maximumFractionDigits: 20 });
 }
 
+/** ราคาต่อหน่วย — เหรียญราคาจิ๋ว (1e-7) ต้องเห็นเลขนัยสำคัญ ไม่ใช่ $0.00 */
+export function formatPrice(v: number | null | undefined): string {
+  if (v === null || v === undefined || !Number.isFinite(v) || v === 0) return '—';
+  const abs = Math.abs(v);
+  const opts = abs >= 1 ? { maximumFractionDigits: 2 } : { maximumSignificantDigits: 4 };
+  return `${v < 0 ? '-' : ''}$${abs.toLocaleString(locale, opts)}`;
+}
+
 export function formatDate(unixSeconds: number): { date: string; time: string } {
   const d = new Date(unixSeconds * 1000);
   return {

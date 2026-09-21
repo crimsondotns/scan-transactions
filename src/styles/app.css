@@ -760,6 +760,7 @@ th[aria-sort='descending'] .th-btn {
 .act-sub {
   color: var(--color-muted);
   font-size: var(--size-caption);
+  font-weight: var(--weight-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -13,6 +13,8 @@ export interface Move {
   symbol: string;
   usd: number | null;
   flagged: boolean;
+  /** โลโก้โทเคนจากแหล่งข้อมูล (ถ้ามี) — ไม่มีก็ใช้ตัวอักษรแทน */
+  logo: string | null;
 }
 
 export interface TxRow {
@@ -20,6 +22,8 @@ export interface TxRow {
   hash: string;
   walletId: string;
   chain: string;
+  /** โลโก้เชนจากแหล่งข้อมูล (ถ้ามี) */
+  chainLogo: string | null;
   time: number;
   type: TxType;
   name: string;
@@ -29,6 +33,8 @@ export interface TxRow {
   counterparty: string | null;
   counterpartyName: string | null;
   gasUsd: number | null;
+  /** ทุกฟิลด์ที่แหล่งข้อมูลส่งมา — โชว์ในแผงรายละเอียด */
+  raw: Record<string, unknown>;
 }
 
 export interface Cursor {
@@ -99,6 +105,8 @@ type Dict = Record<string, unknown>;
 const isObj = (v: unknown): v is Dict => typeof v === 'object' && v !== null && !Array.isArray(v);
 const num = (v: unknown): number | null => (typeof v === 'number' && Number.isFinite(v) ? v : typeof v === 'string' && v !== '' && Number.isFinite(Number(v)) ? Number(v) : null);
 const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
+/** รับเฉพาะ https รูปภาพจากแหล่งข้อมูล — กัน javascript:/data: ที่อาจแทรกมา */
+const httpUrl = (v: unknown): string | null => (typeof v === 'string' && /^https:\/\//i.test(v) ? v : null);
 
 function normalize(body: unknown, walletId: string, address: string): Page {
   if (isObj(body) && Array.isArray(body.history_list)) return fromHistoryList(body, walletId, address);
@@ -137,6 +145,7 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
           symbol: str(tok.optimized_symbol) ?? str(tok.display_symbol) ?? str(tok.symbol) ?? shortId(tokenId),
           usd: price !== null ? amount * price : null,
           flagged: bad,
+          logo: httpUrl(tok.logo_url),
         });
       }
     };
@@ -148,18 +157,21 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
     const type: TxType = approve ? 'approve' : moves.some((m) => m.dir === 'in') && moves.some((m) => m.dir === 'out') ? 'swap' : moves.some((m) => m.dir === 'out') ? 'send' : moves.some((m) => m.dir === 'in') ? 'receive' : 'contract';
     if (approve) {
       const tok = isObj(tokens[str(approve.token_id) ?? '']) ? (tokens[str(approve.token_id) ?? ''] as Dict) : {};
-      moves.push({ dir: 'out', amount: num(approve.value) ?? 0, symbol: str(tok.optimized_symbol) ?? str(tok.symbol) ?? '', usd: null, flagged: false });
+      moves.push({ dir: 'out', amount: num(approve.value) ?? 0, symbol: str(tok.optimized_symbol) ?? str(tok.symbol) ?? '', usd: null, flagged: false, logo: httpUrl(tok.logo_url) });
     }
 
     const projectId = str(item.project_id);
     const project = projectId && isObj(projects[projectId]) ? (projects[projectId] as Dict) : null;
     const other = str(item.other_addr) ?? (str(tx.from_addr)?.toLowerCase() === address ? str(tx.to_addr) : str(tx.from_addr));
 
+    // โลโก้เชน: แหล่งข้อมูลบางแบบใส่ chain_logo_url มาให้ ไม่งั้นใช้โลโก้โทเคนพื้นเมือง (key = ชื่อเชน)
+    const native = isObj(tokens[chain]) ? (tokens[chain] as Dict) : {};
     rows.push({
       key: `${walletId}:${chain}:${hash}:${num(item.idx) ?? 0}`,
       hash,
       walletId,
       chain,
+      chainLogo: httpUrl(item.chain_logo_url) ?? httpUrl(native.logo_url),
       time,
       type,
       name,
@@ -169,6 +181,7 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
       counterparty: other,
       counterpartyName: project ? str(project.name) : null,
       gasUsd: num(tx.usd_gas_fee),
+      raw: item,
     });
   }
   return { rows, next: cursorOf(rows) };
@@ -189,7 +202,7 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
     const amount = str(item.tokenDecimal) || raw > 1e15 ? raw / 10 ** decimals : raw;
     const out = from === address;
     const symbol = str(item.tokenSymbol) ?? str(item.symbol) ?? '';
-    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, usd: null, flagged: false }] : [];
+    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, usd: null, flagged: false, logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) }] : [];
     const gasPrice = num(item.gasPrice);
     const gasUsed = num(item.gasUsed);
     rows.push({
@@ -197,6 +210,7 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
       hash,
       walletId,
       chain: str(item.chain) ?? '—',
+      chainLogo: httpUrl(item.chain_logo_url),
       time,
       type: moves.length ? (out ? 'send' : 'receive') : 'contract',
       name: str(item.functionName)?.split('(')[0] ?? str(item.name) ?? '',
@@ -206,6 +220,7 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
       counterparty: out ? to || null : from || null,
       counterpartyName: null,
       gasUsd: gasPrice !== null && gasUsed !== null ? null : num(item.usd_gas_fee),
+      raw: item,
     });
   }
   return { rows, next: cursorOf(rows) };
@@ -231,7 +246,7 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
         const dir: Move['dir'] = from === address ? 'out' : 'in';
         other ??= dir === 'out' ? to || null : from || null;
         const amount = native ? (num(m.amount) ?? 0) / 1e9 : (num(m.tokenAmount) ?? num(m.amount) ?? 0);
-        moves.push({ dir, amount, symbol: native ? 'SOL' : (str(m.symbol) ?? shortId(str(m.mint) ?? '')), usd: num(m.usd), flagged: false });
+        moves.push({ dir, amount, symbol: native ? 'SOL' : (str(m.symbol) ?? shortId(str(m.mint) ?? '')), usd: num(m.usd), flagged: false, logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
       }
     };
     push(item.nativeTransfers, true);
@@ -246,6 +261,7 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
       hash,
       walletId,
       chain: str(item.chain) ?? 'sol',
+      chainLogo: httpUrl(item.chain_logo_url),
       time,
       type,
       name: kind && kind !== 'unknown' ? kind : (str(item.source) ?? ''),
@@ -255,6 +271,7 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
       counterparty: other,
       counterpartyName: null,
       gasUsd: fee !== null && str(item.feePayer) === address ? num(item.feeUsd) : null,
+      raw: item,
     });
   }
   return { rows, next: cursorOf(rows) };

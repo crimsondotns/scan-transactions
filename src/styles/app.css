@@ -146,6 +146,15 @@ select {
   min-width: 0;
 }
 
+/* เปิดแผงขวาแล้วเนื้อหาขยับหลบ ไม่ถูกทับ (จอกว้างพอ) */
+@media (min-width: 1200px) {
+  .layout[data-drawer='true'] {
+    width: auto;
+    margin-inline: var(--layout-gutter) calc(440px + var(--space-6));
+    transition: margin var(--motion-slow) var(--easing-standard);
+  }
+}
+
 @media (max-width: 900px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
@@ -461,7 +470,7 @@ input[type='file'].input::file-selector-button {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--size-body);
-  min-width: 820px;
+  min-width: 640px;
 }
 .tx th {
   position: sticky;
@@ -591,6 +600,251 @@ input[type='file'].input::file-selector-button {
   padding: var(--space-6);
   gap: var(--space-3);
   flex-wrap: wrap;
+}
+
+/* หัวตารางกดเรียงได้ */
+.th-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.th-btn:hover {
+  color: var(--color-ink);
+}
+.th-ico {
+  width: 14px;
+  height: 14px;
+  color: var(--color-tertiary);
+}
+th[aria-sort='ascending'] .th-btn,
+th[aria-sort='descending'] .th-btn {
+  color: var(--color-ink);
+}
+.tx .num .th-btn {
+  flex-direction: row-reverse;
+}
+.tx-row {
+  cursor: pointer;
+}
+.tx-row[aria-selected='true'] {
+  background: var(--color-soft);
+}
+.tx-row:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: -2px;
+}
+.tx-wallet {
+  display: block;
+  font-weight: 500;
+}
+.tx-hash {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  color: var(--color-muted);
+  white-space: nowrap;
+}
+.tx .num[data-sign='neg'] {
+  color: var(--color-muted);
+}
+.tx .num .more {
+  color: var(--color-tertiary);
+}
+
+/* ---------- โลโก้ ---------- */
+
+.logo {
+  display: inline-block;
+  border-radius: var(--radius-pill);
+  background: var(--color-soft);
+  object-fit: cover;
+  flex: none;
+  vertical-align: middle;
+}
+.logo-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-muted);
+  font-weight: 500;
+  line-height: 1;
+  border: 1px solid var(--color-line-subtle);
+}
+.logo-stack {
+  position: relative;
+  display: inline-block;
+  flex: none;
+}
+.logo-badge {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: inline-flex;
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
+  padding: 1px;
+}
+.with-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.tx-id {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.tx-id-text {
+  min-width: 0;
+}
+
+/* ---------- แผงขวา (รายละเอียด) ---------- */
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 100vw);
+  background: var(--color-bg);
+  border-left: 1px solid var(--color-line);
+  box-shadow: var(--shadow-soft);
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  animation: drawer-in var(--motion-slow) var(--easing-standard);
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-6);
+  border-bottom: 1px solid var(--color-line-subtle);
+}
+.drawer-head h2 {
+  font-size: var(--size-heading-sm);
+}
+.drawer-body {
+  overflow-y: auto;
+  padding: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.dt-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.dt-value {
+  font-size: var(--size-heading-lg);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+.dt-value[data-sign='neg'] {
+  color: var(--color-muted);
+}
+.dt {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dt-row {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr);
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-line-subtle);
+}
+.dt-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.dt-row dt {
+  color: var(--color-muted);
+  font-size: var(--size-caption);
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.dt-row dd {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+.dt-row dd .btn-icon {
+  min-height: 24px;
+  min-width: 24px;
+}
+.dt-row dd .btn-icon svg {
+  width: 14px;
+  height: 14px;
+}
+.dt-sub {
+  font-size: var(--size-label);
+  font-weight: 500;
+  color: var(--color-muted);
+  margin-bottom: calc(-1 * var(--space-3));
+}
+.dt-moves {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.dt-moves .move {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-line-subtle);
+  font-size: var(--size-body);
+}
+.dt-moves .move:first-child {
+  border-top: 0;
+}
+.dt-raw summary {
+  cursor: pointer;
+  font-size: var(--size-label);
+  font-weight: 500;
+  color: var(--color-muted);
+  padding: var(--space-2) 0;
+  border-radius: var(--radius-sm);
+}
+.dt-raw summary:hover {
+  color: var(--color-ink);
+}
+.dt-raw .dt {
+  margin-top: var(--space-2);
+}
+.dt-raw .dt-row {
+  grid-template-columns: 140px minmax(0, 1fr);
+  padding: var(--space-2) 0;
+  font-size: var(--size-caption);
 }
 
 /* ---------- สถานะว่าง ---------- */

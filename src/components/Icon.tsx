@@ -45,6 +45,8 @@ const PATHS = {
   ),
   x: <path d="M18 6 6 18M6 6l12 12" />,
   chevronDown: <path d="m6 9 6 6 6-6" />,
+  chevronUp: <path d="m18 15-6-6-6 6" />,
+  chevronsUpDown: <path d="m7 15 5 5 5-5M7 9l5-5 5 5" />,
   check: <path d="M20 6 9 17l-5-5" />,
   sun: (
     <>

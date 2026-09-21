@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from './i18n';
 import { useStore } from './store';
 import { endpointsFor, hasOlder, useFeed } from './useFeed';
@@ -6,6 +6,8 @@ import { XCapMark } from './components/XCapMark';
 import { Icon } from './components/Icon';
 import { WalletPanel } from './components/WalletPanel';
 import { TxTable } from './components/TxTable';
+import { DetailPanel } from './components/DetailPanel';
+import type { TxRow } from './feed';
 import { SettingsDialog } from './components/SettingsDialog';
 import { LangMenu } from './components/LangMenu';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -15,6 +17,8 @@ export function App() {
   const { wallets, settings } = useStore();
   const { feeds, loadMany, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [selected, setSelected] = useState<TxRow | null>(null);
+  const closeDetail = useCallback(() => setSelected(null), []);
 
   const enabledEps = settings.endpoints.filter((e) => e.enabled);
   const hasEndpoint = enabledEps.length > 0;
@@ -70,7 +74,7 @@ export function App() {
         <LangMenu />
       </header>
 
-      <div className="layout">
+      <div className="layout" data-drawer={selected !== null}>
         <aside className="side">
           <WalletPanel feeds={feeds} onRemove={forget} />
           <p className="hint">{t('foot.local')}</p>
@@ -107,7 +111,7 @@ export function App() {
                   ))}
                 </div>
               )}
-              <TxTable rows={rows} wallets={active} />
+              <TxTable rows={rows} wallets={active} selected={selected?.key ?? null} onSelect={setSelected} />
               {anyOlder && (
                 <div className="tfoot">
                   <button type="button" className="btn" disabled={anyLoading} onClick={() => void loadMany(active, 'older')}>
@@ -121,6 +125,7 @@ export function App() {
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <DetailPanel row={selected} wallets={wallets} onClose={closeDetail} />
     </>
   );
 }

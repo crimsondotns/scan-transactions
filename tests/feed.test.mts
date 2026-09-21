@@ -9,7 +9,7 @@ const fixture = {
   cate_dict: {},
   project_dict: { arb_dex: { id: 'arb_dex', chain: 'arb', name: 'Some DEX' } },
   token_dict: {
-    arb: { id: 'arb', chain: 'arb', symbol: 'ETH', price: 2000, is_scam: false },
+    arb: { id: 'arb', chain: 'arb', symbol: 'ETH', price: 2000, is_scam: false, logo_url: 'https://img.invalid/eth.png' },
     '0xaaaa': { id: '0xaaaa', chain: 'arb', symbol: 'USDC', optimized_symbol: 'USDC', price: 1 },
     '0xbad0': { id: '0xbad0', chain: 'base', symbol: 'AIRDROP', price: 0, is_scam: true },
   },
@@ -31,6 +31,9 @@ test('history_list shape → rows, types, flags, cursor', async () => {
   assert.deepEqual(page.rows.map((r) => r.type), ['swap', 'receive', 'approve', 'send']);
   assert.equal(page.rows[0]!.counterpartyName, 'Some DEX');
   assert.equal(page.rows[0]!.moves[1]!.usd, 1000);
+  assert.equal(page.rows[0]!.moves[0]!.logo, 'https://img.invalid/eth.png');
+  assert.equal(page.rows[0]!.chainLogo, 'https://img.invalid/eth.png');
+  assert.equal(page.rows[0]!.moves[1]!.logo, null);
   assert.equal(page.rows[1]!.flagged, true);
   assert.equal(page.rows[3]!.failed, true);
   assert.equal(page.rows[3]!.counterparty, '0xfriend');

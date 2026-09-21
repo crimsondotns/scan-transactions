@@ -21,9 +21,13 @@
   --color-line-hover: rgba(0, 0, 0, 0.32);
 
   /* อังกฤษ = Suisse Intl เท่านั้น; ตัวถัดไปในสแตกใช้แค่กับอักษรที่ฟอนต์ไม่มี (ไทย) */
-  --font-sans: 'Suisse Intl', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --weight-book: 450;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --font-sans: 'Suisse Intl', -apple-system, BlinkMacSystemFont, sans-serif;
+  /* น้ำหนัก: Regular 400 (เนื้อหา) / Book 500 (ข้อความรอง) / Medium 600 (ป้าย ปุ่ม หัวข้อ) */
+  --weight-regular: 400;
+  --weight-book: 500;
+  --weight-medium: 600;
+  /* ตัวเลข/hash ก็ใช้ Suisse — ไม่มี monospace; tabular-nums จัดหลักให้ */
+  --font-mono: var(--font-sans);
 
   /* type scale (display-md … caption) */
   --size-display: 2.5rem;

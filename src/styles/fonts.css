@@ -1,7 +1,7 @@
 /*
- * ฟอนต์เดียวสำหรับข้อความอังกฤษ: Suisse Int'l (Regular 400 / Book 450 / Medium 500)
- * unicode-range จำกัดไว้เฉพาะละติน — อักษรไทยตกไปที่ฟอนต์ระบบตามธรรมชาติ ไม่ต้องสลับด้วยโค้ด
- * ไฟล์อยู่ที่ public/assets/fonts/ (ไม่ commit — ดู README ในโฟลเดอร์นั้น)
+ * Suisse Int'l เท่านั้น — ข้อความอังกฤษและตัวเลขทุกจุด (ไม่มี monospace)
+ * น้ำหนัก: Regular 400 / Book 500 / Medium 600  ไฟล์ที่ public/assets/fonts/ (ไม่ commit)
+ * อักษรไทยไม่มีในฟอนต์ เบราว์เซอร์จึงหยิบฟอนต์ระบบให้เฉพาะตัวนั้นเอง
  */
 @font-face {
   font-family: 'Suisse Intl';
@@ -9,21 +9,61 @@
   font-weight: 400;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2200-22FF, U+FB00-FB06;
 }
 @font-face {
   font-family: 'Suisse Intl';
   src: url('/scan-transactions/assets/fonts/SuisseIntl-Book.woff2') format('woff2');
-  font-weight: 450;
+  font-weight: 500;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2200-22FF, U+FB00-FB06;
 }
 @font-face {
   font-family: 'Suisse Intl';
   src: url('/scan-transactions/assets/fonts/SuisseIntl-Medium.woff2') format('woff2');
-  font-weight: 500;
+  font-weight: 600;
   font-style: normal;
   font-display: swap;
-  unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2200-22FF, U+FB00-FB06;
+}
+
+/* บังคับทุกข้อความ + ตัวเลข */
+html,
+body {
+  font-family: 'Suisse Intl', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+p,
+span,
+a,
+button,
+input,
+textarea,
+label,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+td,
+th,
+dt,
+dd,
+li,
+small,
+summary,
+code,
+pre,
+.mono,
+.number,
+[data-number] {
+  font-family: 'Suisse Intl', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+.font-regular {
+  font-weight: 400;
+}
+.font-book {
+  font-weight: 500;
+}
+.font-medium {
+  font-weight: 600;
 }

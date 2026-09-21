@@ -34,7 +34,7 @@ h1,
 h2,
 h3 {
   margin: 0;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   line-height: 1.2;
   letter-spacing: -0.01em;
   text-wrap: balance;
@@ -113,7 +113,7 @@ select {
   align-items: center;
   gap: var(--space-2);
   font-size: var(--size-label);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 .brand svg {
   width: 22px;
@@ -212,7 +212,7 @@ select {
   border-radius: var(--radius-pill);
   background: var(--color-bg);
   color: var(--color-ink);
-  font: 500 var(--size-label) / 1.4 var(--font-sans);
+  font: var(--weight-medium) var(--size-label) / 1.4 var(--font-sans);
   cursor: pointer;
   transition: background-color var(--motion-base) var(--easing-standard), border-color var(--motion-base) var(--easing-standard), opacity var(--motion-base) var(--easing-standard);
   white-space: nowrap;
@@ -274,7 +274,7 @@ select {
 }
 .label {
   font-size: var(--size-label);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 .input {
   width: 100%;
@@ -325,7 +325,7 @@ input[type='file'].input::file-selector-button {
   border-radius: var(--radius-pill);
   background: var(--color-bg);
   color: var(--color-ink);
-  font: 500 var(--size-label) / 1.4 var(--font-sans);
+  font: var(--weight-medium) var(--size-label) / 1.4 var(--font-sans);
   cursor: pointer;
 }
 .hint {
@@ -393,7 +393,7 @@ input[type='file'].input::file-selector-button {
 }
 .panel-title {
   font-size: var(--size-heading-sm);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 .row-actions {
   display: flex;
@@ -441,7 +441,7 @@ input[type='file'].input::file-selector-button {
 }
 .wallet-label {
   font-size: var(--size-body);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -515,7 +515,7 @@ input[type='file'].input::file-selector-button {
   background: var(--color-bg);
   text-align: left;
   font-size: var(--size-caption);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--color-muted);
   padding: var(--space-3) var(--space-3);
   border-bottom: 1px solid var(--color-line);
@@ -565,7 +565,7 @@ input[type='file'].input::file-selector-button {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 .chip {
   display: inline-block;
@@ -574,7 +574,7 @@ input[type='file'].input::file-selector-button {
   border: 1px solid var(--color-line);
   border-radius: var(--radius-pill);
   font-size: var(--size-caption);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   white-space: nowrap;
   background: var(--color-bg);
 }
@@ -628,7 +628,7 @@ input[type='file'].input::file-selector-button {
 }
 .cp-name {
   display: block;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 
 .tfoot {
@@ -679,7 +679,7 @@ th[aria-sort='descending'] .th-btn {
 }
 .tx-wallet {
   display: block;
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 .tx-hash {
   display: inline-flex;
@@ -710,7 +710,7 @@ th[aria-sort='descending'] .th-btn {
   align-items: center;
   justify-content: center;
   color: var(--color-muted);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   line-height: 1;
   border: 1px solid var(--color-line-subtle);
 }
@@ -794,7 +794,7 @@ th[aria-sort='descending'] .th-btn {
 }
 .dt-value {
   font-size: var(--size-heading-lg);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
 }
@@ -820,7 +820,7 @@ th[aria-sort='descending'] .th-btn {
 .dt-row dt {
   color: var(--color-muted);
   font-size: var(--size-caption);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   overflow-wrap: anywhere;
 }
 .dt-row dd {
@@ -842,7 +842,7 @@ th[aria-sort='descending'] .th-btn {
 }
 .dt-sub {
   font-size: var(--size-label);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--color-muted);
   margin-bottom: calc(-1 * var(--space-3));
 }
@@ -867,7 +867,7 @@ th[aria-sort='descending'] .th-btn {
 .dt-raw summary {
   cursor: pointer;
   font-size: var(--size-label);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   color: var(--color-muted);
   padding: var(--space-2) 0;
   border-radius: var(--radius-sm);
@@ -971,7 +971,7 @@ dialog.dlg::backdrop {
 }
 .preview th {
   color: var(--color-muted);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   position: sticky;
   top: 0;
   background: var(--color-bg);
@@ -1003,7 +1003,7 @@ dialog.dlg::backdrop {
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--color-muted);
-  font: 500 var(--size-caption) / 1.4 var(--font-sans);
+  font: var(--weight-medium) var(--size-caption) / 1.4 var(--font-sans);
   cursor: pointer;
   transition: background-color var(--motion-base) var(--easing-standard), color var(--motion-base) var(--easing-standard);
 }
@@ -1125,7 +1125,7 @@ dialog.dlg::backdrop {
   text-overflow: ellipsis;
 }
 .dd-item[aria-selected='true'] {
-  font-weight: 500;
+  font-weight: var(--weight-medium);
 }
 .dd-item small {
   color: var(--color-tertiary);
@@ -1161,7 +1161,7 @@ dialog.dlg::backdrop {
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-pill);
   font-size: var(--size-label);
-  font-weight: 500;
+  font-weight: var(--weight-medium);
   animation: toast-in var(--motion-base) var(--easing-standard);
 }
 @keyframes toast-in {

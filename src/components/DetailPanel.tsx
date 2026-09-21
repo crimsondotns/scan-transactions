@@ -6,7 +6,7 @@ import type { Wallet } from '../store';
 import { formatAmountFull, formatDate, formatPrice, formatUsd } from '../format';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
-import { netUsd } from './TxTable';
+import { rowValue } from './TxTable';
 import { Logo } from './Logo';
 import type { ChainMap } from '../chains';
 
@@ -42,7 +42,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   const chainLogo = chain?.logo ?? row.chainLogo ?? null;
   const explorer = chain?.explorer ? `${chain.explorer.replace(/\/$/, '')}/tx/${row.hash}` : null;
   const d = formatDate(row.time);
-  const v = netUsd(row);
+  const v = rowValue(row);
 
   async function copy(text: string) {
     try {
@@ -84,8 +84,8 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
             {row.failed ? t('tx.failed') : t(`tx.type.${row.type}`)}
             </span>
           </span>
-          <span className="dt-value" data-sign={v === null ? undefined : v < 0 ? 'neg' : 'pos'}>
-            {v === null ? '—' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${formatUsd(Math.abs(v))}`}
+          <span className="dt-value" data-sign={v === null ? undefined : v.sign === '−' ? 'neg' : 'pos'}>
+            {v === null ? '—' : `${v.sign}${formatUsd(v.value)}`}
           </span>
           <span className="hint">
             {d.date} · {d.time}

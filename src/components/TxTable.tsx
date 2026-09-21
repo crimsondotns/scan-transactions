@@ -11,26 +11,37 @@ import type { ChainMap } from '../chains';
 const TYPES: TxType[] = ['swap', 'send', 'receive', 'approve', 'contract'];
 type SortKey = 'tx' | 'type' | 'date' | 'value' | 'balance';
 
-/** มูลค่าสุทธิ USD ของแถว (รับ − ส่ง) */
-export function netUsd(r: TxRow): number | null {
+/**
+ * มูลค่าของแถว (USD) — "เงินที่เคลื่อน" ไม่ใช่ผลต่างสุทธิ
+ * ส่งอย่างเดียว → −ยอดส่ง, รับอย่างเดียว → +ยอดรับ,
+ * ทั้งส่งและรับ (สลับ) → ขนาดของธุรกรรม (ฝั่งที่ใหญ่กว่า) ไม่มีเครื่องหมาย
+ * ก้อนที่จำนวน 0 หรือไม่มีราคา ไม่นับ
+ */
+export function rowValue(r: TxRow): { value: number; sign: '+' | '−' | '' } | null {
   let inUsd = 0;
   let outUsd = 0;
-  let any = false;
+  let hasIn = false;
+  let hasOut = false;
   for (const m of r.moves) {
-    if (m.usd === null) continue;
-    any = true;
-    if (m.dir === 'in') inUsd += m.usd;
-    else outUsd += m.usd;
+    if (m.usd === null || m.amount === 0) continue;
+    if (m.dir === 'in') {
+      inUsd += m.usd;
+      hasIn = true;
+    } else {
+      outUsd += m.usd;
+      hasOut = true;
+    }
   }
-  if (!any) return null;
-  const net = inUsd - outUsd;
-  // สลับที่มูลค่าเท่ากันสองฝั่ง (net ≈ 0) แสดงขนาดของธุรกรรมแทนศูนย์
-  return Math.abs(net) < 0.005 ? inUsd || outUsd : net;
+  if (hasIn && hasOut) return { value: Math.max(inUsd, outUsd), sign: '' };
+  if (hasOut) return { value: outUsd, sign: '−' };
+  if (hasIn) return { value: inUsd, sign: '+' };
+  return null;
 }
 
 /** จำนวนโทเคนหลักของแถว (ก้อนแรกที่มีจำนวน) */
 function mainMove(r: TxRow) {
-  return r.moves.find((m) => m.amount !== 0) ?? r.moves[0] ?? null;
+  const real = r.moves.filter((m) => m.amount !== 0);
+  return real.find((m) => m.usd !== null) ?? real[0] ?? r.moves[0] ?? null;
 }
 
 export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void }) {
@@ -60,8 +71,10 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
           return `${labels.get(r.walletId) ?? ''} ${r.hash}`;
         case 'type':
           return r.failed ? 'zz' : r.type;
-        case 'value':
-          return netUsd(r) ?? Number.NEGATIVE_INFINITY;
+        case 'value': {
+          const v = rowValue(r);
+          return v ? (v.sign === '−' ? -v.value : v.value) : Number.NEGATIVE_INFINITY;
+        }
         case 'balance':
           return mainMove(r)?.amount ?? Number.NEGATIVE_INFINITY;
         default:
@@ -123,7 +136,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
             <tbody>
               {filtered.map((r) => {
                 const d = formatDate(r.time);
-                const v = netUsd(r);
+                const v = rowValue(r);
                 const m = mainMove(r);
                 const isSel = r.key === selected;
                 return (
@@ -165,8 +178,8 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                       {d.date}
                       <small>{d.time}</small>
                     </td>
-                    <td className="num" data-sign={v === null ? undefined : v < 0 ? 'neg' : 'pos'}>
-                      {v === null ? '—' : `${v > 0 ? '+' : v < 0 ? '−' : ''}${formatUsd(Math.abs(v))}`}
+                    <td className="num" data-sign={v === null ? undefined : v.sign === '−' ? 'neg' : 'pos'}>
+                      {v === null ? '—' : `${v.sign}${formatUsd(v.value)}`}
                     </td>
                     <td className="num">
                       {m ? (

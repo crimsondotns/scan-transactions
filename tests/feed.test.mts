@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCsv } from '../src/importWallets.ts';
 import { detectEndpoint, parseAddress } from '../src/store.ts';
+import { rowValue } from '../src/components/TxTable.tsx';
 import { buildUrl, fetchPage, lookalike, toTemplate } from '../src/feed.ts';
 
 const ME = '0x42a8000000000000000000000000000000000000';
@@ -109,4 +110,13 @@ test('lookalike symbols (non-ASCII homoglyphs) are flagged', () => {
   assert.equal(lookalike('HYPE'), false);
   assert.equal(lookalike('H\u1EF4PE'), true);
   assert.equal(lookalike('USDC'), false);
+});
+
+test('rowValue: moved value, not net', () => {
+  const base = { key: '', hash: '', walletId: '', chain: '', chainLogo: null, time: 0, type: 'swap' as const, name: '', failed: false, flagged: false, counterparty: null, counterpartyName: null, gasUsd: null, raw: {} };
+  const mv = (dir: 'in' | 'out', amount: number, usd: number | null) => ({ dir, amount, usd, price: null, symbol: 'X', flagged: false, logo: null });
+  assert.deepEqual(rowValue({ ...base, moves: [mv('out', 293, 116.09), mv('in', 0.04, 116.42), mv('out', 0, null)] }), { value: 116.42, sign: '' });
+  assert.deepEqual(rowValue({ ...base, moves: [mv('out', 2, 191.06)] }), { value: 191.06, sign: '−' });
+  assert.deepEqual(rowValue({ ...base, moves: [mv('in', 5, 3.82)] }), { value: 3.82, sign: '+' });
+  assert.equal(rowValue({ ...base, moves: [mv('out', 2, null)] }), null);
 });

@@ -7,9 +7,10 @@ import { Icon } from './components/Icon';
 import { WalletPanel } from './components/WalletPanel';
 import { TxTable } from './components/TxTable';
 import { SettingsDialog } from './components/SettingsDialog';
+import { LangMenu } from './components/LangMenu';
 
 export function App() {
-  const { t, lang, setLang } = useI18n();
+  const { t } = useI18n();
   const { wallets, settings } = useStore();
   const { feeds, loadMany, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -64,9 +65,7 @@ export function App() {
         <button type="button" className="btn btn-icon" onClick={() => setSettingsOpen(true)} aria-label={t('nav.settings')} title={t('nav.settings')}>
           <Icon name="settings" />
         </button>
-        <button type="button" className="btn btn-sm" onClick={() => setLang(lang === 'th' ? 'en' : 'th')} aria-label={t('nav.lang')}>
-          {lang === 'th' ? 'EN' : 'TH'}
-        </button>
+        <LangMenu />
       </header>
 
       <div className="layout">

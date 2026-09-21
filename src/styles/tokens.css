@@ -54,8 +54,9 @@
   --sp-12: 48px;
   --sp-16: 64px;
 
-  --radius: 0;
+  --radius: 8px;
   --radius-sm: 4px;
+  --radius-lg: 12px;
 
   --dur: 150ms;
 }

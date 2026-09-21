@@ -44,6 +44,7 @@ const PATHS = {
     </>
   ),
   x: <path d="M18 6 6 18M6 6l12 12" />,
+  chevronDown: <path d="m6 9 6 6 6-6" />,
 } as const;
 
 export type IconName = keyof typeof PATHS;

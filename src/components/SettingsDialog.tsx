@@ -11,6 +11,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  const [chainUrl, setChainUrl] = useState(settings.chainListUrl);
+  const [chainErr, setChainErr] = useState<string | null>(null);
 
   /* ปุ่มเพิ่มติดทันทีที่มีข้อความ — ตรวจความถูกต้องตอนกดส่ง ไม่ใช่ตอนพิมพ์ */
   function submit(e: FormEvent) {
@@ -43,7 +45,13 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                     {ep.url}
                   </span>
                 </div>
-                <button type="button" className="btn btn-icon" onClick={() => removeEndpoint(ep.id)} aria-label={t('settings.remove', { name: ep.name })} title={t('settings.remove', { name: ep.name })}>
+                <button
+                  type="button"
+                  className="btn btn-icon"
+                  onClick={() => removeEndpoint(ep.id)}
+                  aria-label={t('settings.remove', { name: ep.name })}
+                  title={t('settings.remove', { name: ep.name })}
+                >
                   <Icon name="trash" />
                 </button>
               </li>
@@ -87,17 +95,80 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           </div>
         </form>
 
-        <div className="field">
-          <label className="label" htmlFor="set-chains">
-            {t('settings.chainList')}
-          </label>
-          <input id="set-chains" name="chainList" type="url" inputMode="url" className="input mono" defaultValue={settings.chainListUrl} onBlur={(e) => setChainListUrl(e.target.value)} autoComplete="off" spellCheck={false} />
-        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!/^https:\/\//i.test(chainUrl.trim())) return setChainErr(t('settings.badUrl'));
+            setChainListUrl(chainUrl);
+            setChainErr(null);
+            toast(t('settings.chainListSaved'));
+          }}
+          noValidate
+        >
+          <div className="field">
+            <label className="label" htmlFor="set-chains">
+              {t('settings.chainList')}
+            </label>
+            <div className="inline">
+              <input
+                id="set-chains"
+                name="chainList"
+                type="url"
+                inputMode="url"
+                className="input mono"
+                value={chainUrl}
+                onChange={(e) => {
+                  setChainUrl(e.target.value);
+                  setChainErr(null);
+                }}
+                autoComplete="off"
+                spellCheck={false}
+                aria-invalid={chainErr ? 'true' : undefined}
+              />
+              <button type="submit" className="btn btn-primary" disabled={chainUrl.trim() === '' || chainUrl.trim() === settings.chainListUrl}>
+                {t('settings.addBtn')}
+              </button>
+            </div>
+            {chainErr && (
+              <span className="error" aria-live="polite">
+                {chainErr}
+              </span>
+            )}
+            {settings.chainListUrl && (
+              <span className="hint with-logo">
+                <span className="mono">{settings.chainListUrl}</span>
+                <button
+                  type="button"
+                  className="btn btn-icon"
+                  onClick={() => {
+                    setChainListUrl('');
+                    setChainUrl('');
+                  }}
+                  aria-label={t('settings.remove', { name: t('settings.chainList') })}
+                  title={t('settings.remove', { name: t('settings.chainList') })}
+                >
+                  <Icon name="trash" />
+                </button>
+              </span>
+            )}
+          </div>
+        </form>
         <div className="field" style={{ maxWidth: 120 }}>
           <label className="label" htmlFor="set-page">
             {t('settings.pageSize')}
           </label>
-          <input id="set-page" name="pageSize" type="text" inputMode="numeric" pattern="[0-9]*" className="input" value={settings.pageSize} onChange={(e) => setPageSize(Math.min(100, Math.max(1, Number(e.target.value.replace(/\D/g, '')) || 20)))} autoComplete="off" spellCheck={false} />
+          <input
+            id="set-page"
+            name="pageSize"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            className="input"
+            value={settings.pageSize}
+            onChange={(e) => setPageSize(Math.min(100, Math.max(1, Number(e.target.value.replace(/\D/g, '')) || 20)))}
+            autoComplete="off"
+            spellCheck={false}
+          />
         </div>
         <div className="dlg-actions">
           <button type="button" className="btn" onClick={onClose}>

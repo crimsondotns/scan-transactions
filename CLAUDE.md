@@ -1,0 +1,24 @@
+# CLAUDE.md
+
+XCap Scan — static multi-wallet transaction list (React 19 + Vite, GitHub Pages, no backend, no auth).
+
+## Design system — mandatory
+
+**Before any UI change, new element, or edit: read `docs/design-system.md` and match it.** It is the single source of truth for colour, type, spacing, radius, elevation, components, motion and accessibility. Tokens live in `src/styles/tokens.css` and map 1:1 to that file; never invent values outside it.
+
+Key rules from it: white canvas / black ink, neutral surfaces only, semantic colour only for real status; sans-serif (OpenAI Sans → system-ui fallback), sentence case, weight 500 for labels/buttons; pill buttons, 12px inputs/cards, 8–16px containers; hairline borders instead of shadows; 44px minimum control height; visible 2px focus outline; `prefers-reduced-motion` honoured.
+
+## Hard rules
+
+- Never hardcode or name any external history source in code, comments, docs or tests — the user pastes URLs at runtime. `pnpm check` enforces this.
+- All UI text goes through `t()` in `src/i18n.tsx` (Thai key + English pair). No literal Thai in `.tsx`.
+- No `px` font-size in CSS; use `--size-*` tokens. No gradients.
+- Icons only via `components/Icon.tsx`.
+
+## Commands
+
+```bash
+pnpm dev · pnpm typecheck · pnpm check · pnpm test · pnpm build
+```
+
+Do not declare work done while any of these is red.

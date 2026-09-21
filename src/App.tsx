@@ -99,7 +99,7 @@ export function App() {
                 </button>
               </div>
               {errors.length > 0 && (
-                <div className="field" style={{ marginBottom: 'var(--sp-4)' }} aria-live="polite">
+                <div className="field" style={{ marginBottom: 'var(--space-4)' }} aria-live="polite">
                   {errors.map((x) => (
                     <span key={`${x.w.id}:${x.ep?.id}`} className="error">
                       {errMsg(x)}

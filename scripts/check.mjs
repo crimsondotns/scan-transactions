@@ -2,7 +2,7 @@
  * ด่านของ repo — รันก่อน build ใน CI
  * 1. ไม่มี URL ของแหล่งข้อมูลจริงฝังในซอร์ส (ผู้ใช้ต้องใส่เองตอนใช้งาน)
  * 2. ไม่มีข้อความไทยตรงใน .tsx (ทุกข้อความผ่าน t())
- * 3. ไม่มี font-size เป็น px ลอยใน CSS, ไม่มี gradient / box-shadow ตกแต่ง
+ * 3. CSS: ไม่มี font-size เป็น px ลอย, ไม่มี gradient, ไม่มี uppercase, สีดิบอยู่ได้เฉพาะ tokens.css (ดู docs/design-system.md)
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -31,6 +31,8 @@ for (const f of files) {
   if (f.endsWith('.css')) {
     if (/font-size:\s*\d+px/.test(code)) bad.push(`${f}: px font-size`);
     if (/gradient\(/.test(code)) bad.push(`${f}: gradient`);
+    if (/text-transform:\s*uppercase/.test(code)) bad.push(`${f}: uppercase (design system uses sentence case)`);
+    if (/#[0-9a-f]{3,8}\b/i.test(code) && !f.endsWith('tokens.css')) bad.push(`${f}: raw colour outside tokens.css`);
   }
 }
 if (bad.length) {

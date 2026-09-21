@@ -149,8 +149,27 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
               <li key={i} className="move" data-dir={m.dir}>
                 <span className="amt with-logo">
                   <Logo src={m.logo} name={m.symbol} size={20} />
-                  {m.dir === 'in' ? '+' : '−'}
-                  {formatAmountFull(m.amount)} {m.symbol}
+                  <span>
+                    {m.dir === 'in' ? '+' : '−'}
+                    {formatAmountFull(m.amount)} {m.symbol}
+                  </span>
+                  {m.tokenId && (
+                    <span className="dt-actions">
+                      <button type="button" className="btn btn-icon" onClick={() => void copy(m.tokenId ?? '')} aria-label={t('tx.copy', { what: t('detail.tokenAddress') })} title={`${t('tx.copy', { what: t('detail.tokenAddress') })}: ${m.tokenId}`}>
+                        <Icon name="copy" />
+                      </button>
+                      {tokenUrl(m.tokenId) && (
+                        <a className="btn btn-icon" href={tokenUrl(m.tokenId) ?? undefined} target="_blank" rel="noopener noreferrer" aria-label={t('detail.explorer', { what: t('detail.tokenAddress') })} title={t('detail.explorer', { what: t('detail.tokenAddress') })}>
+                          <Icon name="external" />
+                        </a>
+                      )}
+                    </span>
+                  )}
+                  {m.flagged && (
+                    <span className="flag">
+                      <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} /> {t('tx.scam')}
+                    </span>
+                  )}
                 </span>
                 <span className="move-right">
                   <span className="usd">{m.usd !== null ? formatUsd(m.usd) : '—'}</span>
@@ -158,23 +177,6 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
                     {t('detail.price')} {formatPrice(m.price)}
                   </small>
                 </span>
-                {m.tokenId && (
-                  <span className="dt-actions">
-                    <button type="button" className="btn btn-icon" onClick={() => void copy(m.tokenId ?? '')} aria-label={t('tx.copy', { what: t('detail.tokenAddress') })} title={`${t('tx.copy', { what: t('detail.tokenAddress') })}: ${m.tokenId}`}>
-                      <Icon name="copy" />
-                    </button>
-                    {tokenUrl(m.tokenId) && (
-                      <a className="btn btn-icon" href={tokenUrl(m.tokenId) ?? undefined} target="_blank" rel="noopener noreferrer" aria-label={t('detail.explorer', { what: t('detail.tokenAddress') })} title={t('detail.explorer', { what: t('detail.tokenAddress') })}>
-                        <Icon name="external" />
-                      </a>
-                    )}
-                  </span>
-                )}
-                {m.flagged && (
-                  <span className="flag">
-                    <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} /> {t('tx.scam')}
-                  </span>
-                )}
               </li>
             ))}
           </ul>

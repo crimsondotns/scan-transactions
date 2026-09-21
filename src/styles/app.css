@@ -889,6 +889,7 @@ th[aria-sort='descending'] .th-btn {
   min-width: 0;
   white-space: normal;
   align-self: center;
+  flex-wrap: wrap;
 }
 .dt-moves .move-right {
   flex: none;

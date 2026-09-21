@@ -173,7 +173,6 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                         <>
                           {m.dir === 'in' ? '+' : '−'}
                           {formatAmount(m.amount)} {m.symbol}
-                          {r.moves.length > 1 && <small className="more"> +{r.moves.length - 1}</small>}
                         </>
                       ) : (
                         '—'

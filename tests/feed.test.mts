@@ -61,7 +61,7 @@ test('csv: quotes, embedded commas, CRLF, multi-line cell', () => {
 
 test('buildUrl fills every placeholder', () => {
   assert.equal(buildUrl('https://a.invalid/?id={address}&s={start}&c={count}&b={cursor}', '0xAB', { start: 5, cursor: 'sig' }, 9), 'https://a.invalid/?id=0xAB&s=5&c=9&b=sig');
-  assert.equal(buildUrl('https://a.invalid/?s={start}&b={cursor}', 'x', null, 9), 'https://a.invalid/?s=0&b=');
+  assert.equal(buildUrl('https://a.invalid/{address}?s={start}&b={cursor}', 'x', null, 9), 'https://a.invalid/x?s=0&b=');
 });
 
 const SOL = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';

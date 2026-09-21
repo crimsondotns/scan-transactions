@@ -1275,6 +1275,21 @@ dialog.dlg::backdrop {
   border-color: var(--color-ink-hover);
 }
 
+/* ยืนยันการลบ */
+.confirm-msg {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--size-body-lg);
+  text-wrap: pretty;
+}
+.btn.btn-danger {
+  background: var(--color-danger);
+}
+.btn.btn-danger:hover {
+  background: var(--color-danger);
+  opacity: 0.85;
+}
+
 /* ---------- Dropdown panel ---------- */
 
 .dd {

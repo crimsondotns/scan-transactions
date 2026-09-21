@@ -148,6 +148,9 @@ const th = {
   'dialog.cancel': 'ยกเลิก',
   'dialog.close': 'ปิด',
   'dialog.confirm': 'ยืนยัน',
+  'confirm.deleteTitle': 'ลบกระเป๋า',
+  'confirm.deleteMsg': 'ลบ {label} ออกจากเครื่องนี้? ธุรกรรมที่โหลดไว้จะหายไปด้วย',
+  'confirm.clearTitle': 'ล้างกระเป๋าทั้งหมด',
   'foot.local': 'ข้อมูลทั้งหมดอยู่ในเบราว์เซอร์นี้เท่านั้น',
 } as const;
 
@@ -291,6 +294,9 @@ const en: Record<MessageKey, string> = {
   'dialog.cancel': 'Cancel',
   'dialog.close': 'Close',
   'dialog.confirm': 'Confirm',
+  'confirm.deleteTitle': 'Delete wallet',
+  'confirm.deleteMsg': 'Remove {label} from this device? Its loaded transactions go with it.',
+  'confirm.clearTitle': 'Clear all wallets',
   'foot.local': 'Everything stays in this browser',
 };
 

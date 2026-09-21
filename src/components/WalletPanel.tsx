@@ -7,6 +7,7 @@ import { Icon } from './Icon';
 import { AddWalletDialog } from './AddWalletDialog';
 import { ImportDialog } from './ImportDialog';
 import { Identicon } from './Identicon';
+import { ConfirmDialog, type ConfirmState } from './ConfirmDialog';
 
 /**
  * แผงกระเป๋า — ไม่พับ คลิกแถว = สลับกระเป๋าที่ดู (คลิกซ้ำ = ดูทุกกระเป๋า)
@@ -19,21 +20,34 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const [expandPanel, setExpandPanel] = useState(true);
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmState | null>(null);
   const hiddenWallets = new Set(wallets.filter((w) => !w.enabled).map((w) => w.id));
   const activeWallet = wallets.find((w) => w.id === activeId) ?? null;
 
   function remove(w: Wallet) {
-    removeWallet(w.id);
-    onRemove(w.id);
-    if (activeId === w.id) onSwitch(null);
+    setConfirmDialog({ type: 'deleteWallet', title: t('confirm.deleteTitle'), message: t('confirm.deleteMsg', { label: w.label }), walletId: w.id });
   }
 
   function clear() {
     if (!wallets.length) return;
-    if (!window.confirm(t('wallets.clearConfirm', { n: wallets.length }))) return;
-    clearWallets();
-    wallets.forEach((w) => onRemove(w.id));
-    onSwitch(null);
+    setConfirmDialog({ type: 'clearAll', title: t('confirm.clearTitle'), message: t('wallets.clearConfirm', { n: wallets.length }), walletId: null });
+  }
+
+  /* ผู้ใช้กดยืนยัน → ทำจริง; ไม่มี dialog ค้าง → ไม่ทำอะไร */
+  function confirmAction() {
+    const c = confirmDialog;
+    setConfirmDialog(null);
+    if (!c) return null;
+    if (c.type === 'deleteWallet' && c.walletId) {
+      removeWallet(c.walletId);
+      onRemove(c.walletId);
+      if (activeId === c.walletId) onSwitch(null);
+    } else if (c.type === 'clearAll') {
+      clearWallets();
+      wallets.forEach((w) => onRemove(w.id));
+      onSwitch(null);
+    }
+    return c.type;
   }
 
   return (
@@ -104,6 +118,7 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
 
       <AddWalletDialog open={adding} onClose={() => setAdding(false)} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} />
+      <ConfirmDialog state={confirmDialog} onConfirm={confirmAction} onCancel={() => setConfirmDialog(null)} />
     </section>
   );
 }

@@ -78,7 +78,6 @@ export function App() {
           {!hasEndpoint ? (
             <div className="empty">
               <h2>{t('tx.emptyEndpoint')}</h2>
-              <p>{t('tx.emptyEndpointBody')}</p>
               <button type="button" className="btn btn-primary" onClick={() => setSettingsOpen(true)}>
                 {t('nav.settings')}
               </button>
@@ -86,7 +85,6 @@ export function App() {
           ) : wallets.length === 0 ? (
             <div className="empty">
               <h2>{t('tx.emptyWallets')}</h2>
-              <p>{t('tx.emptyWalletsBody')}</p>
             </div>
           ) : (
             <>

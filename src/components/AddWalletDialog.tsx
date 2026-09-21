@@ -32,7 +32,7 @@ export function AddWalletDialog({ open, onClose }: { open: boolean; onClose: () 
           <label className="label" htmlFor="add-label">
             {t('add.label')}
           </label>
-          <input id="add-label" name="label" className="input" value={label} onChange={(e) => setLabel(e.target.value)} placeholder={t('add.labelPh')} autoComplete="off" maxLength={64} />
+          <input id="add-label" name="label" className="input" value={label} onChange={(e) => setLabel(e.target.value)} autoComplete="off" maxLength={64} />
         </div>
         <div className="field">
           <label className="label" htmlFor="add-address">
@@ -47,7 +47,6 @@ export function AddWalletDialog({ open, onClose }: { open: boolean; onClose: () 
               setAddress(e.target.value);
               setErr(null);
             }}
-            placeholder={t('add.addressPh')}
             autoComplete="off"
             spellCheck={false}
             required

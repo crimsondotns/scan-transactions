@@ -11,6 +11,7 @@ Key rules from it: white canvas / black ink, neutral surfaces only, semantic col
 ## Hard rules
 
 - Never hardcode or name any external history source in code, comments, docs or tests — the user pastes URLs at runtime. `pnpm check` enforces this.
+- **Zero hints to the client.** No placeholder text, helper text, example URLs, placeholder syntax (`{address}` etc.), chain explanations or request previews in the UI or README. Labels only; errors are generic ("Invalid URL"). The user is expected to know.
 - All UI text goes through `t()` in `src/i18n.tsx` (Thai key + English pair). No literal Thai in `.tsx`.
 - No `px` font-size in CSS; use `--size-*` tokens. No gradients.
 - Icons only via `components/Icon.tsx`.

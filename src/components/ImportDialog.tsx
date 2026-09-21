@@ -57,10 +57,7 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
           <label className="label" htmlFor="import-file">
             {t('import.file')}
           </label>
-          <input id="import-file" ref={fileRef} name="file" type="file" className="input" accept=".csv,.xlsx,.xlsm,.xls,text/csv" onChange={(e) => void pick(e.target.files?.[0])} aria-describedby="import-help" />
-          <span id="import-help" className="hint">
-            {t('import.columns')}
-          </span>
+          <input id="import-file" ref={fileRef} name="file" type="file" className="input" accept=".csv,.xlsx,.xlsm,.xls,text/csv" onChange={(e) => void pick(e.target.files?.[0])} />
           {busy && (
             <span className="hint" aria-live="polite">
               {t('import.reading')}

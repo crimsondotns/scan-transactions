@@ -1,13 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useI18n } from '../i18n';
 import { useStore, type Family } from '../store';
-import { buildUrl, hasPlaceholder } from '../feed';
+import { hasPlaceholder } from '../feed';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
 import { Dropdown } from './Dropdown';
 
-const SAMPLE: Record<Family, string> = { evm: '0x0000000000000000000000000000000000000000', sol: '11111111111111111111111111111111' };
 const FAMILIES: Family[] = ['evm', 'sol'];
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -34,8 +33,6 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   return (
     <Dialog open={open} onClose={onClose} title={t('settings.title')}>
       <div className="stack">
-        <p className="hint">{t('settings.help')}</p>
-
         {settings.endpoints.length === 0 ? (
           <p className="hint">{t('settings.none')}</p>
         ) : (
@@ -70,7 +67,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               <label className="label" htmlFor="ep-name">
                 {t('settings.name')}
               </label>
-              <input id="ep-name" name="name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('settings.namePh')} autoComplete="off" maxLength={40} />
+              <input id="ep-name" name="name" className="input" value={name} onChange={(e) => setName(e.target.value)} autoComplete="off" maxLength={40} />
             </div>
             <div className="field" style={{ flex: '0 0 140px' }}>
               <span className="label" id="ep-family-l">
@@ -94,22 +91,16 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 setUrl(e.target.value);
                 setErr(null);
               }}
-              placeholder={t('settings.endpointPh')}
               autoComplete="off"
               spellCheck={false}
               required
               aria-invalid={err ? 'true' : undefined}
-              aria-describedby="ep-help"
             />
-            <span id="ep-help" className="hint">
-              {t('settings.placeholders')}
-            </span>
             {err && (
               <span className="error" aria-live="polite">
                 {err}
               </span>
             )}
-            {valid && <span className="hint mono">{buildUrl(url.trim(), SAMPLE[family], null, settings.pageSize)}</span>}
           </div>
           <div className="dlg-actions">
             <button type="submit" className="btn btn-primary" disabled={!valid}>

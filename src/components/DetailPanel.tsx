@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { useI18n } from '../i18n';
 import type { TxRow } from '../feed';
 import type { Wallet } from '../store';
-import { formatAmount, formatDate, formatUsd } from '../format';
+import { formatAmountFull, formatDate, formatUsd, formatUsdFull } from '../format';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
 import { netUsd } from './TxTable';
@@ -130,7 +130,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
             </Row>
           )}
           <Row label={t('tx.col.gas')} mono>
-            {formatUsd(row.gasUsd)}
+            {formatUsdFull(row.gasUsd)}
           </Row>
         </dl>
 
@@ -144,9 +144,9 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
                 <span className="amt with-logo">
                   <Logo src={m.logo} name={m.symbol} size={20} />
                   {m.dir === 'in' ? '+' : '−'}
-                  {formatAmount(m.amount)} {m.symbol}
+                  {formatAmountFull(m.amount)} {m.symbol}
                 </span>
-                <span className="usd">{m.usd !== null ? formatUsd(m.usd) : '—'}</span>
+                <span className="usd">{m.usd !== null ? formatUsdFull(m.usd) : '—'}</span>
                 {m.flagged && (
                   <span className="flag">
                     <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} /> {t('tx.scam')}

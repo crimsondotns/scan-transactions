@@ -419,7 +419,7 @@ input[type='file'].input::file-selector-button {
   width: 100%;
   border-collapse: collapse;
   font-size: var(--size-body);
-  min-width: 880px;
+  min-width: 820px;
 }
 .tx th {
   position: sticky;
@@ -481,6 +481,7 @@ input[type='file'].input::file-selector-button {
 }
 .chip {
   display: inline-block;
+  font-family: var(--font-sans);
   padding: 2px var(--space-2);
   border: 1px solid var(--color-line);
   border-radius: var(--radius-pill);
@@ -502,6 +503,8 @@ input[type='file'].input::file-selector-button {
   font-family: var(--font-mono);
   font-size: var(--size-caption);
   font-variant-numeric: tabular-nums;
+}
+.move .amt {
   white-space: nowrap;
 }
 .move[data-dir='out'] {
@@ -511,9 +514,12 @@ input[type='file'].input::file-selector-button {
   color: var(--color-tertiary);
 }
 .flag {
+  display: inline-block;
   color: var(--color-danger);
+  font-family: var(--font-sans);
   font-size: var(--size-caption);
   margin-left: var(--space-1);
+  white-space: nowrap;
 }
 .addr {
   font-family: var(--font-mono);
@@ -522,6 +528,7 @@ input[type='file'].input::file-selector-button {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  white-space: nowrap;
 }
 .addr .btn-icon {
   min-height: 28px;

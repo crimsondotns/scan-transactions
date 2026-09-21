@@ -110,9 +110,11 @@ export function TxTable({ rows, wallets }: { rows: TxRow[]; wallets: Wallet[] })
                       <div className="moves">
                         {r.moves.map((m, i) => (
                           <span key={i} className="move" data-dir={m.dir}>
-                            {m.dir === 'in' ? '+' : '−'}
-                            {formatAmount(m.amount)} {m.symbol}
-                            {m.usd !== null && m.usd !== 0 && <span className="usd"> {formatUsd(m.usd)}</span>}
+                            <span className="amt">
+                              {m.dir === 'in' ? '+' : '−'}
+                              {formatAmount(m.amount)} {m.symbol}
+                              {m.usd !== null && m.usd !== 0 && <span className="usd"> {formatUsd(m.usd)}</span>}
+                            </span>
                             {m.flagged && (
                               <span className="flag" title={t('tx.scam')}>
                                 <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} /> {t('tx.scam')}

@@ -41,5 +41,5 @@ export function shortAddr(a: string): string {
 }
 
 export function shortHash(h: string): string {
-  return h.length > 16 ? `${h.slice(0, 8)}…${h.slice(-6)}` : h;
+  return h.length > 14 ? `${h.slice(0, 6)}…${h.slice(-4)}` : h;
 }

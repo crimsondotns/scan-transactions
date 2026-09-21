@@ -30,6 +30,8 @@ export interface TxRow {
   chain: string;
   /** โลโก้เชนจากแหล่งข้อมูล (ถ้ามี) */
   chainLogo: string | null;
+  /** symbol ของเหรียญพื้นเมืองของเชน (ค่าธรรมเนียม) — จาก token_dict[chain] */
+  nativeSymbol: string | null;
   time: number;
   type: TxType;
   name: string;
@@ -183,13 +185,15 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
     const project = projectId && isObj(projects[projectId]) ? (projects[projectId] as Dict) : null;
     const other = str(item.other_addr) ?? (str(tx.from_addr)?.toLowerCase() === address ? str(tx.to_addr) : str(tx.from_addr));
 
-    // โลโก้เชน: เฉพาะที่แหล่งข้อมูลระบุตรงๆ — โลโก้ native token ไม่ใช่โลโก้เชน (hood ใช้ ETH)
+    // เหรียญพื้นเมือง: key ใน token_dict = ชื่อเชน (hood → ETH, hyper → HYPE)
+    const native = isObj(tokens[chain]) ? (tokens[chain] as Dict) : {};
     rows.push({
       key: `${walletId}:${chain}:${hash}:${num(item.idx) ?? 0}`,
       hash,
       walletId,
       chain,
       chainLogo: httpUrl(item.chain_logo_url),
+      nativeSymbol: str(native.optimized_symbol) ?? str(native.symbol),
       time,
       type,
       name,
@@ -234,6 +238,7 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
       walletId,
       chain: str(item.chain) ?? '—',
       chainLogo: httpUrl(item.chain_logo_url),
+      nativeSymbol: str(item.nativeSymbol),
       time,
       type: moves.length ? (out ? 'send' : 'receive') : 'contract',
       name: str(item.functionName)?.split('(')[0] ?? str(item.name) ?? '',
@@ -291,6 +296,7 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
       walletId,
       chain: str(item.chain) ?? 'sol',
       chainLogo: httpUrl(item.chain_logo_url),
+      nativeSymbol: 'SOL',
       time,
       type,
       name: kind && kind !== 'unknown' ? kind : (str(item.source) ?? ''),

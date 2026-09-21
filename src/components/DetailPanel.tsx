@@ -29,7 +29,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   const chain = chains.get(row.chain);
   const chainLogo = chain?.logo ?? row.chainLogo ?? null;
   const chainName = chain?.name ?? row.chain;
-  const native = chain?.symbol ?? row.chain.toUpperCase();
+  const native = row.nativeSymbol ?? chain?.symbol ?? row.chain.toUpperCase();
   const host = chain?.explorer?.replace(/\/$/, '') ?? null;
   const txUrl = host ? `${host}/tx/${row.hash}` : null;
   const explorerName = host ? host.replace(/^https?:\/\/(www\.)?/, '') : '';

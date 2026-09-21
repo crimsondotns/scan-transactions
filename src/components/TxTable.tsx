@@ -147,7 +147,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                 const chainLogo = chainInfo.get(r.chain)?.logo ?? r.chainLogo ?? null;
                 const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
                 const subtitle = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || (r.counterpartyName ?? '');
-                const native = chainInfo.get(r.chain)?.symbol ?? r.chain.toUpperCase();
+                const native = r.nativeSymbol ?? chainInfo.get(r.chain)?.symbol ?? r.chain.toUpperCase();
                 const isSel = r.key === selected;
                 return (
                   <tr

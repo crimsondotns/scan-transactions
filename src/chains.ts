@@ -30,7 +30,7 @@ function normalize(body: unknown): ChainInfo[] {
     if (!isObj(c)) continue;
     const id = str(c.id);
     if (!id) continue;
-    out.push({ id, name: str(c.name) ?? id, logo: https(c.logo_url), explorer: https(c.explorer_host), symbol: str(c.token_symbol) ?? str(c.native_token_id) });
+    out.push({ id, name: str(c.name) ?? id, logo: https(c.logo_url), explorer: https(c.explorer_host), symbol: str(c.token_symbol) });
   }
   return out;
 }

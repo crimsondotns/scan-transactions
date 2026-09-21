@@ -9,17 +9,6 @@ import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { useToast } from './Toast';
 
-function flatten(v: unknown, prefix = '', out: Array<[string, string]> = []): Array<[string, string]> {
-  if (v === null || v === undefined) out.push([prefix, '—']);
-  else if (Array.isArray(v)) {
-    if (!v.length) out.push([prefix, '[]']);
-    v.forEach((x, i) => flatten(x, `${prefix}[${i}]`, out));
-  } else if (typeof v === 'object') {
-    for (const [k, x] of Object.entries(v as Record<string, unknown>)) flatten(x, prefix ? `${prefix}.${k}` : k, out);
-  } else out.push([prefix, String(v)]);
-  return out;
-}
-
 export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; onClose: () => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
@@ -43,6 +32,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   const native = chain?.symbol ?? row.chain.toUpperCase();
   const host = chain?.explorer?.replace(/\/$/, '') ?? null;
   const txUrl = host ? `${host}/tx/${row.hash}` : null;
+  const explorerName = host ? host.replace(/^https?:\/\/(www\.)?/, '') : '';
   const addrUrl = (a: string) => (host ? `${host}/address/${a}` : null);
 
   const real = row.moves.filter((m) => m.amount !== 0);
@@ -181,18 +171,15 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
           {row.nonce !== null && <Row label={t('detail.nonce')}>{row.nonce}</Row>}
         </div>
 
-        <details className="dt-raw">
-          <summary>{t('detail.allFields')}</summary>
-          <dl className="dt">
-            {flatten(row.raw).map(([k, val]) => (
-              <div className="dt-row" key={k}>
-                <dt className="mono">{k}</dt>
-                <dd className="mono">{val}</dd>
-              </div>
-            ))}
-          </dl>
-        </details>
       </div>
+
+      {txUrl && (
+        <div className="drawer-foot">
+          <a className="btn btn-primary" href={txUrl} target="_blank" rel="noopener noreferrer">
+            {t('detail.viewOn', { name: explorerName })}
+          </a>
+        </div>
+      )}
     </aside>
   );
 }

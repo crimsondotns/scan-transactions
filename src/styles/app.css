@@ -779,22 +779,6 @@ th[aria-sort='descending'] .th-btn {
   font-weight: var(--weight-regular);
   font-size: var(--size-caption);
 }
-.hash-link {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-  color: var(--color-muted);
-  font-size: var(--size-caption);
-  font-weight: var(--weight-regular);
-}
-.hash-link svg {
-  width: 14px;
-  height: 14px;
-}
-a.hash-link:hover {
-  color: var(--color-ink);
-  text-decoration: none;
-}
 
 /* ---------- โลโก้ ---------- */
 

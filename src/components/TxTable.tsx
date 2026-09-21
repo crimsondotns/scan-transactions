@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useStore, type Wallet } from '../store';
 import type { TxRow, TxType } from '../feed';
-import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative, shortHash } from '../format';
+import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative } from '../format';
 import { Icon } from './Icon';
 import { Dropdown } from './Dropdown';
 import { Logo } from './Logo';
@@ -148,7 +148,6 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                 const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
                 const subtitle = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || (r.counterpartyName ?? '');
                 const native = chainInfo.get(r.chain)?.symbol ?? r.chain.toUpperCase();
-                const host = chainInfo.get(r.chain)?.explorer?.replace(/\/$/, '');
                 const isSel = r.key === selected;
                 return (
                   <tr
@@ -214,14 +213,6 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                       <span className="fee">
                         <span>{formatFeeUsd(r.gasUsd)}</span>
                         {r.gasNative !== null && <span className="amt-out">{formatFeeNative(r.gasNative, native)}</span>}
-                        {host ? (
-                          <a className="hash-link" href={`${host}/tx/${r.hash}`} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                            {shortHash(r.hash)}
-                            <Icon name="external" />
-                          </a>
-                        ) : (
-                          <span className="hash-link">{shortHash(r.hash)}</span>
-                        )}
                       </span>
                     </td>
                   </tr>

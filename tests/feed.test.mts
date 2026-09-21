@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCsv } from '../src/importWallets.ts';
+import { parseAddress } from '../src/store.ts';
 import { buildUrl, fetchPage } from '../src/feed.ts';
 
 const ME = '0x42a8000000000000000000000000000000000000';
@@ -26,28 +27,28 @@ const mock = (body: unknown, ok = true, status = 200) => {
 
 test('history_list shape → rows, types, flags, cursor', async () => {
   mock(fixture);
-  const page = await fetchPage('https://x.invalid/h?id={address}&s={start}&c={count}', 'w1', ME, 0, 4);
+  const page = await fetchPage('https://x.invalid/h?id={address}&s={start}&c={count}', 'w1', ME, null, 4);
   assert.deepEqual(page.rows.map((r) => r.type), ['swap', 'receive', 'approve', 'send']);
   assert.equal(page.rows[0]!.counterpartyName, 'Some DEX');
   assert.equal(page.rows[0]!.moves[1]!.usd, 1000);
   assert.equal(page.rows[1]!.flagged, true);
   assert.equal(page.rows[3]!.failed, true);
   assert.equal(page.rows[3]!.counterparty, '0xfriend');
-  assert.equal(page.next, 1700000000);
+  assert.deepEqual(page.next, { start: 1700000000, cursor: '0x04' });
 });
 
 test('flat list shape (result[]) with wei values', async () => {
   mock({ result: [{ hash: '0xabc', from: '0xaa', to: '0xbb', value: '1000000000000000000', timeStamp: '1700000000', isError: '0' }] });
-  const page = await fetchPage('https://x.invalid/{address}', 'w', '0xaa', 0, 20);
+  const page = await fetchPage('https://x.invalid/{address}', 'w', '0xaa', null, 20);
   assert.equal(page.rows[0]!.type, 'send');
   assert.equal(page.rows[0]!.moves[0]!.amount, 1);
 });
 
 test('unknown shape and HTTP errors are typed', async () => {
   mock({ hello: 1 });
-  await assert.rejects(fetchPage('https://x.invalid/{address}', 'w', '0xaa', 0, 20), { kind: 'shape' });
+  await assert.rejects(fetchPage('https://x.invalid/{address}', 'w', '0xaa', null, 20), { kind: 'shape' });
   mock({}, false, 404);
-  await assert.rejects(fetchPage('https://x.invalid/{address}', 'w', '0xaa', 0, 20), { kind: 'http', status: 404 });
+  await assert.rejects(fetchPage('https://x.invalid/{address}', 'w', '0xaa', null, 20), { kind: 'http', status: 404 });
 });
 
 test('csv: quotes, embedded commas, CRLF, multi-line cell', () => {
@@ -59,5 +60,27 @@ test('csv: quotes, embedded commas, CRLF, multi-line cell', () => {
 });
 
 test('buildUrl fills every placeholder', () => {
-  assert.equal(buildUrl('https://a.invalid/?id={address}&s={start}&c={count}', '0xAB', 5, 9), 'https://a.invalid/?id=0xAB&s=5&c=9');
+  assert.equal(buildUrl('https://a.invalid/?id={address}&s={start}&c={count}&b={cursor}', '0xAB', { start: 5, cursor: 'sig' }, 9), 'https://a.invalid/?id=0xAB&s=5&c=9&b=sig');
+  assert.equal(buildUrl('https://a.invalid/?s={start}&b={cursor}', 'x', null, 9), 'https://a.invalid/?s=0&b=');
+});
+
+const SOL = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
+test('signature-list shape (Solana family)', async () => {
+  mock([
+    { signature: 'sigA', timestamp: 1700000500, type: 'SWAP', fee: 5000, feePayer: SOL, nativeTransfers: [{ fromUserAccount: SOL, toUserAccount: 'pool', amount: 2e9 }], tokenTransfers: [{ fromUserAccount: 'pool', toUserAccount: SOL, tokenAmount: 100, mint: 'MintAAAAAAAA', symbol: 'USDC' }] },
+    { signature: 'sigB', timestamp: 1700000400, type: 'TRANSFER', fee: 5000, feePayer: 'someone', transactionError: null, nativeTransfers: [{ fromUserAccount: 'someone', toUserAccount: SOL, amount: 5e8 }], tokenTransfers: [] },
+  ]);
+  const page = await fetchPage('https://x.invalid/{address}?before={cursor}', 'w', SOL, null, 20);
+  assert.deepEqual(page.rows.map((r) => r.type), ['swap', 'receive']);
+  assert.equal(page.rows[0]!.moves[0]!.amount, 2);
+  assert.equal(page.rows[1]!.moves[0]!.amount, 0.5);
+  assert.equal(page.rows[1]!.counterparty, 'someone');
+  assert.deepEqual(page.next, { start: 1700000400, cursor: 'sigB' });
+});
+
+test('parseAddress: EVM lowercased, Solana kept as-is, junk rejected', () => {
+  assert.deepEqual(parseAddress(' 0xABCDEFabcdef0123456789ABCDEFabcdef012345 '), { address: '0xabcdefabcdef0123456789abcdefabcdef012345', family: 'evm' });
+  assert.deepEqual(parseAddress(SOL), { address: SOL, family: 'sol' });
+  assert.equal(parseAddress('0x123'), null);
+  assert.equal(parseAddress('0OIl' + 'a'.repeat(30)), null);
 });

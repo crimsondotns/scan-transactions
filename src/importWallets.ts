@@ -2,7 +2,7 @@
  * อ่านไฟล์ .csv / .xlsx เป็นรายการกระเป๋า — ต้องมีคอลัมน์ Label กับ Addresses
  * ตัวอ่านสเปรดชีตโหลดแบบ dynamic import เฉพาะตอนผู้ใช้เลือกไฟล์
  */
-import { ADDRESS_RE, normalizeAddress } from './store';
+import { parseAddress } from './store';
 
 export interface ImportRow {
   label: string;
@@ -84,15 +84,14 @@ function toRows(grid: string[][], existing: Set<string>): ImportRow[] {
   const rows: ImportRow[] = [];
   for (const r of grid.slice(1)) {
     const label = (r[li] ?? '').trim();
-    // ช่องที่อยู่ใส่ได้หลายค่า คั่นด้วยจุลภาค / ช่องว่าง / ขึ้นบรรทัดใหม่
+    // ช่องที่อยู่ใส่ได้หลายค่า (EVM หรือ Solana ปนกันได้) คั่นด้วยจุลภาค / ช่องว่าง / ขึ้นบรรทัดใหม่
     const parts = (r[ai] ?? '').split(/[\s,;]+/).filter(Boolean);
     if (!parts.length && !label) continue;
     parts.forEach((p, i) => {
-      const address = normalizeAddress(p);
-      const bad = !ADDRESS_RE.test(address);
-      const dupe = !bad && seen.has(address);
-      if (!bad) seen.add(address);
-      rows.push({ label: parts.length > 1 && label ? `${label} ${i + 1}` : label, address: bad ? p : address, status: bad ? 'bad' : dupe ? 'dupe' : 'ok' });
+      const parsed = parseAddress(p);
+      const dupe = parsed !== null && seen.has(parsed.address);
+      if (parsed) seen.add(parsed.address);
+      rows.push({ label: parts.length > 1 && label ? `${label} ${i + 1}` : label, address: parsed?.address ?? p, status: !parsed ? 'bad' : dupe ? 'dupe' : 'ok' });
     });
     if (!parts.length) rows.push({ label, address: '', status: 'bad' });
   }

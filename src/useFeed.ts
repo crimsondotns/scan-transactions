@@ -1,58 +1,84 @@
 /**
- * สถานะการโหลดต่อกระเป๋า — แต่ละกระเป๋าถือหน้าที่โหลดแล้ว, cursor หน้าถัดไป, error ล่าสุด
- * เก็บในหน่วยความจำเท่านั้น (รีเฟรชแล้วโหลดใหม่) ไม่มีการจดข้อมูลธุรกรรมลงเครื่อง
+ * สถานะการโหลดต่อกระเป๋า — แต่ละกระเป๋าถูกยิงไปทุกแหล่งข้อมูลที่เปิดอยู่และตรงตระกูลเชน
+ * แถวจากหลายแหล่งรวมกันแล้วตัดซ้ำด้วย key; cursor/error เก็บแยกต่อแหล่ง
+ * อยู่ในหน่วยความจำเท่านั้น (รีเฟรชแล้วโหลดใหม่) ไม่มีการจดธุรกรรมลงเครื่อง
  */
 import { useCallback, useRef, useState } from 'react';
-import { FeedError, fetchPage, type TxRow } from './feed';
-import type { Settings, Wallet } from './store';
+import { FeedError, fetchPage, type Cursor, type TxRow } from './feed';
+import type { Endpoint, Settings, Wallet } from './store';
 
 export interface WalletFeed {
   rows: TxRow[];
-  next: number | null;
+  /** cursor ต่อแหล่งข้อมูล; undefined = ยังไม่โหลด, null = หมดแล้ว */
+  next: Record<string, Cursor | null | undefined>;
+  errors: Record<string, FeedError>;
   loading: boolean;
-  error: FeedError | null;
   loaded: boolean;
 }
 
-const EMPTY: WalletFeed = { rows: [], next: null, loading: false, error: null, loaded: false };
+const EMPTY: WalletFeed = { rows: [], next: {}, errors: {}, loading: false, loaded: false };
+
+export function endpointsFor(w: Wallet, settings: Settings): Endpoint[] {
+  return settings.endpoints.filter((e) => e.enabled && e.family === w.family);
+}
 
 export function useFeed(settings: Settings) {
   const [feeds, setFeeds] = useState<Record<string, WalletFeed>>({});
   const inflight = useRef(new Set<string>());
-
-  const patch = useCallback((id: string, p: Partial<WalletFeed>) => {
-    setFeeds((s) => ({ ...s, [id]: { ...(s[id] ?? EMPTY), ...p } }));
-  }, []);
+  const latest = useRef(feeds);
+  latest.current = feeds;
 
   const load = useCallback(
     async (w: Wallet, mode: 'reset' | 'older') => {
-      if (!settings.endpoint || inflight.current.has(w.id)) return;
-      const cur = feeds[w.id] ?? EMPTY;
-      const start = mode === 'older' ? cur.next : 0;
-      if (mode === 'older' && start === null) return;
+      const eps = endpointsFor(w, settings);
+      if (!eps.length || inflight.current.has(w.id)) return;
       inflight.current.add(w.id);
-      patch(w.id, { loading: true, error: null });
-      try {
-        const page = await fetchPage(settings.endpoint, w.id, w.address, start ?? 0, settings.pageSize);
-        setFeeds((s) => {
-          const prev = mode === 'older' ? (s[w.id]?.rows ?? []) : [];
-          const seen = new Set(prev.map((r) => r.key));
-          const merged = [...prev, ...page.rows.filter((r) => !seen.has(r.key))];
-          const grew = merged.length > prev.length;
-          return { ...s, [w.id]: { rows: merged, next: grew && page.rows.length >= settings.pageSize ? page.next : null, loading: false, error: null, loaded: true } };
-        });
-      } catch (e) {
-        patch(w.id, { loading: false, error: e instanceof FeedError ? e : new FeedError('net'), loaded: true });
-      } finally {
-        inflight.current.delete(w.id);
-      }
+      const cur = latest.current[w.id] ?? EMPTY;
+      setFeeds((s) => ({ ...s, [w.id]: { ...(s[w.id] ?? EMPTY), loading: true, errors: {} } }));
+
+      const results = await Promise.all(
+        eps.map(async (ep) => {
+          const c = mode === 'older' ? cur.next[ep.id] : null;
+          if (mode === 'older' && c === null) return { ep, page: null, error: null };
+          try {
+            return { ep, page: await fetchPage(ep.url, w.id, w.address, c ?? null, settings.pageSize), error: null };
+          } catch (e) {
+            return { ep, page: null, error: e instanceof FeedError ? e : new FeedError('net') };
+          }
+        })
+      );
+
+      setFeeds((s) => {
+        const prev = s[w.id] ?? EMPTY;
+        const rows = mode === 'older' ? [...prev.rows] : [];
+        const seen = new Set(rows.map((r) => r.key));
+        const next: WalletFeed['next'] = mode === 'older' ? { ...prev.next } : {};
+        const errors: WalletFeed['errors'] = {};
+        for (const r of results) {
+          if (r.error) {
+            errors[r.ep.id] = r.error;
+            continue;
+          }
+          if (!r.page) continue;
+          let grew = false;
+          for (const row of r.page.rows) {
+            if (seen.has(row.key)) continue;
+            seen.add(row.key);
+            rows.push(row);
+            grew = true;
+          }
+          next[r.ep.id] = grew && r.page.rows.length >= settings.pageSize ? r.page.next : null;
+        }
+        return { ...s, [w.id]: { rows, next, errors, loading: false, loaded: true } };
+      });
+      inflight.current.delete(w.id);
     },
-    [settings.endpoint, settings.pageSize, feeds, patch]
+    [settings]
   );
 
   const loadMany = useCallback(
     (ws: Wallet[], mode: 'reset' | 'older') => {
-      // ยิงทีละ 4 ไม่ให้แหล่งข้อมูลโดนรุมตอนนำเข้ากระเป๋าเป็นร้อย
+      // ยิงทีละ 4 กระเป๋า ไม่ให้แหล่งข้อมูลโดนรุมตอนนำเข้ากระเป๋าเป็นร้อย
       let i = 0;
       const worker = async () => {
         while (i < ws.length) {
@@ -72,5 +98,9 @@ export function useFeed(settings: Settings) {
     });
   }, []);
 
-  return { feeds, load, loadMany, forget, EMPTY };
+  return { feeds, load, loadMany, forget };
+}
+
+export function hasOlder(f: WalletFeed | undefined): boolean {
+  return !!f?.loaded && Object.values(f.next).some((c) => c !== null && c !== undefined);
 }

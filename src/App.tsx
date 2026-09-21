@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useI18n } from './i18n';
 import { useStore } from './store';
-import { useFeed } from './useFeed';
+import { endpointsFor, hasOlder, useFeed } from './useFeed';
 import { XCapMark } from './components/XCapMark';
 import { Icon } from './components/Icon';
 import { WalletPanel } from './components/WalletPanel';
@@ -15,20 +15,22 @@ export function App() {
   const { feeds, loadMany, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
-  const hasEndpoint = settings.endpoint !== '';
+  const enabledEps = settings.endpoints.filter((e) => e.enabled);
+  const hasEndpoint = enabledEps.length > 0;
   const active = useMemo(() => wallets.filter((w) => w.enabled), [wallets]);
 
   /* กระเป๋าใหม่ที่ยังไม่เคยโหลด → โหลดให้เองเมื่อมีแหล่งข้อมูล; แหล่งข้อมูลเปลี่ยน → โหลดใหม่ทั้งหมด */
-  const lastEndpoint = useRef(settings.endpoint);
+  const epKey = enabledEps.map((e) => `${e.id}:${e.url}:${e.family}`).join('|');
+  const lastKey = useRef(epKey);
   useEffect(() => {
     if (!hasEndpoint) return;
-    const changed = lastEndpoint.current !== settings.endpoint;
-    lastEndpoint.current = settings.endpoint;
-    const todo = changed ? active : active.filter((w) => !feeds[w.id]);
+    const changed = lastKey.current !== epKey;
+    lastKey.current = epKey;
+    const todo = (changed ? active : active.filter((w) => !feeds[w.id])).filter((w) => endpointsFor(w, settings).length);
     if (todo.length) void loadMany(todo, 'reset');
     // feeds ตั้งใจไม่อยู่ใน deps — ไม่งั้นวนโหลดซ้ำทุกครั้งที่ state เปลี่ยน
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasEndpoint, settings.endpoint, active, loadMany]);
+  }, [hasEndpoint, epKey, active, loadMany]);
 
   const rows = useMemo(
     () =>
@@ -38,14 +40,12 @@ export function App() {
     [active, feeds]
   );
   const anyLoading = active.some((w) => feeds[w.id]?.loading);
-  const anyOlder = active.some((w) => feeds[w.id]?.next !== null && feeds[w.id]?.loaded);
-  const errors = active.filter((w) => feeds[w.id]?.error);
+  const anyOlder = active.some((w) => hasOlder(feeds[w.id]));
+  const errors = active.flatMap((w) => Object.entries(feeds[w.id]?.errors ?? {}).map(([epId, e]) => ({ w, ep: settings.endpoints.find((x) => x.id === epId), e })));
 
-  function errMsg(w: (typeof errors)[number]): string {
-    const e = feeds[w.id]?.error;
-    if (!e) return '';
+  function errMsg({ w, ep, e }: (typeof errors)[number]): string {
     const msg = e.kind === 'http' ? t('tx.errorHttp', { status: e.status }) : e.kind === 'shape' ? t('tx.errorShape') : t('tx.errorNet');
-    return `${w.label}: ${t('tx.error', { msg })}`;
+    return `${w.label} · ${ep?.name ?? '?'}: ${t('tx.error', { msg })}`;
   }
 
   return (
@@ -60,7 +60,7 @@ export function App() {
         </span>
         <span className="top-spacer" />
         <span className="top-status" data-ok={hasEndpoint}>
-          {hasEndpoint ? t('status.endpointSet') : t('status.noEndpoint')}
+          {hasEndpoint ? t('status.endpointSet', { n: enabledEps.length }) : t('status.noEndpoint')}
         </span>
         <button type="button" className="btn btn-icon" onClick={() => setSettingsOpen(true)} aria-label={t('nav.settings')} title={t('nav.settings')}>
           <Icon name="settings" />
@@ -100,9 +100,9 @@ export function App() {
               </div>
               {errors.length > 0 && (
                 <div className="field" style={{ marginBottom: 'var(--sp-4)' }} aria-live="polite">
-                  {errors.map((w) => (
-                    <span key={w.id} className="error">
-                      {errMsg(w)}
+                  {errors.map((x) => (
+                    <span key={`${x.w.id}:${x.ep?.id}`} className="error">
+                      {errMsg(x)}
                     </span>
                   ))}
                 </div>

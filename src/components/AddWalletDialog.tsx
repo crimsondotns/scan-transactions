@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useI18n } from '../i18n';
-import { ADDRESS_RE, normalizeAddress, useStore } from '../store';
+import { parseAddress, useStore } from '../store';
 import { Dialog } from './Dialog';
 import { useToast } from './Toast';
 
@@ -14,10 +14,10 @@ export function AddWalletDialog({ open, onClose }: { open: boolean; onClose: () 
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const a = normalizeAddress(address);
-    if (!ADDRESS_RE.test(a)) return setErr(t('add.badAddress'));
-    if (wallets.some((w) => w.address === a)) return setErr(t('add.dupe'));
-    addWallets([{ label, address: a }]);
+    const p = parseAddress(address);
+    if (!p) return setErr(t('add.badAddress'));
+    if (wallets.some((w) => w.address === p.address)) return setErr(t('add.dupe'));
+    addWallets([{ label, address: p.address }]);
     toast(t('add.done'));
     setLabel('');
     setAddress('');

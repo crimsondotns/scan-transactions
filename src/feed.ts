@@ -31,10 +31,17 @@ export interface TxRow {
   gasUsd: number | null;
 }
 
+export interface Cursor {
+  /** เวลาของแถวเก่าสุดในหน้า → {start} */
+  start: number;
+  /** hash/signature ของแถวสุดท้าย → {cursor} (แหล่งข้อมูลบางแบบเลื่อนหน้าด้วยอันนี้) */
+  cursor: string;
+}
+
 export interface Page {
   rows: TxRow[];
-  /** เวลาของแถวเก่าสุดในหน้า ใช้เป็น {start} ของหน้าถัดไป; null = ไม่มีต่อ */
-  next: number | null;
+  /** ใช้ขอหน้าถัดไป; null = ไม่มีต่อ */
+  next: Cursor | null;
 }
 
 export class FeedError extends Error {
@@ -50,17 +57,18 @@ export function hasPlaceholder(tpl: string): boolean {
   return tpl.includes('{address}');
 }
 
-export function buildUrl(tpl: string, address: string, start: number, count: number): string {
+export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number): string {
   return tpl
     .replaceAll('{address}', encodeURIComponent(address))
-    .replaceAll('{start}', String(start))
+    .replaceAll('{start}', String(cur?.start ?? 0))
+    .replaceAll('{cursor}', cur ? encodeURIComponent(cur.cursor) : '')
     .replaceAll('{count}', String(count));
 }
 
-export async function fetchPage(tpl: string, walletId: string, address: string, start: number, count: number): Promise<Page> {
+export async function fetchPage(tpl: string, walletId: string, address: string, cur: Cursor | null, count: number): Promise<Page> {
   let res: Response;
   try {
-    res = await fetch(buildUrl(tpl, address, start, count), { headers: { accept: 'application/json' } });
+    res = await fetch(buildUrl(tpl, address, cur, count), { headers: { accept: 'application/json' } });
   } catch {
     throw new FeedError('net');
   }
@@ -83,9 +91,10 @@ const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? 
 
 function normalize(body: unknown, walletId: string, address: string): Page {
   if (isObj(body) && Array.isArray(body.history_list)) return fromHistoryList(body, walletId, address);
-  const list = Array.isArray(body) ? body : isObj(body) && Array.isArray(body.result) ? body.result : null;
-  if (list) return fromFlatList(list, walletId, address);
-  throw new FeedError('shape');
+  const list = Array.isArray(body) ? body : isObj(body) && Array.isArray(body.result) ? body.result : isObj(body) && Array.isArray(body.data) ? body.data : null;
+  if (!list) throw new FeedError('shape');
+  if (list.some((x) => isObj(x) && (typeof x.signature === 'string' || Array.isArray(x.tokenTransfers) || Array.isArray(x.nativeTransfers)))) return fromSignatureList(list, walletId, address);
+  return fromFlatList(list, walletId, address);
 }
 
 /** รูปแบบ A: { history_list[], token_dict, project_dict } */
@@ -151,8 +160,7 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
       gasUsd: num(tx.usd_gas_fee),
     });
   }
-  const oldest = rows.reduce((m, r) => (r.time > 0 && r.time < m ? r.time : m), Infinity);
-  return { rows, next: rows.length && Number.isFinite(oldest) ? oldest : null };
+  return { rows, next: cursorOf(rows) };
 }
 
 /** รูปแบบ B: รายการแบน [{ hash, from, to, value, timeStamp, … }] หรือ { result: [...] } */
@@ -189,8 +197,62 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
       gasUsd: gasPrice !== null && gasUsed !== null ? null : num(item.usd_gas_fee),
     });
   }
-  const oldest = rows.reduce((m, r) => (r.time > 0 && r.time < m ? r.time : m), Infinity);
-  return { rows, next: rows.length && Number.isFinite(oldest) ? oldest : null };
+  return { rows, next: cursorOf(rows) };
+}
+
+/** รูปแบบ C: รายการธุรกรรมแบบ signature (เชนตระกูล Solana) — { signature, timestamp, type, fee, feePayer, nativeTransfers[], tokenTransfers[] } */
+function fromSignatureList(list: unknown[], walletId: string, address: string): Page {
+  const rows: TxRow[] = [];
+  for (const item of list) {
+    if (!isObj(item)) continue;
+    const hash = str(item.signature) ?? str(item.txHash) ?? str(item.id) ?? '';
+    const rawTime = num(item.timestamp) ?? num(item.blockTime) ?? num(item.time) ?? 0;
+    const time = rawTime > 1e12 ? Math.floor(rawTime / 1000) : rawTime;
+    const moves: Move[] = [];
+    let other: string | null = null;
+    const push = (list: unknown, native: boolean) => {
+      if (!Array.isArray(list)) return;
+      for (const m of list) {
+        if (!isObj(m)) continue;
+        const from = str(m.fromUserAccount) ?? str(m.from) ?? '';
+        const to = str(m.toUserAccount) ?? str(m.to) ?? '';
+        if (from !== address && to !== address) continue;
+        const dir: Move['dir'] = from === address ? 'out' : 'in';
+        other ??= dir === 'out' ? to || null : from || null;
+        const amount = native ? (num(m.amount) ?? 0) / 1e9 : (num(m.tokenAmount) ?? num(m.amount) ?? 0);
+        moves.push({ dir, amount, symbol: native ? 'SOL' : (str(m.symbol) ?? shortId(str(m.mint) ?? '')), usd: num(m.usd), flagged: false });
+      }
+    };
+    push(item.nativeTransfers, true);
+    push(item.tokenTransfers, false);
+    const hasIn = moves.some((m) => m.dir === 'in');
+    const hasOut = moves.some((m) => m.dir === 'out');
+    const kind = (str(item.type) ?? '').toLowerCase();
+    const type: TxType = kind.includes('swap') || (hasIn && hasOut) ? 'swap' : hasOut ? 'send' : hasIn ? 'receive' : 'contract';
+    const fee = num(item.fee);
+    rows.push({
+      key: `${walletId}:sol:${hash}`,
+      hash,
+      walletId,
+      chain: str(item.chain) ?? 'sol',
+      time,
+      type,
+      name: kind && kind !== 'unknown' ? kind : (str(item.source) ?? ''),
+      failed: item.transactionError !== null && item.transactionError !== undefined && item.transactionError !== false,
+      flagged: false,
+      moves,
+      counterparty: other,
+      counterpartyName: null,
+      gasUsd: fee !== null && str(item.feePayer) === address ? num(item.feeUsd) : null,
+    });
+  }
+  return { rows, next: cursorOf(rows) };
+}
+
+function cursorOf(rows: TxRow[]): Cursor | null {
+  if (!rows.length) return null;
+  const oldest = rows.reduce((m, r) => (r.time > 0 && r.time < m.time ? r : m), rows[0]!);
+  return { start: oldest.time, cursor: oldest.hash };
 }
 
 function shortId(id: string): string {

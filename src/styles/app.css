@@ -226,7 +226,7 @@ select {
 .select {
   width: 100%;
   min-width: 0;
-  padding: var(--sp-2) var(--sp-3);
+  padding: var(--sp-2) var(--sp-4);
   background: var(--bg-surface);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius);
@@ -260,14 +260,27 @@ select {
   padding-right: var(--sp-8);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right var(--sp-2) center;
+  background-position: right var(--sp-3) center;
   background-size: 14px;
+}
+
+input[type='file'].input::file-selector-button {
+  margin-right: var(--sp-3);
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--text);
+  font: 400 var(--size-tiny) / 1.4 var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: var(--track-btn);
+  cursor: pointer;
 }
 
 /* ---------- แผง ---------- */
 
 .panel {
-  border-radius: var(--radius);
+  border-radius: var(--radius-box);
   border: 1px solid var(--border);
   background: var(--bg-surface);
   padding: var(--sp-4);
@@ -320,7 +333,7 @@ select {
   cursor: pointer;
 }
 .wallet-check input {
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   accent-color: var(--accent);
   margin: 0;
   width: 14px;
@@ -378,7 +391,7 @@ select {
 }
 
 .table-wrap {
-  border-radius: var(--radius);
+  border-radius: var(--radius-box);
   border: 1px solid var(--border);
   overflow-x: auto;
 }
@@ -391,6 +404,14 @@ select {
 .table-wrap .tx {
   border-radius: inherit;
   overflow: hidden;
+}
+.tx td:first-child,
+.tx th:first-child {
+  padding-left: var(--sp-4);
+}
+.tx td:last-child,
+.tx th:last-child {
+  padding-right: var(--sp-4);
 }
 .tx th {
   position: sticky;
@@ -444,8 +465,8 @@ select {
 }
 .chip {
   display: inline-block;
-  border-radius: var(--radius-sm);
-  padding: 1px var(--sp-2);
+  border-radius: var(--radius);
+  padding: 1px var(--sp-3);
   border: 1px solid var(--border-strong);
   font-family: var(--font-display);
   font-size: var(--size-tiny);
@@ -514,7 +535,7 @@ select {
 /* ---------- สถานะว่าง ---------- */
 
 .empty {
-  border-radius: var(--radius);
+  border-radius: var(--radius-box);
   border: 1px dashed var(--border-strong);
   padding: var(--sp-12) var(--sp-6);
   text-align: center;
@@ -570,7 +591,7 @@ dialog.dlg::backdrop {
 }
 
 .preview {
-  border-radius: var(--radius);
+  border-radius: var(--radius-box);
   max-height: 240px;
   overflow: auto;
   border: 1px solid var(--border);

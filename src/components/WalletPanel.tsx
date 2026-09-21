@@ -55,7 +55,7 @@ export function WalletPanel({ feeds, onRemove }: { feeds: Record<string, WalletF
         <ul className="wallets">
           {wallets.map((w) => {
             const f = feeds[w.id];
-            const state = f?.loading ? 'loading' : f?.error ? 'error' : f?.loaded ? 'ok' : 'idle';
+            const state = f?.loading ? 'loading' : f && Object.keys(f.errors).length ? 'error' : f?.loaded ? 'ok' : 'idle';
             return (
               <li key={w.id} className="wallet">
                 <label className="wallet-check">
@@ -66,7 +66,7 @@ export function WalletPanel({ feeds, onRemove }: { feeds: Record<string, WalletF
                     {w.label}
                   </span>
                   <span className="wallet-addr" title={w.address}>
-                    {shortAddr(w.address)}
+                    <span className="chip">{t(`family.${w.family}`)}</span> {shortAddr(w.address)}
                   </span>
                 </div>
                 <div className="row-actions" style={{ alignItems: 'center' }}>

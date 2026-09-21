@@ -7,15 +7,21 @@ import { Icon } from './Icon';
 import { AddWalletDialog } from './AddWalletDialog';
 import { ImportDialog } from './ImportDialog';
 
-export function WalletPanel({ feeds, onRemove }: { feeds: Record<string, WalletFeed>; onRemove: (id: string) => void }) {
+/**
+ * แผงกระเป๋า — ไม่พับ คลิกแถว = สลับกระเป๋าที่ดู (คลิกซ้ำ = ดูทุกกระเป๋า)
+ * ไอคอนตา = ซ่อน/แสดงข้อมูลของกระเป๋านั้นในตาราง (hiddenWallets เก็บใน store เป็น enabled=false)
+ */
+export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Record<string, WalletFeed>; activeId: string | null; onSwitch: (id: string | null) => void; onRemove: (id: string) => void }) {
   const { t } = useI18n();
   const { wallets, removeWallet, toggleWallet, clearWallets } = useStore();
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
+  const hiddenWallets = new Set(wallets.filter((w) => !w.enabled).map((w) => w.id));
 
   function remove(w: Wallet) {
     removeWallet(w.id);
     onRemove(w.id);
+    if (activeId === w.id) onSwitch(null);
   }
 
   function clear() {
@@ -23,6 +29,7 @@ export function WalletPanel({ feeds, onRemove }: { feeds: Record<string, WalletF
     if (!window.confirm(t('wallets.clearConfirm', { n: wallets.length }))) return;
     clearWallets();
     wallets.forEach((w) => onRemove(w.id));
+    onSwitch(null);
   }
 
   return (
@@ -52,31 +59,34 @@ export function WalletPanel({ feeds, onRemove }: { feeds: Record<string, WalletF
       {wallets.length === 0 ? (
         <p className="hint">{t('wallets.empty')}</p>
       ) : (
-        <ul className="wallets">
+        <ul className="wallets" role="listbox" aria-label={t('wallets.title')}>
           {wallets.map((w) => {
             const f = feeds[w.id];
+            const hidden = hiddenWallets.has(w.id);
+            const active = activeId === w.id;
             const state = f?.loading ? 'loading' : f && Object.keys(f.errors).length ? 'error' : f?.loaded ? 'ok' : 'idle';
             return (
-              <li key={w.id} className="wallet">
-                <label className="wallet-check">
-                  <input type="checkbox" checked={w.enabled} onChange={(e) => toggleWallet(w.id, e.target.checked)} aria-label={t('wallets.toggle', { label: w.label })} />
-                </label>
-                <div className="wallet-meta">
-                  <span className="wallet-label" title={w.label}>
-                    {w.label}
+              <li key={w.id} className="wallet" data-active={active} data-hidden={hidden}>
+                <button type="button" className="wallet-switch" role="option" aria-selected={active} onClick={() => onSwitch(active ? null : w.id)} title={w.address}>
+                  <span className="avatar">{w.label.trim()[0]?.toUpperCase() ?? '?'}</span>
+                  <span className="wallet-meta">
+                    <span className="wallet-label">{w.label}</span>
+                    <span className="wallet-addr">
+                      <span className="chip">{t(`family.${w.family}`)}</span> {shortAddr(w.address)}
+                    </span>
                   </span>
-                  <span className="wallet-addr" title={w.address}>
-                    <span className="chip">{t(`family.${w.family}`)}</span> {shortAddr(w.address)}
-                  </span>
-                </div>
-                <div className="row-actions" style={{ alignItems: 'center' }}>
                   <span className="wallet-state" data-state={state} aria-live="polite">
                     {state === 'ok' ? t('wallets.state.ok', { n: f?.rows.length ?? 0 }) : t(`wallets.state.${state}`)}
                   </span>
+                </button>
+                <span className="wallet-actions">
+                  <button type="button" className="btn btn-icon" aria-pressed={!hidden} onClick={() => toggleWallet(w.id, hidden)} aria-label={t(hidden ? 'wallets.show' : 'wallets.hide', { label: w.label })} title={t(hidden ? 'wallets.show' : 'wallets.hide', { label: w.label })}>
+                    <Icon name={hidden ? 'eyeOff' : 'eye'} />
+                  </button>
                   <button type="button" className="btn btn-icon" onClick={() => remove(w)} aria-label={t('wallets.remove', { label: w.label })} title={t('wallets.remove', { label: w.label })}>
                     <Icon name="trash" />
                   </button>
-                </div>
+                </span>
               </li>
             );
           })}

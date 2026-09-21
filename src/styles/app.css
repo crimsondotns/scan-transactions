@@ -387,10 +387,6 @@ input[type='file'].input::file-selector-button {
 }
 .panel .wallet:first-child {
   border-top: 0;
-  padding-top: 0;
-}
-.panel .wallet:last-child {
-  padding-bottom: 0;
 }
 .panel-title {
   font-size: var(--size-heading-sm);
@@ -413,11 +409,61 @@ input[type='file'].input::file-selector-button {
 }
 .wallet {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-1);
+  border-top: 1px solid var(--color-line-subtle);
+}
+/* แถวกระเป๋า = ปุ่มสลับกระเป๋าที่ดู */
+.wallet-switch {
+  display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--space-3);
-  padding: var(--space-3) 0;
-  border-top: 1px solid var(--color-line-subtle);
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-2) var(--space-2);
+  margin-left: calc(-1 * var(--space-2));
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--easing-standard);
+}
+.wallet-switch:hover {
+  background: var(--color-hover);
+}
+.wallet[data-active='true'] .wallet-switch {
+  background: var(--color-soft);
+}
+.wallet[data-hidden='true'] .wallet-meta,
+.wallet[data-hidden='true'] .avatar {
+  opacity: 0.45;
+}
+.wallet-actions {
+  display: inline-flex;
+  gap: 2px;
+}
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-pill);
+  background: var(--color-soft);
+  border: 1px solid var(--color-line-subtle);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--size-caption);
+  font-weight: var(--weight-medium);
+  color: var(--color-muted);
+  flex: none;
+}
+.wallet[data-active='true'] .avatar {
+  background: var(--color-ink);
+  color: var(--color-bg);
+  border-color: var(--color-ink);
 }
 .wallet-check {
   display: inline-flex;

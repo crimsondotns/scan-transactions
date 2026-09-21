@@ -25,6 +25,10 @@ Breakpoints: mobile < 640, tablet 640–1024, desktop > 1024. Tokens in `tokens.
 
 Four columns, all sortable: **Type** (token icon 40px, or two 28px overlapping icons for a swap, chain badge bottom-right; title = type, subtitle = wallet · token name or `OUT → IN`), **Submitted** (relative time: `29 min ago`, `15:04, yesterday`, `17:48, 17 Sep 26`), **Amount** (compact in the table, full precision only in the detail panel; incoming legs first in `--color-positive` green/medium, outgoing below in muted/caption), **Network fee** (USD, native amount, short hash linking to the chain explorer). No borders, no shadow; row click opens the detail panel.
 
+## Wallets panel (user spec, 2026-09-21)
+
+Never collapses. Each row is a button: click = switch the active wallet (table filters to it; click again = all wallets); the eye icon toggles hide/show that wallet's data (`enabled` in the store = not hidden; the panel derives a `hiddenWallets` Set). Icons: `eye` (shown) / `eyeOff` (hidden). Trash removes. No checkboxes.
+
 ## Hard rules
 
 - Never hardcode or name any external history source in code, comments, docs or tests — the user pastes URLs at runtime. `pnpm check` enforces this.

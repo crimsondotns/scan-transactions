@@ -20,6 +20,8 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selected, setSelected] = useState<TxRow | null>(null);
   const [sideOpen, setSideOpen] = useState(true);
+  /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
+  const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const closeDetail = useCallback(() => setSelected(null), []);
 
   const enabledEps = settings.endpoints.filter((e) => e.enabled);
@@ -82,7 +84,7 @@ export function App() {
 
       <div className="layout" data-drawer={selected !== null} data-side={sideOpen}>
         <aside className="side">
-          <WalletPanel feeds={feeds} onRemove={forget} />
+          <WalletPanel feeds={feeds} activeId={activeWallet} onSwitch={setActiveWallet} onRemove={forget} />
           <p className="hint">{t('foot.local')}</p>
         </aside>
 
@@ -117,7 +119,7 @@ export function App() {
                   ))}
                 </div>
               )}
-              <TxTable rows={rows} wallets={active} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} />
+              <TxTable rows={rows} wallets={active} chains={chains} wallet={activeWallet ?? ''} onWallet={(id) => setActiveWallet(id || null)} selected={selected?.key ?? null} onSelect={setSelected} />
               {anyOlder && (
                 <div className="tfoot">
                   <button type="button" className="btn" disabled={anyLoading} onClick={() => void loadMany(active, 'older')}>

@@ -44,12 +44,11 @@ function mainMove(r: TxRow) {
   return real.find((m) => m.usd !== null) ?? real[0] ?? r.moves[0] ?? null;
 }
 
-export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void }) {
+export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, selected, onSelect }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; wallet: string; onWallet: (id: string) => void; selected: string | null; onSelect: (r: TxRow) => void }) {
   const { t } = useI18n();
   const { settings, setHideScam } = useStore();
   const hideScam = settings.hideScam;
   const [q, setQ] = useState('');
-  const [wallet, setWallet] = useState('');
   const [chain, setChain] = useState('');
   const [type, setType] = useState('');
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'date', dir: 'desc' });
@@ -110,7 +109,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
           {t('tx.search')}
         </label>
         <input id="tx-q" name="q" type="search" className="input search mono" placeholder={t('tx.search')} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" spellCheck={false} />
-        <Dropdown value={wallet} onChange={setWallet} label={t('tx.col.wallet')} options={[{ value: '', label: t('tx.allWallets') }, ...wallets.map((w) => ({ value: w.id, label: w.label }))]} />
+        <Dropdown value={wallet} onChange={onWallet} label={t('tx.col.wallet')} options={[{ value: '', label: t('tx.allWallets') }, ...wallets.map((w) => ({ value: w.id, label: w.label }))]} />
         <Dropdown value={chain} onChange={setChain} label={t('tx.col.chain')} options={[{ value: '', label: t('tx.allChains') }, ...chains.map((c) => ({ value: c, label: chainInfo.get(c)?.name ?? c }))]} />
         <Dropdown value={type} onChange={setType} label={t('tx.col.type')} options={[{ value: '', label: t('tx.allTypes') }, ...TYPES.map((k) => ({ value: k, label: t(`tx.type.${k}`) }))]} />
         <button type="button" className="btn toggle" aria-pressed={hideScam} onClick={() => setHideScam(!hideScam)}>

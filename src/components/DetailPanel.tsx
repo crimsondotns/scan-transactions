@@ -74,7 +74,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
       </span>
       <span className="ev-amount" data-dir={m.dir} title={`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`}>
         {m.dir === 'in' ? '+' : '−'}
-        {formatAmount(m.amount)}
+        {formatAmountFull(m.amount)}
       </span>
     </div>
   );

@@ -773,6 +773,7 @@ th[aria-sort='descending'] .th-btn {
 }
 .amt-in {
   font-weight: var(--weight-medium);
+  color: var(--color-positive);
 }
 .amt-out {
   color: var(--color-muted);
@@ -934,6 +935,9 @@ th[aria-sort='descending'] .th-btn {
 }
 .ev-amount[data-dir='out'] {
   color: var(--color-muted);
+}
+.ev-amount[data-dir='in'] {
+  color: var(--color-positive);
 }
 .ev-pair {
   display: flex;

@@ -499,12 +499,12 @@ input[type='file'].input::file-selector-button {
 }
 
 .table-wrap {
-  /* ไม่มีเส้นขอบ/เส้นคั่น — ตารางเป็นพื้นผิวเดียว ล้อมด้วยเงาอ่อนที่พอดีกล่อง
+  /* ไม่มีเส้นขอบ/เส้นคั่น/เงา — ตารางเป็นพื้นผิวเดียวเรียบๆ แถว hover เป็นตัวบอกขอบเขต
      overflow: clip (ไม่ใช่ hidden) ตัดมุมโค้งโดยไม่สร้าง scroll container → sticky header ยังยึดหน้าเว็บ
      จอเล็ก (ตารางกว้างกว่าจอ): เลื่อนแนวนอนในตัวเอง */
   border: 0;
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
+  box-shadow: none;
   overflow: clip;
   background: var(--color-bg);
 }

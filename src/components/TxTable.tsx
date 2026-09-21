@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useStore, type Wallet } from '../store';
 import type { TxRow, TxType } from '../feed';
-import { formatAmountFull, formatFeeNative, formatFeeUsd, formatRelative } from '../format';
+import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative } from '../format';
 import { Icon } from './Icon';
 import { Dropdown } from './Dropdown';
 import { Logo } from './Logo';
@@ -198,12 +198,12 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                       <span className="amts">
                         {ins.map((m, i) => (
                           <span key={`i${i}`} className="amt-in">
-                            +{formatAmountFull(m.amount)} {m.symbol}
+                            +{formatAmount(m.amount)} {m.symbol}
                           </span>
                         ))}
                         {outs.map((m, i) => (
                           <span key={`o${i}`} className="amt-out">
-                            −{formatAmountFull(m.amount)} {m.symbol}
+                            −{formatAmount(m.amount)} {m.symbol}
                           </span>
                         ))}
                         {real.length === 0 && <span className="amt-out">—</span>}

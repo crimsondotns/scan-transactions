@@ -1,0 +1,29 @@
+/*
+ * ฟอนต์เดียวสำหรับข้อความอังกฤษ: Suisse Int'l (Regular 400 / Book 450 / Medium 500)
+ * unicode-range จำกัดไว้เฉพาะละติน — อักษรไทยตกไปที่ฟอนต์ระบบตามธรรมชาติ ไม่ต้องสลับด้วยโค้ด
+ * ไฟล์อยู่ที่ public/assets/fonts/ (ไม่ commit — ดู README ในโฟลเดอร์นั้น)
+ */
+@font-face {
+  font-family: 'Suisse Intl';
+  src: url('/scan-transactions/assets/fonts/SuisseIntl-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2200-22FF, U+FB00-FB06;
+}
+@font-face {
+  font-family: 'Suisse Intl';
+  src: url('/scan-transactions/assets/fonts/SuisseIntl-Book.woff2') format('woff2');
+  font-weight: 450;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2200-22FF, U+FB00-FB06;
+}
+@font-face {
+  font-family: 'Suisse Intl';
+  src: url('/scan-transactions/assets/fonts/SuisseIntl-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  unicode-range: U+0000-024F, U+2000-206F, U+20A0-20CF, U+2100-214F, U+2190-21FF, U+2200-22FF, U+FB00-FB06;
+}

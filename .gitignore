@@ -2,3 +2,5 @@ node_modules
 dist
 .DS_Store
 *.local
+# licensed fonts stay local
+public/assets/fonts/*.woff2

@@ -4,3 +4,4 @@ dist
 *.local
 # licensed fonts stay local
 public/assets/fonts/*.woff2
+public/design/

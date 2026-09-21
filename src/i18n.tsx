@@ -121,7 +121,7 @@ const th = {
   'tx.col.counterparty': 'คู่สัญญา',
   'tx.col.gas': 'ค่าธรรมเนียม',
   'tx.col.hash': 'Hash',
-  'tx.type.swap': 'สลับ',
+  'tx.type.swap': 'Swap',
   'tx.type.send': 'ส่ง',
   'tx.type.receive': 'รับ',
   'tx.type.approve': 'อนุมัติ',

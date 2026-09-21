@@ -7,6 +7,7 @@ import type { ChainMap } from '../chains';
 import { formatAmount, formatAmountFull, formatFeeNative, formatStamp, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
+import { Identicon } from './Identicon';
 import { useToast } from './Toast';
 
 export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; onClose: () => void }) {
@@ -77,7 +78,7 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   );
 
   const known = (a: string) => wallets.find((w) => w.address.toLowerCase() === a.toLowerCase())?.label;
-  const AddrRow = ({ label, addr, short }: { label: ReactNode; addr: string; short?: string }) => {
+  const AddrRow = ({ label, addr, short }: { label: ReactNode; addr: string; short?: ReactNode }) => {
     const url = addrUrl(addr);
     short ??= known(addr);
     return (
@@ -140,7 +141,18 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
         ) : null}
 
         <div className="ev-rows">
-          {wallet && <AddrRow label={t('tx.col.wallet')} addr={wallet.address} short={wallet.label} />}
+          {wallet && (
+            <AddrRow
+              label={t('tx.col.wallet')}
+              addr={wallet.address}
+              short={
+                <span className="with-logo">
+                  <Identicon value={wallet.address} size={20} />
+                  {wallet.label}
+                </span>
+              }
+            />
+          )}
           {isSwap && (
             <>
               <Row label={`1 ${ins[0]!.symbol}`}>

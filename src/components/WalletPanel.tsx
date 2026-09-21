@@ -6,6 +6,7 @@ import { shortAddr } from '../format';
 import { Icon } from './Icon';
 import { AddWalletDialog } from './AddWalletDialog';
 import { ImportDialog } from './ImportDialog';
+import { Identicon } from './Identicon';
 
 /**
  * แผงกระเป๋า — ไม่พับ คลิกแถว = สลับกระเป๋าที่ดู (คลิกซ้ำ = ดูทุกกระเป๋า)
@@ -17,6 +18,7 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
   const [adding, setAdding] = useState(false);
   const [importing, setImporting] = useState(false);
   const hiddenWallets = new Set(wallets.filter((w) => !w.enabled).map((w) => w.id));
+  const activeWallet = wallets.find((w) => w.id === activeId) ?? null;
 
   function remove(w: Wallet) {
     removeWallet(w.id);
@@ -35,10 +37,11 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
   return (
     <section className="panel" aria-labelledby="wallets-h">
       <div className="panel-head">
-        <h2 id="wallets-h" className="panel-title">
-          {t('wallets.title')}
+        <h2 id="wallets-h" className="panel-title with-logo">
+          {activeWallet ? <Identicon value={activeWallet.address} size={28} /> : null}
+          {activeWallet ? activeWallet.label : t('wallets.title')}
         </h2>
-        <span className="hint">{t('wallets.count', { n: wallets.length })}</span>
+        <span className="hint">{activeWallet ? shortAddr(activeWallet.address) : t('wallets.count', { n: wallets.length })}</span>
       </div>
       <div className="row-actions">
         <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
@@ -68,7 +71,7 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
             return (
               <li key={w.id} className="wallet" data-active={active} data-hidden={hidden}>
                 <button type="button" className="wallet-switch" role="option" aria-selected={active} onClick={() => onSwitch(active ? null : w.id)} title={w.address}>
-                  <span className="avatar">{w.label.trim()[0]?.toUpperCase() ?? '?'}</span>
+                  <Identicon value={w.address} size={40} />
                   <span className="wallet-meta">
                     <span className="wallet-label">{w.label}</span>
                     <span className="wallet-addr">

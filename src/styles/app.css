@@ -414,6 +414,15 @@ input[type='file'].input::file-selector-button {
   gap: var(--space-1);
   border-top: 1px solid var(--color-line-subtle);
 }
+/* identicon: กล่องมุม 8px ไม่ใช่วงกลม */
+.identicon {
+  border-radius: var(--radius-md);
+  flex: none;
+  display: inline-block;
+}
+.wallet[data-active='true'] .identicon {
+  box-shadow: 0 0 0 2px var(--color-ink);
+}
 /* แถวกระเป๋า = ปุ่มสลับกระเป๋าที่ดู */
 .wallet-switch {
   display: grid;
@@ -439,32 +448,14 @@ input[type='file'].input::file-selector-button {
   background: var(--color-soft);
 }
 .wallet[data-hidden='true'] .wallet-meta,
-.wallet[data-hidden='true'] .avatar {
+.wallet[data-hidden='true'] .identicon {
   opacity: 0.45;
 }
 .wallet-actions {
   display: inline-flex;
   gap: 2px;
 }
-.avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: var(--radius-pill);
-  background: var(--color-soft);
-  border: 1px solid var(--color-line-subtle);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: var(--size-caption);
-  font-weight: var(--weight-medium);
-  color: var(--color-muted);
-  flex: none;
-}
-.wallet[data-active='true'] .avatar {
-  background: var(--color-ink);
-  color: var(--color-bg);
-  border-color: var(--color-ink);
-}
+
 .wallet-check {
   display: inline-flex;
   align-items: center;

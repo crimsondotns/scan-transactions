@@ -322,7 +322,7 @@ input[type='file'].input::file-selector-button {
   gap: var(--space-4);
 }
 /* ลูกในการ์ดไม่ถือ margin ของตัวเอง — ระยะทั้งหมดมาจาก gap 16px ของการ์ด */
-.panel > * {
+.panel > :not(dialog) {
   margin: 0;
 }
 .panel-head {
@@ -621,6 +621,10 @@ input[type='file'].input::file-selector-button {
 /* ---------- ไดอะล็อก ---------- */
 
 dialog.dlg {
+  /* กลางจอเสมอ (เปิด/ย่อขยาย) — ไม่พึ่ง margin:auto ของ UA เพราะ .panel > * รีเซ็ต margin */
+  position: fixed;
+  inset: 0;
+  margin: auto;
   background: var(--color-bg);
   color: var(--color-ink);
   border: 1px solid var(--color-line-subtle);

@@ -561,8 +561,15 @@ input[type='file'].input::file-selector-button {
   text-align: right;
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
-  font-size: var(--size-caption);
   white-space: nowrap;
+}
+/* ตัวเลขมูลค่า/ยอด ขนาดเท่าข้อความหลักของแถว น้ำหนัก Medium */
+.tx td.num {
+  font-size: var(--size-body-lg);
+  font-weight: var(--weight-medium);
+}
+.tx th.num {
+  font-size: var(--size-caption);
 }
 .cell-time {
   white-space: nowrap;

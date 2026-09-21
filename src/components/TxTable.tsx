@@ -6,6 +6,7 @@ import { formatAmount, formatDate, formatUsd, shortHash } from '../format';
 import { Icon } from './Icon';
 import { Dropdown } from './Dropdown';
 import { Logo, TokenLogo } from './Logo';
+import type { ChainMap } from '../chains';
 
 const TYPES: TxType[] = ['swap', 'send', 'receive', 'approve', 'contract'];
 type SortKey = 'tx' | 'type' | 'date' | 'value' | 'balance';
@@ -32,7 +33,7 @@ function mainMove(r: TxRow) {
   return r.moves.find((m) => m.amount !== 0) ?? r.moves[0] ?? null;
 }
 
-export function TxTable({ rows, wallets, selected, onSelect }: { rows: TxRow[]; wallets: Wallet[]; selected: string | null; onSelect: (r: TxRow) => void }) {
+export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void }) {
   const { t } = useI18n();
   const [q, setQ] = useState('');
   const [wallet, setWallet] = useState('');
@@ -96,7 +97,7 @@ export function TxTable({ rows, wallets, selected, onSelect }: { rows: TxRow[]; 
         </label>
         <input id="tx-q" name="q" type="search" className="input search mono" placeholder={t('tx.search')} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" spellCheck={false} />
         <Dropdown value={wallet} onChange={setWallet} label={t('tx.col.wallet')} options={[{ value: '', label: t('tx.allWallets') }, ...wallets.map((w) => ({ value: w.id, label: w.label }))]} />
-        <Dropdown value={chain} onChange={setChain} label={t('tx.col.chain')} options={[{ value: '', label: t('tx.allChains') }, ...chains.map((c) => ({ value: c, label: c }))]} />
+        <Dropdown value={chain} onChange={setChain} label={t('tx.col.chain')} options={[{ value: '', label: t('tx.allChains') }, ...chains.map((c) => ({ value: c, label: chainInfo.get(c)?.name ?? c }))]} />
         <Dropdown value={type} onChange={setType} label={t('tx.col.type')} options={[{ value: '', label: t('tx.allTypes') }, ...TYPES.map((k) => ({ value: k, label: t(`tx.type.${k}`) }))]} />
         <span className="count" aria-live="polite">
           {t('tx.count', { n: filtered.length })}
@@ -141,11 +142,11 @@ export function TxTable({ rows, wallets, selected, onSelect }: { rows: TxRow[]; 
                   >
                     <td>
                       <span className="tx-id">
-                        {m ? <TokenLogo token={m.logo} tokenName={m.symbol} chain={r.chainLogo} chainName={r.chain} /> : <Logo src={r.chainLogo} name={r.chain} size={24} />}
+                        {m ? <TokenLogo token={m.logo} tokenName={m.symbol} chain={r.chainLogo ?? chainInfo.get(r.chain)?.logo ?? null} chainName={r.chain} /> : <Logo src={r.chainLogo ?? chainInfo.get(r.chain)?.logo ?? null} name={r.chain} size={24} />}
                         <span className="tx-id-text">
                           <span className="tx-wallet">{labels.get(r.walletId) ?? '—'}</span>
                           <span className="tx-hash">
-                            <span className="chip">{r.chain}</span> <span className="mono">{shortHash(r.hash)}</span>
+                            <span className="chip" title={chainInfo.get(r.chain)?.name}>{r.chain}</span> <span className="mono">{shortHash(r.hash)}</span>
                           </span>
                         </span>
                       </span>

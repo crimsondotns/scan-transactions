@@ -8,6 +8,7 @@ import { Icon } from './Icon';
 import { useToast } from './Toast';
 import { netUsd } from './TxTable';
 import { Logo } from './Logo';
+import type { ChainMap } from '../chains';
 
 function flatten(v: unknown, prefix = '', out: Array<[string, string]> = []): Array<[string, string]> {
   if (v === null || v === undefined) out.push([prefix, '—']);
@@ -20,7 +21,7 @@ function flatten(v: unknown, prefix = '', out: Array<[string, string]> = []): Ar
   return out;
 }
 
-export function DetailPanel({ row, wallets, onClose }: { row: TxRow | null; wallets: Wallet[]; onClose: () => void }) {
+export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; onClose: () => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
   const closeBtn = useRef<HTMLButtonElement>(null);
@@ -37,6 +38,9 @@ export function DetailPanel({ row, wallets, onClose }: { row: TxRow | null; wall
 
   if (!row) return null;
   const wallet = wallets.find((w) => w.id === row.walletId);
+  const chain = chains.get(row.chain);
+  const chainLogo = row.chainLogo ?? chain?.logo ?? null;
+  const explorer = chain?.explorer ? `${chain.explorer.replace(/\/$/, '')}/tx/${row.hash}` : null;
   const d = formatDate(row.time);
   const v = netUsd(row);
 
@@ -75,7 +79,7 @@ export function DetailPanel({ row, wallets, onClose }: { row: TxRow | null; wall
       <div className="drawer-body">
         <div className="dt-hero">
           <span className="with-logo">
-            <Logo src={row.chainLogo} name={row.chain} size={24} />
+            <Logo src={chainLogo} name={row.chain} size={24} />
             <span className="chip" data-failed={row.failed}>
             {row.failed ? t('tx.failed') : t(`tx.type.${row.type}`)}
             </span>
@@ -95,7 +99,13 @@ export function DetailPanel({ row, wallets, onClose }: { row: TxRow | null; wall
 
         <dl className="dt">
           <Row label={t('tx.col.hash')} mono copyText={row.hash}>
-            {row.hash}
+            {explorer ? (
+              <a href={explorer} target="_blank" rel="noopener noreferrer">
+                {row.hash}
+              </a>
+            ) : (
+              row.hash
+            )}
           </Row>
           <Row label={t('tx.col.wallet')}>
             {wallet?.label ?? '—'}
@@ -107,8 +117,9 @@ export function DetailPanel({ row, wallets, onClose }: { row: TxRow | null; wall
           </Row>
           <Row label={t('tx.col.chain')}>
             <span className="with-logo">
-              <Logo src={row.chainLogo} name={row.chain} size={20} />
+              <Logo src={chainLogo} name={row.chain} size={20} />
               <span className="chip">{row.chain}</span>
+              {chain && chain.name !== row.chain && <span>{chain.name}</span>}
             </span>
           </Row>
           {row.name && <Row label={t('detail.method')}>{row.name}</Row>}

@@ -8,6 +8,7 @@ import { WalletPanel } from './components/WalletPanel';
 import { TxTable } from './components/TxTable';
 import { DetailPanel } from './components/DetailPanel';
 import type { TxRow } from './feed';
+import { useChains } from './chains';
 import { SettingsDialog } from './components/SettingsDialog';
 import { LangMenu } from './components/LangMenu';
 import { ThemeToggle } from './components/ThemeToggle';
@@ -21,6 +22,7 @@ export function App() {
   const closeDetail = useCallback(() => setSelected(null), []);
 
   const enabledEps = settings.endpoints.filter((e) => e.enabled);
+  const chains = useChains(settings.endpoints);
   const hasEndpoint = enabledEps.length > 0;
   const active = useMemo(() => wallets.filter((w) => w.enabled), [wallets]);
 
@@ -111,7 +113,7 @@ export function App() {
                   ))}
                 </div>
               )}
-              <TxTable rows={rows} wallets={active} selected={selected?.key ?? null} onSelect={setSelected} />
+              <TxTable rows={rows} wallets={active} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} />
               {anyOlder && (
                 <div className="tfoot">
                   <button type="button" className="btn" disabled={anyLoading} onClick={() => void loadMany(active, 'older')}>
@@ -125,7 +127,7 @@ export function App() {
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
-      <DetailPanel row={selected} wallets={wallets} onClose={closeDetail} />
+      <DetailPanel row={selected} wallets={wallets} chains={chains} onClose={closeDetail} />
     </>
   );
 }

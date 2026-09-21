@@ -20,6 +20,7 @@ Dark theme: the file's neutrals inverted but never pure black — bg #171717, so
 ## Hard rules
 
 - Never hardcode or name any external history source in code, comments, docs or tests — the user pastes URLs at runtime. `pnpm check` enforces this.
+- Chain names/logos/explorer links come from `<origin of each pasted source>/v1/chain/list` (`src/chains.ts`), cached 24h; failure is silent (lettered fallback). No chain list host may be hardcoded or bundled.
 - Data sources are added from a URL only: name and chain family are auto-detected (`detectEndpoint` in `store.ts`); never add manual name/chain fields back.
 - **Zero hints to the client.** No placeholder text, helper text, example URLs, placeholder syntax (`{address}` etc.), chain explanations or request previews in the UI or README. Labels only; errors are generic ("Invalid URL"). The user is expected to know.
 - All UI text goes through `t()` in `src/i18n.tsx` (Thai key + English pair). No literal Thai in `.tsx`.

@@ -87,37 +87,6 @@ export function SettingsDialog({
           <h3 id="ep-add-h" className="panel-title">
             {t("settings.add")}
           </h3>
-          <div className="row-actions">
-            <div className="field" style={{ flex: "1 1 140px" }}>
-              <label className="label" htmlFor="ep-name">
-                {t("settings.name")}
-              </label>
-              <input
-                id="ep-name"
-                name="name"
-                className="input"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoComplete="off"
-                maxLength={40}
-              />
-            </div>
-            <div className="field" style={{ flex: "0 0 140px" }}>
-              <span className="label" id="ep-family-l">
-                {t("settings.family")}
-              </span>
-              <Dropdown
-                value={family}
-                onChange={setFamily}
-                label={t("settings.family")}
-                options={FAMILIES.map((f) => ({
-                  value: f,
-                  label: t(`family.${f}`),
-                }))}
-                className="dd-block"
-              />
-            </div>
-          </div>
           <div className="field">
             <label className="label" htmlFor="ep-url">
               {t("settings.endpoint")}

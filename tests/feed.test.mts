@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { parseCsv } from '../src/importWallets.ts';
-import { parseAddress } from '../src/store.ts';
+import { detectEndpoint, parseAddress } from '../src/store.ts';
 import { buildUrl, fetchPage } from '../src/feed.ts';
 
 const ME = '0x42a8000000000000000000000000000000000000';
@@ -83,4 +83,12 @@ test('parseAddress: EVM lowercased, Solana kept as-is, junk rejected', () => {
   assert.deepEqual(parseAddress(SOL), { address: SOL, family: 'sol' });
   assert.equal(parseAddress('0x123'), null);
   assert.equal(parseAddress('0OIl' + 'a'.repeat(30)), null);
+});
+
+test('detectEndpoint: family and name from the URL alone', () => {
+  assert.deepEqual(detectEndpoint('https://api.example.com/v1/history?id={address}'), { name: 'example.com', family: 'evm' });
+  assert.deepEqual(detectEndpoint('https://solana.example.org/{address}'), { name: 'solana.example.org', family: 'sol' });
+  assert.deepEqual(detectEndpoint('https://example.net/sol/txs?a={address}'), { name: 'example.net', family: 'sol' });
+  assert.equal(detectEndpoint('http://example.com/{address}'), null);
+  assert.equal(detectEndpoint('not a url'), null);
 });

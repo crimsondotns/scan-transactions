@@ -90,6 +90,25 @@ function subscribe(l: () => void) {
 
 const uid = () => Math.random().toString(36).slice(2, 10);
 
+/**
+ * ตรวจแหล่งข้อมูลจาก URL ที่ผู้ใช้วาง — ไม่มีการตั้งค่ามือ
+ * ตระกูลเชน: มีคำว่า sol/solana ใน host หรือ path → Solana, นอกนั้น EVM
+ * ชื่อ: host โดยตัด www./api. ข้างหน้า
+ */
+export function detectEndpoint(url: string): { name: string; family: Family } | null {
+  let u: URL;
+  try {
+    u = new URL(url.trim());
+  } catch {
+    return null;
+  }
+  if (u.protocol !== 'https:') return null;
+  const probe = `${u.hostname}${u.pathname}`.toLowerCase();
+  const family: Family = /\bsol(ana)?\b|solana|[/._-]sol[/._-]/.test(probe) ? 'sol' : 'evm';
+  const name = u.hostname.replace(/^(www|api)\./, '') || u.hostname;
+  return { name, family };
+}
+
 export function useStore() {
   const s = useSyncExternalStore(subscribe, () => state);
 

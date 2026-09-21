@@ -881,14 +881,14 @@ th[aria-sort='descending'] .th-btn {
   min-width: 0;
 }
 .ev-title {
-  font-size: var(--size-heading-md);
+  font-size: var(--size-heading-lg);
 }
 .ev-sub {
   display: flex;
   align-items: center;
   gap: var(--space-3);
   color: var(--color-muted);
-  font-size: var(--size-caption);
+  font-size: var(--size-body);
 }
 .ev-status {
   display: inline-flex;
@@ -923,13 +923,14 @@ th[aria-sort='descending'] .th-btn {
 }
 .ev-symbol {
   font-weight: var(--weight-medium);
+  font-size: var(--size-heading-sm);
 }
 .ev-net {
   color: var(--color-muted);
-  font-size: var(--size-caption);
+  font-size: var(--size-body);
 }
 .ev-amount {
-  font-size: var(--size-heading-sm);
+  font-size: var(--size-heading-md);
   font-weight: var(--weight-medium);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -996,18 +997,22 @@ th[aria-sort='descending'] .th-btn {
   justify-content: space-between;
   align-items: center;
   gap: var(--space-3);
-  min-height: 40px;
+  min-height: 44px;
   padding: var(--space-2) 0;
 }
 .ev-label {
   color: var(--color-muted);
-  font-size: var(--size-body);
+  font-size: var(--size-body-lg);
   white-space: nowrap;
 }
 .ev-value {
   text-align: right;
   min-width: 0;
   overflow-wrap: anywhere;
+  font-size: var(--size-body-lg);
+}
+.ev-value .mono {
+  font-size: var(--size-body-lg);
 }
 .ev-addr {
   display: inline-flex;
@@ -1015,12 +1020,12 @@ th[aria-sort='descending'] .th-btn {
   gap: 2px;
 }
 .ev-addr .btn-icon {
-  min-height: 28px;
-  min-width: 28px;
+  min-height: 32px;
+  min-width: 32px;
 }
 .ev-addr .btn-icon svg {
-  width: 15px;
-  height: 15px;
+  width: 17px;
+  height: 17px;
 }
 
 /* ปุ่มล่างแผง */

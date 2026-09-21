@@ -102,7 +102,7 @@ export function detectEndpoint(url: string): { name: string; family: Family } | 
   } catch {
     return null;
   }
-  if (u.protocol !== 'https:') return null;
+  if (u.protocol !== 'https:' || !u.hostname.includes('.')) return null;
   const probe = `${u.hostname}${u.pathname}`.toLowerCase();
   const family: Family = /\bsol(ana)?\b|solana|[/._-]sol[/._-]/.test(probe) ? 'sol' : 'evm';
   const name = u.hostname.replace(/^(www|api)\./, '') || u.hostname;

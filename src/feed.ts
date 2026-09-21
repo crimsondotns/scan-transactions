@@ -57,8 +57,19 @@ export function hasPlaceholder(tpl: string): boolean {
   return tpl.includes('{address}');
 }
 
+/**
+ * base URL ที่ไม่มี {address} → แอปต่อ query ให้เอง (id / start_time / page_count)
+ * ต่อท้าย ? หรือ & ที่มีอยู่แล้วให้ถูกต้อง
+ */
+export function toTemplate(url: string): string {
+  const u = url.trim();
+  if (hasPlaceholder(u)) return u;
+  const sep = u.endsWith('?') || u.endsWith('&') ? '' : u.includes('?') ? '&' : '?';
+  return `${u}${sep}id={address}&start_time={start}&page_count={count}`;
+}
+
 export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number): string {
-  return tpl
+  return toTemplate(tpl)
     .replaceAll('{address}', encodeURIComponent(address))
     .replaceAll('{start}', String(cur?.start ?? 0))
     .replaceAll('{cursor}', cur ? encodeURIComponent(cur.cursor) : '')

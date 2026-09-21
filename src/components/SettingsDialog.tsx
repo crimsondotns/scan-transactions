@@ -1,7 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useI18n } from '../i18n';
 import { detectEndpoint, useStore } from '../store';
-import { hasPlaceholder } from '../feed';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
@@ -16,7 +15,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   /* ปุ่มเพิ่มติดทันทีที่มีข้อความ — ตรวจความถูกต้องตอนกดส่ง ไม่ใช่ตอนพิมพ์ */
   function submit(e: FormEvent) {
     e.preventDefault();
-    const detected = hasPlaceholder(url) ? detectEndpoint(url) : null;
+    const detected = detectEndpoint(url);
     if (!detected) return setErr(t('settings.badUrl'));
     addEndpoint({ ...detected, url: url.trim() });
     toast(t('settings.added'));

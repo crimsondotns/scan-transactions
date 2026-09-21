@@ -32,7 +32,7 @@
   --size-heading-sm: 1.25rem;
   --size-body-lg: 1.0625rem;
   --size-input: 0.9375rem;
-  --size-body: 0.9375rem;
+  --size-body: 1rem;
   --size-label: 0.875rem;
   --size-caption: 0.8125rem;
 
@@ -63,9 +63,36 @@
   --layout-max: 1440px;
   --layout-gutter: clamp(20px, 3vw, 48px);
 
-  --control-h: 44px;
-  /* ผู้ใช้กำหนดให้ช่องกรอกเล็กกว่าสเปก 48px — 40px ยังคง pill และแตะได้สบาย */
+  /* ระยะ/ขนาดควบคุมตามจอ: มือถือ 12px·48px, แท็บเล็ต 16px·40px, เดสก์ท็อป 24px·40px */
+  --section-pad: 24px;
+  --control-h: 40px;
   --input-h: 40px;
+  --side-w: 340px;
+}
+
+/* แท็บเล็ต 640–1024 */
+@media (max-width: 1024px) {
+  :root {
+    --size-body: 0.875rem;
+    --size-body-lg: 1rem;
+    --size-input: 0.875rem;
+    --size-heading-lg: 1.75rem;
+    --size-heading-md: 1.375rem;
+    --section-pad: 16px;
+    --control-h: 40px;
+    --input-h: 40px;
+    --side-w: 300px;
+    --layout-gutter: 16px;
+  }
+}
+/* มือถือ < 640 */
+@media (max-width: 639px) {
+  :root {
+    --section-pad: 12px;
+    --control-h: 48px;
+    --input-h: 48px;
+    --layout-gutter: 12px;
+  }
 }
 
 /*

@@ -17,6 +17,10 @@ Dark theme: the file's neutrals inverted but never pure black — bg #171717, so
 3. Hover check is done with every `:hover` rule forced on (scratch copy of dist, not in repo) in both themes: no control may blend into its background or lose its text; primary hover uses `--color-ink-hover`, everything else `--color-hover` / `--color-line-hover`. Never let a generic `.btn:hover` outrank `.btn-primary`.
 4. Any mismatch = fix first, then re-run `pnpm typecheck && pnpm check && pnpm test && pnpm build`. Never skip, never deliver with a known deviation.
 
+## Responsive (user spec, 2026-09-21)
+
+Breakpoints: mobile < 640, tablet 640–1024, desktop > 1024. Tokens in `tokens.css` switch per breakpoint: body 14px below 1024 / 16px above; section spacing 12 / 16 / 24; controls 48px / 40px / 40px. Mobile: single column, full-width inputs, Balance column hidden, table scrolls inside its card, dialogs are full-width bottom sheets, detail panel full-screen. Tablet: wallets panel collapsible via the header toggle, panel 80% width. Desktop: sticky wallets panel, all columns. `html, body { overflow-x: hidden }` — nothing may scroll the page sideways.
+
 ## Hard rules
 
 - Never hardcode or name any external history source in code, comments, docs or tests — the user pastes URLs at runtime. `pnpm check` enforces this.

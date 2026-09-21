@@ -19,6 +19,7 @@ export function App() {
   const { feeds, loadMany, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selected, setSelected] = useState<TxRow | null>(null);
+  const [sideOpen, setSideOpen] = useState(true);
   const closeDetail = useCallback(() => setSelected(null), []);
 
   const enabledEps = settings.endpoints.filter((e) => e.enabled);
@@ -66,6 +67,9 @@ export function App() {
           {t('app.name')} <span className="brand-sub">{t('app.sub')}</span>
         </span>
         <span className="top-spacer" />
+        <button type="button" className="btn btn-icon side-toggle" onClick={() => setSideOpen((o) => !o)} aria-pressed={sideOpen} aria-label={t('nav.toggleSide')} title={t('nav.toggleSide')}>
+          <Icon name="panelLeft" />
+        </button>
         <span className="top-status" data-ok={hasEndpoint}>
           {hasEndpoint ? t('status.endpointSet', { n: enabledEps.length }) : t('status.noEndpoint')}
         </span>
@@ -76,7 +80,7 @@ export function App() {
         <LangMenu />
       </header>
 
-      <div className="layout" data-drawer={selected !== null}>
+      <div className="layout" data-drawer={selected !== null} data-side={sideOpen}>
         <aside className="side">
           <WalletPanel feeds={feeds} onRemove={forget} />
           <p className="hint">{t('foot.local')}</p>

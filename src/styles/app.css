@@ -16,6 +16,11 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+html,
+body {
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   background: var(--color-bg);
@@ -132,19 +137,40 @@ select {
 
 .layout {
   display: grid;
-  grid-template-columns: 340px minmax(0, 1fr);
-  gap: var(--space-8);
+  grid-template-columns: var(--side-w) minmax(0, 1fr);
+  gap: var(--section-pad);
   width: min(100% - 2 * var(--layout-gutter), var(--layout-max));
   margin-inline: auto;
-  padding: var(--space-8) 0 var(--space-16);
+  padding: var(--section-pad) 0 var(--space-16);
 }
 .side {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  align-self: start;
+  position: sticky;
+  top: calc(64px + var(--section-pad));
 }
 .main {
   min-width: 0;
+}
+.top .side-toggle {
+  display: none;
+}
+/* แท็บเล็ต: แผงกระเป๋าพับได้จากปุ่มในหัวเว็บ */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .top .side-toggle {
+    display: inline-flex;
+  }
+  .layout[data-side='false'] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .layout[data-side='false'] .side {
+    display: none;
+  }
+  .side {
+    position: static;
+  }
 }
 
 /* เปิดแผงขวาแล้วเนื้อหาขยับหลบ ไม่ถูกทับ (จอกว้างพอ) */
@@ -156,11 +182,20 @@ select {
   }
 }
 
-@media (max-width: 900px) {
+/* มือถือ: คอลัมน์เดียว */
+@media (max-width: 639px) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-6);
-    padding-top: var(--space-6);
+  }
+  .side {
+    position: static;
+  }
+  .top {
+    min-height: 56px;
+    gap: var(--space-2);
+  }
+  .brand-sub {
+    display: none;
   }
 }
 
@@ -1149,7 +1184,7 @@ dialog.dlg::backdrop {
   }
 }
 
-@media (max-width: 640px) {
+@media (max-width: 639px) {
   .top-status {
     display: none;
   }
@@ -1161,5 +1196,68 @@ dialog.dlg::backdrop {
   }
   .panel {
     padding: var(--space-4);
+  }
+  .btn-icon,
+  .btn-sm,
+  .dd-btn.btn-sm {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  .row-actions .btn {
+    flex: 1 1 auto;
+  }
+  .toolbar .input,
+  .toolbar .dd,
+  .toolbar .dd-btn {
+    width: 100%;
+    max-width: none;
+  }
+  .toolbar .search {
+    flex-basis: 100%;
+  }
+  .count {
+    margin-left: 0;
+    flex-basis: 100%;
+  }
+  /* ตาราง: ซ่อนคอลัมน์รอง เลื่อนแนวนอนในกรอบเอง */
+  .tx {
+    min-width: 520px;
+  }
+  .tx th:nth-child(5),
+  .tx td:nth-child(5) {
+    display: none;
+  }
+  /* โมดัล = bottom sheet เต็มจอ */
+  dialog.dlg {
+    inset: auto 0 0 0;
+    margin: 0;
+    width: 100%;
+    max-width: none;
+    max-height: 92dvh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    border-bottom: 0;
+    padding: var(--space-4) var(--space-4) calc(var(--space-4) + env(safe-area-inset-bottom));
+  }
+  .drawer {
+    width: 100vw;
+    border-left: 0;
+  }
+  .layout[data-drawer='true'] {
+    margin-inline: auto;
+  }
+}
+/* แท็บเล็ต: โมดัลกลางจอ แผงขวา 80% */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .drawer {
+    width: min(80vw, 440px);
+  }
+  .tx {
+    min-width: 600px;
+  }
+}
+/* เดสก์ท็อป: โมดัลกว้างสุด 80% ของจอ (ไม่เกิน 520px) */
+@media (min-width: 1025px) {
+  dialog.dlg {
+    width: min(520px, 80vw);
   }
 }

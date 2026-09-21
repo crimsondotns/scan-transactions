@@ -19,6 +19,7 @@ const th = {
   'theme.light': 'สว่าง',
   'theme.dark': 'มืด',
   'nav.settings': 'ตั้งค่าแหล่งข้อมูล',
+  'nav.toggleSide': 'ซ่อน/แสดงแผงกระเป๋า',
 
   'wallets.title': 'กระเป๋า',
   'wallets.count': '{n} กระเป๋า',
@@ -137,6 +138,7 @@ const en: Record<MessageKey, string> = {
   'theme.light': 'Light',
   'theme.dark': 'Dark',
   'nav.settings': 'Data source settings',
+  'nav.toggleSide': 'Show or hide wallets panel',
 
   'wallets.title': 'Wallets',
   'wallets.count': '{n} wallets',

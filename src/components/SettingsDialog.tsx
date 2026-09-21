@@ -113,7 +113,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           <label className="label" htmlFor="set-page">
             {t('settings.pageSize')}
           </label>
-          <input id="set-page" name="pageSize" type="number" inputMode="numeric" min={1} max={100} className="input" value={settings.pageSize} onChange={(e) => setPageSize(Math.min(100, Math.max(1, Number(e.target.value) || 20)))} autoComplete="off" />
+          <input id="set-page" name="pageSize" type="text" inputMode="numeric" pattern="[0-9]*" className="input" value={settings.pageSize} onChange={(e) => setPageSize(Math.min(100, Math.max(1, Number(e.target.value.replace(/\D/g, '')) || 20)))} autoComplete="off" spellCheck={false} />
         </div>
         <div className="dlg-actions">
           <button type="button" className="btn" onClick={onClose}>

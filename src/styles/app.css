@@ -248,6 +248,16 @@ select {
 .input[aria-invalid='true'] {
   border-color: var(--color-danger);
 }
+/* ช่องตัวเลขเป็น text ล้วน — ไม่มีลูกศร spinner; กันไว้อีกชั้นเผื่อเบราว์เซอร์แสดง */
+.input::-webkit-inner-spin-button,
+.input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+.input[type='search']::-webkit-search-decoration,
+.input[type='search']::-webkit-search-cancel-button {
+  appearance: none;
+}
 input[type='file'].input {
   padding-block: var(--space-2);
   display: flex;

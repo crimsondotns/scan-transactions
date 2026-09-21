@@ -24,6 +24,7 @@ for (const f of files) {
   for (const m of code.matchAll(/https?:\/\/[a-z0-9.-]+\.[a-z]{2,}/gi)) {
     if (!/fonts\.g|w3\.org|example\.invalid/.test(m[0])) bad.push(`${f}: hardcoded URL ${m[0]}`);
   }
+  if (f.endsWith('.tsx') && /type=["']number["']/.test(code)) bad.push(`${f}: type="number" (use type="text" inputMode="numeric")`);
   if (f.endsWith('.tsx') && /<select\b/.test(code)) bad.push(`${f}: native <select> (use components/Dropdown)`);
   if (f.endsWith('.tsx') && !f.endsWith('i18n.tsx')) {
     const jsx = code.replace(/\{[^{}]*\}/g, '');

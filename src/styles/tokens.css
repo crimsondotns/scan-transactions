@@ -59,3 +59,36 @@
   --control-h: 44px;
   --input-h: 48px;
 }
+
+/*
+ * ธีมมืด — สลับค่ากลางของระบบเดิม (พื้น↔หมึก) โครงสร้าง/ระยะ/มุมเหมือนเดิมทุกอย่าง
+ * ค่าเริ่มต้นตามระบบ (ยังไม่มี data-theme) แล้วผู้ใช้เลือกทับได้
+ */
+:root:not([data-theme='light']) {
+  @media (prefers-color-scheme: dark) {
+    color-scheme: dark;
+    --color-bg: #000000;
+    --color-ink: #ffffff;
+    --color-soft: #1a1a1a;
+    --color-line: rgba(255, 255, 255, 0.16);
+    --color-line-subtle: rgba(255, 255, 255, 0.1);
+    --color-muted: rgba(255, 255, 255, 0.64);
+    --color-tertiary: rgba(255, 255, 255, 0.48);
+    --color-disabled: rgba(255, 255, 255, 0.4);
+    --color-danger: #f87171;
+    --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.4);
+  }
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-bg: #000000;
+  --color-ink: #ffffff;
+  --color-soft: #1a1a1a;
+  --color-line: rgba(255, 255, 255, 0.16);
+  --color-line-subtle: rgba(255, 255, 255, 0.1);
+  --color-muted: rgba(255, 255, 255, 0.64);
+  --color-tertiary: rgba(255, 255, 255, 0.48);
+  --color-disabled: rgba(255, 255, 255, 0.4);
+  --color-danger: #f87171;
+  --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.4);
+}

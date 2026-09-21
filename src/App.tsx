@@ -8,6 +8,7 @@ import { WalletPanel } from './components/WalletPanel';
 import { TxTable } from './components/TxTable';
 import { SettingsDialog } from './components/SettingsDialog';
 import { LangMenu } from './components/LangMenu';
+import { ThemeToggle } from './components/ThemeToggle';
 
 export function App() {
   const { t } = useI18n();
@@ -65,6 +66,7 @@ export function App() {
         <button type="button" className="btn btn-icon" onClick={() => setSettingsOpen(true)} aria-label={t('nav.settings')} title={t('nav.settings')}>
           <Icon name="settings" />
         </button>
+        <ThemeToggle />
         <LangMenu />
       </header>
 

@@ -15,6 +15,9 @@ const th = {
   'app.sub': 'Scan',
   'nav.skip': 'ข้ามไปเนื้อหาหลัก',
   'nav.lang': 'สลับภาษา',
+  'theme.label': 'ธีม',
+  'theme.light': 'สว่าง',
+  'theme.dark': 'มืด',
   'nav.settings': 'ตั้งค่าแหล่งข้อมูล',
 
   'wallets.title': 'กระเป๋า',
@@ -123,6 +126,9 @@ const en: Record<MessageKey, string> = {
   'app.sub': 'Scan',
   'nav.skip': 'Skip to main content',
   'nav.lang': 'Switch language',
+  'theme.label': 'Theme',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
   'nav.settings': 'Data source settings',
 
   'wallets.title': 'Wallets',

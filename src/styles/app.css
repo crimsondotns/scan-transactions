@@ -321,11 +321,29 @@ input[type='file'].input::file-selector-button {
   flex-direction: column;
   gap: var(--space-4);
 }
+/* ลูกในการ์ดไม่ถือ margin ของตัวเอง — ระยะทั้งหมดมาจาก gap 16px ของการ์ด */
+.panel > * {
+  margin: 0;
+}
 .panel-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-3);
+  margin-bottom: var(--space-1);
+}
+.panel .row-actions {
+  gap: var(--space-2);
+}
+.panel .wallets {
+  margin-top: var(--space-2);
+}
+.panel .wallet:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+.panel .wallet:last-child {
+  padding-bottom: 0;
 }
 .panel-title {
   font-size: var(--size-heading-sm);

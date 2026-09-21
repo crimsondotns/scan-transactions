@@ -188,9 +188,8 @@ export function TxTable({ rows, wallets, chains: chainInfo, selected, onSelect }
                               </span>
                             )}
                           </span>
-                          <span className="act-sub">
-                            <span className="act-wallet">{labels.get(r.walletId) ?? '—'}</span>
-                            {subtitle && <span> · {subtitle}</span>}
+                          <span className="act-sub" title={labels.get(r.walletId)}>
+                            {subtitle}
                           </span>
                         </span>
                       </span>

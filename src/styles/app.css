@@ -173,7 +173,8 @@ select {
   white-space: nowrap;
 }
 .btn:hover {
-  background: var(--color-soft);
+  background: var(--color-hover);
+  border-color: var(--color-line-hover);
 }
 .btn:disabled {
   color: var(--color-disabled);
@@ -181,16 +182,19 @@ select {
 }
 .btn:disabled:hover {
   background: var(--color-bg);
+  border-color: var(--color-line);
 }
 .btn-primary {
   background: var(--color-ink);
   color: var(--color-bg);
   border: 0;
 }
-.btn-primary:hover {
-  opacity: 0.85;
+.btn.btn-primary:hover {
+  background: var(--color-ink-hover);
+  border-color: transparent;
 }
-.btn-primary:disabled {
+.btn.btn-primary:disabled,
+.btn.btn-primary:disabled:hover {
   background: var(--color-soft);
   color: var(--color-disabled);
 }
@@ -205,9 +209,10 @@ select {
   border-color: transparent;
   color: var(--color-muted);
 }
-.btn-icon:hover {
+.btn.btn-icon:hover {
   color: var(--color-ink);
-  background: var(--color-soft);
+  background: var(--color-hover);
+  border-color: transparent;
 }
 .btn svg,
 .btn-icon svg {
@@ -242,7 +247,7 @@ select {
   color: var(--color-tertiary);
 }
 .input:hover {
-  border-color: var(--color-muted);
+  border-color: var(--color-line-hover);
 }
 .input[aria-invalid='true'] {
   border-color: var(--color-danger);
@@ -261,6 +266,10 @@ input[type='file'].input {
   padding-block: var(--space-2);
   display: flex;
   align-items: center;
+}
+input[type='file'].input::file-selector-button:hover {
+  background: var(--color-hover);
+  border-color: var(--color-line-hover);
 }
 input[type='file'].input::file-selector-button {
   margin-right: var(--space-3);
@@ -454,7 +463,7 @@ input[type='file'].input::file-selector-button {
   transition: background-color var(--motion-fast) var(--easing-standard);
 }
 .tx tbody tr:hover {
-  background: var(--color-soft);
+  background: var(--color-hover);
 }
 .tx .num {
   text-align: right;
@@ -672,6 +681,10 @@ dialog.dlg::backdrop {
 }
 .seg-item:hover {
   color: var(--color-ink);
+  background: var(--color-hover);
+}
+.seg-item[aria-checked='true']:hover {
+  background: var(--color-ink-hover);
 }
 .seg-item[aria-checked='true'] {
   background: var(--color-ink);
@@ -770,7 +783,7 @@ dialog.dlg::backdrop {
 }
 .dd-item:hover,
 .dd-item:focus-visible {
-  background: var(--color-soft);
+  background: var(--color-hover);
   outline: none;
 }
 .dd-item-text {

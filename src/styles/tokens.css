@@ -15,6 +15,10 @@
   --color-tertiary: rgba(0, 0, 0, 0.44);
   --color-disabled: rgba(0, 0, 0, 0.38);
   --color-danger: #dc2626;
+  /* hover ของปุ่มหลัก (ink เจือจางเล็กน้อย) และของปุ่มรอง/ไอคอน/แถว */
+  --color-ink-hover: #262626;
+  --color-hover: var(--color-soft);
+  --color-line-hover: rgba(0, 0, 0, 0.32);
 
   --font-sans: 'OpenAI Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
@@ -70,13 +74,16 @@
     color-scheme: dark;
     --color-bg: #000000;
     --color-ink: #ffffff;
-    --color-soft: #1a1a1a;
+    --color-soft: #1f1f1f;
     --color-line: rgba(255, 255, 255, 0.16);
     --color-line-subtle: rgba(255, 255, 255, 0.1);
     --color-muted: rgba(255, 255, 255, 0.64);
     --color-tertiary: rgba(255, 255, 255, 0.48);
     --color-disabled: rgba(255, 255, 255, 0.4);
     --color-danger: #f87171;
+    --color-ink-hover: #d9d9d9;
+    --color-hover: #2a2a2a;
+    --color-line-hover: rgba(255, 255, 255, 0.4);
     --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.4);
   }
 }
@@ -84,12 +91,15 @@
   color-scheme: dark;
   --color-bg: #000000;
   --color-ink: #ffffff;
-  --color-soft: #1a1a1a;
+  --color-soft: #1f1f1f;
   --color-line: rgba(255, 255, 255, 0.16);
   --color-line-subtle: rgba(255, 255, 255, 0.1);
   --color-muted: rgba(255, 255, 255, 0.64);
   --color-tertiary: rgba(255, 255, 255, 0.48);
   --color-disabled: rgba(255, 255, 255, 0.4);
   --color-danger: #f87171;
+  --color-ink-hover: #d9d9d9;
+  --color-hover: #2a2a2a;
+  --color-line-hover: rgba(255, 255, 255, 0.4);
   --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.4);
 }

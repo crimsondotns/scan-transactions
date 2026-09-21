@@ -878,7 +878,7 @@ th[aria-sort='descending'] .th-btn {
 .dt-moves .move {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-3);
   overflow-wrap: anywhere;
   padding: var(--space-2) 0;
@@ -892,6 +892,7 @@ th[aria-sort='descending'] .th-btn {
   flex: 1 1 auto;
   min-width: 0;
   white-space: normal;
+  align-self: center;
 }
 .dt-moves .move-right {
   flex: none;

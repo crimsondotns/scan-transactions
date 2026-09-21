@@ -1,0 +1,290 @@
+/* App Shell & Layout (WALLET-TRACKER-DESIGN.md lines 106-113, 368-384) */
+.tracker-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* Top Navigation Bar */
+.tracker-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 60px;
+  background-color: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.brand-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background-color: var(--color-primary-glow);
+  border: 1px solid var(--color-primary);
+  color: var(--color-primary);
+  display: grid;
+  place-items: center;
+}
+
+.brand-badge svg {
+  width: 18px;
+  height: 18px;
+}
+
+.brand-title {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  display: block;
+}
+
+.brand-sub {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  display: block;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.btn.sm {
+  height: var(--ctl-sm);
+  padding: 0 12px;
+  font-size: 12px;
+}
+
+.status-live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--color-inflow);
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--color-inflow);
+  box-shadow: 0 0 6px var(--color-inflow);
+  animation: liveBlink 1.5s infinite;
+}
+
+@keyframes liveBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* App Grid Layout */
+.tracker-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  flex: 1;
+}
+
+/* Sidebar */
+.tracker-sidebar {
+  background-color: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  height: calc(100dvh - 60px);
+  position: sticky;
+  top: 60px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sidebar-title {
+  color: var(--color-text-muted);
+}
+
+.icon-add-btn {
+  background: none;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+  transition: all var(--motion-fast);
+}
+
+.icon-add-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.wallet-cards-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  overflow-y: auto;
+}
+
+/* Main Area */
+.tracker-main {
+  padding: 24px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Active Wallet Overview Header */
+.wallet-overview-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+  padding-bottom: var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+
+.wo-left {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wo-addr-strip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.wo-addr {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background-color: var(--color-surface-inset);
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--color-border);
+}
+
+.copy-btn-inline {
+  background: none;
+  border: none;
+  color: var(--color-primary);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.wo-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.wo-stat-lbl {
+  color: var(--color-text-muted);
+}
+
+.wo-stat-val {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--color-text);
+  letter-spacing: -0.02em;
+}
+
+/* Data Grid Container */
+.tx-table-container {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.tx-table-header {
+  display: grid;
+  grid-template-columns: 28px 60px 130px 140px minmax(130px, 1fr) 180px 110px 80px;
+  align-items: center;
+  gap: var(--space-2);
+  height: 38px;
+  padding: 0 12px;
+  background-color: var(--color-surface-elevated);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+.tx-th {
+  display: flex;
+  align-items: center;
+}
+
+.table-state-msg {
+  padding: 36px 16px;
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+/* Breakpoints & Responsive Behavior (WALLET-TRACKER-DESIGN.md lines 381-391) */
+@media (max-width: 1024px) {
+  .tracker-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .tracker-sidebar {
+    height: auto;
+    position: static;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .wallet-cards-scroll {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .wallet-card {
+    min-width: 260px;
+  }
+}
+
+@media (max-width: 640px) {
+  .tracker-header {
+    padding: 0 16px;
+  }
+
+  .tracker-main {
+    padding: 16px;
+  }
+
+  .tx-table-header {
+    display: none;
+  }
+}

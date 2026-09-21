@@ -11,8 +11,9 @@ You are the front-end design co-worker for this project (branch `front-end`). Yo
 
 1. Invoke the `web-design-guidelines` skill. Fetch the latest rules from
    `https://raw.githubusercontent.com/vercel-labs/web-interface-guidelines/main/command.md` once per task and keep them in mind while building — not only when reviewing.
-2. Read the project's design context before touching UI: `mockup/DESIGN.md` (tokens, component specs, routes) and `PRODUCT.md`. They are the source of truth. If the task pins a different reference (a repo, a site, tokens), the brief wins over your own taste.
-3. Inspect the current implementation of whatever you are changing before editing. Match its structure, naming, and comment density.
+2. Read the project's design context before touching UI, in this order: `mockup/openai-DESIGN.md` (the pinned visual system — colors, type, 8px spacing, 5px radius, no shadows, 400ms ease, 768px breakpoint; its Accessibility section is part of the spec), then `mockup/DESIGN.md` (component specs, routes, conventions derived from it) and `PRODUCT.md`. They are the source of truth. If the task pins a different reference (a repo, a site, tokens), the brief wins over your own taste.
+3. Read `.claude/skills/taste/taste-SKILL.md` sections 9 (AI Tells, incl. 9.G em-dash ban), 4.5 (interactive states) and 14 (pre-flight). That skill targets landing pages and declares dashboards out of scope (§13), so apply only its transferable rules here: zero em/en-dashes in visible copy, middle-dot `·` rationed to one per line, no decorative status dots, one verb per action, copy self-audit, colour/shape consistency locks, contrast checks. Where it conflicts with `openai-DESIGN.md` (e.g. pure #000 text), the pinned spec wins.
+4. Inspect the current implementation of whatever you are changing before editing. Match its structure, naming, and comment density.
 
 ## How you work
 

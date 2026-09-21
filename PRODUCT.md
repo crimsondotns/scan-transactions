@@ -18,7 +18,7 @@ Crypto power users who track several of their own (and watched) wallets across s
 
 ## Product Purpose
 
-**Scan Transactions** turns the raw Rabby `history_list` feed into a wallet explorer: the user signs in, saves multiple wallets, and gets an Arkham-style entity page per wallet (identity header, key stats, activity chart, sortable transfers table with filters). Success: a user can answer "what did this wallet do, with whom, for how much, and was any of it sketchy" in seconds, and their wallet list survives across devices/sessions.
+**Scan Transactions** turns the raw Rabby `history_list` feed into a wallet explorer: the user saves multiple wallets (one at a time or in bulk from a CSV/XLSX) and gets an Arkham-style entity page per wallet (identity header, key stats, activity chart, sortable transfers table with filters). Success: a user can answer "what did this wallet do, with whom, for how much, and was any of it sketchy" in seconds, and their wallet list survives across sessions in this browser.
 
 ## Positioning
 
@@ -30,19 +30,19 @@ Single-source, bring-your-own-endpoint explorer: the user supplies only the Rabb
 - Chains: the chain list (73 as of Sep 2026) comes from `https://api.debank.com/chain/list` (`data.chains[]`: `id`, `name`, `network_id`, `token_symbol`, `token_id`, `explorer_host`, `logo_url`, `is_support_history`, `prefix`) or `https://api.rabby.io/v1/chain/list` and is used only for names, logos and explorer links. Snapshot at `mockup/sample/chain_list.json`. `token_dict` keys are per response; the native token key equals the chain id (e.g. `hood`, `base`); NFT entries carry `is_erc721/is_erc1155`, `collection.is_scam`, no `price`. DeBank's `is_support_history` flag does not match Rabby and is informational only.
 - A tracked wallet is an address + label; chain is a filter over loaded rows, never a selector.
 - Response shape: `history_list[]` (`cate_id`, `chain`, `id`, `other_addr`, `project_id`, `receives[]`, `sends[]`, `time_at` unix seconds, `token_approve`, `tx {name, status, from_addr, to_addr, usd_gas_fee, value}`) plus `token_dict`, `project_dict`, `cate_dict`, `cex_dict` lookups. Native token key equals the chain id (e.g. `"hood"`). USD = amount × price.
-- Auth: Google + Email/Password, provider undecided (Firebase Auth or Supabase). A "continue as guest" path keeps wallets local only.
+- No accounts, no sync. There is no login: the wallet list, the base URL and query defaults live in `localStorage` (`scantx.v1`) on this device only. Bulk import reads CSV natively and XLSX/XLS through SheetJS loaded on demand from cdnjs (the only third-party script, fetched only when a spreadsheet is chosen).
 - Hosting: GitHub Pages, pure static.
 
 ## Capabilities and Constraints
 
-- Confirmed: multi-wallet tracking, per-wallet entity page, transfers table (Time, Type, From → To, Token, Amount, USD, Gas, Tx hash), filters (chain, token, type, date range, search), tabs (Overview, Transfers, Holdings, Counterparties), scam/suspicious flagging, settings with API base + resolved request preview, login/sign-up.
+- Confirmed: multi-wallet tracking, per-wallet entity page, transfers table (Time, Type, From → To, Token, Amount, USD, Gas, Tx hash), filters (chain, token, type, date range, search), tabs (Overview, Transfers, Holdings, Counterparties), scam/suspicious flagging, settings with API base + resolved request preview, bulk wallet import (CSV/XLSX, `Label, Address` header in either order with `Name` / `Wallet` / `Addresses` aliases, headerless files inferred, per-row status preview, Undo).
 - Type derivation: `token_approve` → Approve; sends and receives → Swap; sends only → Send; receives only → Receive; otherwise the contract call name from `tx.name` **[inferred rule]**.
-- Undecided: auth provider; chart library for the real build; whether "portfolio value / 24h change" tiles come from a second endpoint (history alone cannot supply balances) **[open]**.
+- Undecided: chart library for the real build; whether "portfolio value / 24h change" tiles come from a second endpoint (history alone cannot supply balances) **[open]**.
 - Terminology: "wallet" (tracked address), "counterparty" (`other_addr` or project), "transfer" (one history entry).
 
 ## Brand Commitments
 
-- Name: **Scan Transactions**. Sibling of the user's existing **XCap** site; must share its visual system (dark, near-monochrome, Instrument Sans + IBM Plex Mono, tokens listed in `mockup/DESIGN.md`).
+- Name: **Scan Transactions**. Visual system is the pinned **OpenAI**-derived spec in `mockup/openai-DESIGN.md`, applied in `mockup/DESIGN.md`: light mode (white surfaces, 1px borders, no shadows or gradients), `system-ui` type with `ui-monospace` for identifiers only, a single accent #8e8ea0 with black text, 8px grid, 5px radius, 400ms ease motion, one 768px breakpoint. Gain #1f7a4d / loss #b3261e are the only other colours and mark money direction only.
 - Voice: quiet, precise, operational. No hype copy, no neon.
 
 ## Evidence on Hand
@@ -57,4 +57,4 @@ Single-source, bring-your-own-endpoint explorer: the user supplies only the Rabb
 2. Density over decoration: one screen should answer the question without scrolling on desktop.
 3. Addresses, hashes, and amounts are monospace and copyable; nothing important is truncated without a way to get the full value.
 4. Risk is visible but not loud: flagged tokens are marked with an icon + label, never colour alone.
-5. Nothing secret ever lives in the client; the only stored preference is a public base URL and a wallet list.
+5. Nothing secret ever lives in the client; the only stored data is a public base URL, query defaults and a wallet list, and it never leaves this browser.

@@ -1,0 +1,175 @@
+/* Wallet Card Styling (WALLET-TRACKER-DESIGN.md lines 321-333) */
+.wallet-card {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  cursor: pointer;
+  transition: background-color var(--motion-fast), border-color var(--motion-fast);
+  text-align: left;
+}
+
+.wallet-card:hover {
+  background-color: var(--color-surface-elevated);
+  border-color: var(--color-border-strong);
+}
+
+.wallet-card.selected {
+  border-color: var(--color-primary);
+  background-color: var(--color-surface-elevated);
+}
+
+/* Top Row */
+.wc-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.wc-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.wc-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-elevated);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.wc-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wc-name {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.3;
+}
+
+.wc-addr-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.wc-addr {
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.wc-copy-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-subtle);
+  padding: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-xs);
+  transition: color var(--motion-fast);
+}
+
+.wc-copy-btn svg {
+  width: 12px;
+  height: 12px;
+}
+
+.wc-copy-btn:hover {
+  color: var(--color-primary);
+}
+
+.wc-copy-btn .copy-success {
+  color: var(--color-inflow);
+}
+
+.wc-chains {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.wc-chain-tag {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface-inset);
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-border);
+}
+
+/* Middle Row */
+.wc-middle {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.wc-balance {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--color-text);
+  letter-spacing: -0.01em;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 500;
+  font-feature-settings: "tnum" 1;
+}
+
+.pill.pos {
+  color: var(--color-inflow);
+  background-color: var(--color-inflow-tint);
+  border: 1px solid var(--color-inflow-border);
+}
+
+.pill.neg {
+  color: var(--color-outflow);
+  background-color: var(--color-outflow-tint);
+  border: 1px solid var(--color-outflow-border);
+}
+
+/* Bottom Row */
+.wc-bottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--color-text-muted);
+}
+
+.wc-bullet {
+  color: var(--color-text-subtle);
+}

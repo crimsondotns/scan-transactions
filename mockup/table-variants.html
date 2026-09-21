@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="Four layouts for the Scan Transactions transfers table with a Price column, rendered from the sample wallet.">
+<title>Transfers Table Variants</title>
+<link rel="preconnect" href="https://static.debank.com">
+<style>
+:root{
+  /* openai-DESIGN.md tokens (source) + derived neutrals; see DESIGN.md */
+  --color-bg:#ffffff;--color-surface:#ffffff;--color-elevated:#f7f7f8;
+  --color-fg:#000000;--color-text-2:#6b6b7b;--color-muted:#8e8ea0;
+  --color-primary:#8e8ea0;--color-on-primary:#ffffff;--color-primary-hover:#7d7d90;
+  --color-border:rgba(142,142,160,.25);--color-border-strong:rgba(142,142,160,.5);
+  --color-fill:rgba(142,142,160,.08);--color-fill-2:rgba(142,142,160,.16);
+  --color-gain:#1f7a4d;--color-gain-tint:rgba(31,122,77,.10);
+  --color-loss:#b3261e;--color-loss-tint:rgba(179,38,30,.08);
+  --font-sans:system-ui,sans-serif;
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --radius:5px;--radius-pill:999px;
+  --text-xs:12px;--text-sm:14px;--text-base:16px;--text-md:24px;--text-lg:32px;
+  --ease:ease;--dur:400ms;
+  --top-h:56px;--ctl-h:40px;--ctl-sm:32px;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{background:var(--color-bg);color-scheme:light;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+body{margin:0;min-height:100dvh;background:var(--color-bg);color:var(--color-fg);font-family:var(--font-sans);font-size:var(--text-base);line-height:1.5;overflow-x:hidden;font-feature-settings:"tnum"}
+h1,h2,h3{text-wrap:balance;margin:0}p{text-wrap:pretty;margin:0}
+section,h2,a,button{scroll-margin-top:calc(var(--top-h) + 16px)}   /* keep focused controls clear of the sticky nav */
+::selection{background:var(--color-fill-2);color:var(--color-fg)}
+*{scrollbar-width:thin;scrollbar-color:var(--color-border-strong) transparent}
+:focus-visible{outline:2px solid var(--color-primary);outline-offset:2px;border-radius:var(--radius)}
+a{color:inherit;text-decoration:none}
+button,input{font:inherit;color:inherit}
+button,a,[role=button],label{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button{background:none;border:0;padding:0;cursor:pointer}
+.skip{position:absolute;left:16px;top:-56px;z-index:100;height:40px;display:inline-flex;align-items:center;padding:0 16px;border-radius:var(--radius-pill);background:var(--color-primary);color:var(--color-on-primary);font-weight:600;transition:top var(--dur) var(--ease)}
+.skip:focus{top:8px;outline-color:var(--color-fg)}
+svg.i{width:16px;height:16px;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round}
+.mono{font-family:var(--font-mono);font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--color-text-2)}.faint{color:var(--color-muted)}
+.pos{color:var(--color-gain)}.neg{color:var(--color-loss)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.label{font-size:var(--text-xs);letter-spacing:.04em;text-transform:uppercase;color:var(--color-muted);font-weight:600;line-height:1.5}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:var(--ctl-h);padding:0 16px;border-radius:var(--radius-pill);border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-fg);font-weight:600;font-size:var(--text-sm);line-height:1.5;white-space:nowrap;transition:background-color var(--dur) var(--ease),border-color var(--dur) var(--ease),color var(--dur) var(--ease)}
+.btn:hover{background:var(--color-elevated);border-color:var(--color-border-strong)}
+.btn.sm{height:var(--ctl-sm);padding:0 8px;font-size:var(--text-xs)}
+.chip{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;border-radius:var(--radius-pill);background:var(--color-surface);border:1px solid var(--color-border);font-size:var(--text-xs);font-weight:600;color:var(--color-text-2);white-space:nowrap;line-height:1.5}
+.chip.neg{color:var(--color-loss);background:var(--color-loss-tint);border-color:transparent}
+.chip.warn{color:var(--color-text-2);background:var(--color-elevated);border-color:transparent}
+.chip .i{width:12px;height:12px;stroke-width:2.2}
+.chg{font-size:var(--text-xs);font-weight:400;font-variant-numeric:tabular-nums;white-space:nowrap}
+.chg.pos{color:var(--color-gain)}.chg.neg{color:var(--color-loss)}.chg.flat{color:var(--color-text-2)}
+
+/* page shell */
+.topnav{position:sticky;top:0;z-index:20;height:var(--top-h);background:var(--color-surface);border-bottom:1px solid var(--color-border);display:flex;align-items:center;gap:8px;padding:0 24px;overflow-x:auto;scrollbar-width:none}
+.topnav::-webkit-scrollbar{display:none}
+.topnav .brand{font-size:var(--text-sm);font-weight:600;white-space:nowrap;margin-right:8px}
+.topnav a.jump{display:inline-flex;align-items:center;height:var(--ctl-h);padding:0 16px;border-radius:var(--radius-pill);border:1px solid var(--color-border);font-size:var(--text-sm);font-weight:600;color:var(--color-text-2);white-space:nowrap;transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease),border-color var(--dur) var(--ease)}
+.topnav a.jump:hover{background:var(--color-elevated);color:var(--color-fg);border-color:var(--color-border-strong)}
+.topnav a.jump[aria-current=true]{background:var(--color-primary);color:var(--color-on-primary);border-color:var(--color-primary)}
+.topnav a.jump[aria-current=true]:focus-visible{outline-color:var(--color-fg)}
+.page{max-width:1392px;margin:0 auto;padding:24px;display:flex;flex-direction:column;gap:24px}
+.intro{display:flex;flex-direction:column;gap:8px;max-width:72ch}
+.intro h1{font-size:var(--text-lg);font-weight:600;line-height:1.5}
+.intro p{font-size:var(--text-sm);color:var(--color-text-2)}
+.status{font-size:var(--text-xs);color:var(--color-text-2);min-height:18px}
+.vcard{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);padding:24px;display:flex;flex-direction:column;gap:16px}
+.vhead{display:flex;flex-direction:column;gap:8px;max-width:80ch}
+.vhead h2{font-size:var(--text-md);font-weight:600;line-height:1.5;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.vhead h2 .n{color:var(--color-muted);font-weight:600}
+.vhead .why{font-size:var(--text-sm);color:var(--color-text-2)}
+.vhead .best{font-size:var(--text-sm)}
+.vhead .best strong{font-weight:600}
+.vbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--color-border);border-radius:var(--radius-pill);background:var(--color-surface);padding:0}
+.seg button{height:38px;padding:0 16px;border-radius:var(--radius-pill);font-size:var(--text-sm);font-weight:600;color:var(--color-text-2);transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease)}
+.seg button:hover{color:var(--color-fg);background:var(--color-elevated)}
+.seg button[aria-pressed=true]{background:var(--color-primary);color:var(--color-on-primary)}
+.seg button[aria-pressed=true]:focus-visible{outline-color:var(--color-fg)}
+.seg button:focus-visible{outline-offset:-2px}
+.vnote{font-size:var(--text-xs);color:var(--color-text-2)}
+.render[hidden]{display:none}
+.frame{container-type:inline-size;container-name:frame}
+.phone{width:390px;max-width:100%;margin:0 auto;border:1px solid var(--color-border-strong);border-radius:var(--radius);overflow:hidden;background:var(--color-surface)}
+.phone .frame{padding:16px 0}
+.phone .tbl-card{border-left:0;border-right:0;border-radius:0}
+/* below 768 (or inside the 390px phone frame) inline links get a 44px hit area without growing the row */
+@container frame (max-width:768px){
+  .tok .tl,.hash,.meta .hash{position:relative}
+  .tok{max-width:100%}.tok .tl{max-width:100%;min-width:0;flex-wrap:wrap;row-gap:0}.tok .tsym{min-width:0;overflow:hidden;text-overflow:ellipsis}.chip{flex:none}
+  .tok .tl::before,.hash::before{content:"";position:absolute;left:-8px;right:-8px;top:50%;height:44px;transform:translateY(-50%)}
+  .tcard footer .hash{min-height:44px}
+  .tcard footer .hash::before{display:none}
+}
+
+/* shared table pieces (mirrors index.html table.tx) */
+.tbl-card{background:var(--color-surface);border-radius:var(--radius);border:1px solid var(--color-border);overflow:hidden}
+.tbl-wrap{position:relative;overflow-x:auto}
+table.tx{width:100%;border-collapse:separate;border-spacing:0}
+table.tx th{background:var(--color-elevated);font-size:var(--text-xs);color:var(--color-muted);font-weight:600;line-height:1.5;text-align:left;padding:0 8px;height:40px;border-bottom:1px solid var(--color-border);white-space:nowrap;user-select:none;text-transform:uppercase;letter-spacing:.04em}
+table.tx th.num,table.tx td.num{text-align:right}
+table.tx th button{display:inline-flex;align-items:center;justify-content:inherit;gap:4px;min-height:40px;text-align:inherit;color:inherit;font:inherit;text-transform:inherit;letter-spacing:inherit;padding:0;border-radius:var(--radius);transition:color var(--dur) var(--ease)}
+table.tx th button:hover{color:var(--color-fg)}
+table.tx th button .i{width:12px;height:12px;opacity:.6}
+table.tx th[aria-sort] button{color:var(--color-fg)}table.tx th[aria-sort] button .i{opacity:1}
+table.tx td{height:56px;padding:8px;border-bottom:1px solid var(--color-border);vertical-align:middle;font-size:var(--text-sm);line-height:1.5}
+table.tx tbody tr:last-child td{border-bottom:0}
+table.tx tbody tr{transition:background-color var(--dur) var(--ease)}
+table.tx tbody tr:hover{background:var(--color-elevated)}
+table.tx tr.flag td{background:var(--color-loss-tint)}
+.c-time .t-abs{display:block;white-space:nowrap;font-weight:600}
+.c-time .t-rel{display:block;font-size:var(--text-xs);color:var(--color-text-2);white-space:nowrap}
+.tpill{display:inline-flex;align-items:center;gap:8px;height:32px;padding:0 8px;border-radius:var(--radius);font-size:var(--text-xs);font-weight:600;white-space:nowrap;border:1px solid transparent}
+.tpill .i{width:16px;height:16px;stroke-width:2}
+.tpill.swap{color:var(--color-fg);background:var(--color-surface);border-color:var(--color-border-strong)}
+.tpill.receive{color:var(--color-gain);background:var(--color-gain-tint)}
+.tpill.send{color:var(--color-loss);background:var(--color-loss-tint)}
+.tpill.approve,.tpill.contract{color:var(--color-text-2);background:var(--color-surface);border-color:var(--color-border)}
+.status-fail{color:var(--color-loss);font-size:var(--text-xs);display:inline-flex;align-items:center;gap:4px;font-weight:600}
+.clogo{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none;background:var(--color-elevated);border:1px solid var(--color-border)}
+.clogo.lm{display:inline-grid;place-items:center;color:var(--color-text-2);font-weight:600}
+.tok-wrap{position:relative;display:inline-block;flex:none;line-height:0}
+.tok-wrap .chain-badge{position:absolute;right:-4px;bottom:-4px;line-height:0}
+.tok-wrap .chain-badge .clogo{width:16px;height:16px;border:2px solid var(--color-surface)}
+.tlogo{width:24px;height:24px;border-radius:50%;background:var(--color-elevated);object-fit:cover;flex:none}
+.tlogo.lm{display:inline-grid;place-items:center;font-size:var(--text-xs);font-weight:600;color:var(--color-text-2)}
+.tok{display:flex;flex-direction:column;align-items:flex-start;gap:0;white-space:nowrap}
+.tok .tl{display:inline-flex;align-items:center;gap:8px;min-height:24px;border-radius:var(--radius);color:var(--color-fg);transition:color var(--dur) var(--ease)}
+.tok .tl:hover .tsym{color:var(--color-primary)}
+.tok .tsym{font-weight:600}
+.identicon{display:inline-block;border-radius:50%;background:var(--color-elevated);flex:none;overflow:hidden}
+.identicon svg{display:block;width:100%;height:100%}
+.party{display:flex;align-items:center;gap:8px;min-width:0;white-space:nowrap}
+.party .you{color:var(--color-text-2);font-weight:600}
+.party .arrow{color:var(--color-muted);width:16px;height:16px}
+.party .cp{display:inline-grid;grid-template-columns:auto minmax(0,1fr);grid-template-areas:"logo name" "logo addr";align-items:center;column-gap:8px;min-width:0}
+.party .cp .plogo{grid-area:logo;width:28px;height:28px;border-radius:50%;background:var(--color-elevated);flex:none;object-fit:cover}
+.party .cp .identicon{grid-area:logo;width:28px;height:28px}
+.party .cp .pname{grid-area:name;font-weight:600;align-self:end}
+.party .cp .pname:last-child{grid-row:name / addr;align-self:center}
+.party .cp .paddr{grid-area:addr;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-text-2);align-self:start}
+.amt{display:flex;flex-direction:column;align-items:flex-end;gap:0;font-variant-numeric:tabular-nums;white-space:nowrap;font-weight:600}
+.amt .out{color:var(--color-loss)}.amt .in{color:var(--color-gain)}.amt .neu{color:var(--color-text-2)}
+.amt .sym{color:var(--color-text-2);font-size:var(--text-xs);margin-left:2px;font-weight:400}
+.price{display:flex;flex-direction:column;align-items:flex-end;gap:0;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--color-fg)}
+.price .now{color:var(--color-text-2);font-size:var(--text-xs);font-weight:400;margin-left:4px}
+.price .chg{margin-left:4px}
+.c-usd{font-weight:600;color:var(--color-fg);font-variant-numeric:tabular-nums;white-space:nowrap}
+.c-gas{color:var(--color-text-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.hash{display:inline-flex;align-items:center;gap:4px;white-space:nowrap;font-family:var(--font-mono);font-size:var(--text-xs);color:var(--color-primary);font-weight:400;min-height:32px;border-radius:var(--radius);transition:color var(--dur) var(--ease)}
+.hash:hover{color:var(--color-fg)}
+.hash .i{width:16px;height:16px}
+.empty{padding:48px 24px;text-align:center;color:var(--color-text-2);display:flex;flex-direction:column;align-items:center;gap:8px}
+.empty h3{color:var(--color-fg);font-size:var(--text-base);font-weight:600}
+.empty p{max-width:52ch;font-size:var(--text-sm)}
+.sk{display:inline-block;height:16px;border-radius:var(--radius);background:var(--color-fill-2);animation:sk var(--dur) var(--ease) infinite alternate;vertical-align:middle}
+@keyframes sk{from{opacity:1}to{opacity:.4}}
+.skeleton td{padding:16px}
+
+/* ---- V1 classic dense: 48px rows, 13px numerals, hairline under rows only ---- */
+.v1 table.tx td{height:48px;padding:0 8px}
+.v1 .num,.v1 .amt,.v1 .price,.v1 .c-usd,.v1 .c-gas{font-size:13px}   /* brief asks 13px numerals; off the 12/14 scale on purpose */
+.v1 .amt .sym{font-size:var(--text-xs)}
+.v1 .tpill{height:28px}
+.v1 .c-time .t-abs{font-size:13px}
+.v1 .c-party{min-width:200px}
+@container frame (max-width:768px){
+  .v1 table.tx thead{display:none}
+  .v1 table.tx,.v1 table.tx tbody{display:block}
+  .v1 table.tx tbody tr{display:grid;grid-template-columns:40px minmax(0,1fr) auto;grid-template-areas:"type tok usd" "type amt amt" "type time price";column-gap:8px;padding:8px 16px;border-bottom:1px solid var(--color-border);align-items:center}
+  .v1 table.tx tbody tr:last-child{border-bottom:0}
+  .v1 table.tx td{display:block;padding:0;border:0;height:auto;background:transparent}
+  .v1 table.tx tr.flag{background:var(--color-loss-tint)}.v1 table.tx tr.flag td{background:transparent}
+  .v1 .c-type{grid-area:type;align-self:start}
+  .v1 .tpill{width:40px;height:40px;padding:0;justify-content:center}.v1 .tpill .tl{display:none}.v1 .tpill .i{width:20px;height:20px}
+  .v1 .c-token{grid-area:tok;min-width:0}
+  .v1 .c-time{grid-area:time;font-size:var(--text-xs);color:var(--color-text-2);align-self:start}
+  .v1 .c-time .t-abs{display:none}
+  .v1 .c-amt{grid-area:amt;text-align:right;contain:inline-size}   /* spanning amount must not widen the value column */
+  .v1 .c-price{grid-area:price}.v1 .price{color:var(--color-text-2);font-size:var(--text-xs)}
+  .v1 .c-usd{grid-area:usd;text-align:right}
+  .v1 table.tx td.c-party,.v1 table.tx td.c-gas,.v1 table.tx td.c-hash{display:none}
+  .v1 .c-token{min-width:0;overflow:hidden}
+}
+
+/* ---- V2 token-first ledger ---- */
+.v2 .c-tok .tok .tl{min-height:28px}
+.v2 .c-tok .tlogo{width:28px;height:28px}
+.v2 table.tx td{height:64px}
+.v2 .c-type{min-width:224px}
+.v2 .c-type .tpill{height:28px}
+.v2 .meta{display:flex;align-items:center;gap:4px;font-size:var(--text-xs);color:var(--color-text-2);white-space:nowrap;min-width:0}
+.v2 .meta .arrow{width:12px;height:12px;color:var(--color-muted)}
+.v2 .meta .hash{min-height:0;font-size:var(--text-xs)}
+.v2 .meta .pname{font-weight:600}
+.v2 .meta .paddr{font-family:var(--font-mono)}
+.v2 .op{color:var(--color-muted);font-weight:400;padding:0 4px}
+.v2 th.c-op{padding:0;width:16px}
+.v2 td.c-op{padding:0;text-align:center;color:var(--color-muted);font-size:var(--text-sm)}
+.v2 .ledger{display:flex;flex-direction:column;align-items:flex-end;white-space:nowrap;font-variant-numeric:tabular-nums}
+.v2 .c-usd .ledger{font-weight:600}
+.v2 .c-amt .mline{display:none}
+@container frame (max-width:768px){
+  .v2 table.tx thead{display:none}
+  .v2 table.tx,.v2 table.tx tbody{display:block}
+  .v2 table.tx tbody tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"tok num" "type num" "time num";column-gap:8px;padding:8px 16px;border-bottom:1px solid var(--color-border);align-items:start}
+  .v2 table.tx tbody tr:last-child{border-bottom:0}
+  .v2 table.tx td{display:block;padding:0;border:0;height:auto;background:transparent}
+  .v2 table.tx tr.flag{background:var(--color-loss-tint)}.v2 table.tx tr.flag td{background:transparent}
+  .v2 .c-tok{grid-area:tok}
+  .v2 .c-type{grid-area:type;min-width:0}
+  .v2 .c-type .tpill{height:24px;padding:0 8px}
+  .v2 .c-type .meta{white-space:normal;flex-wrap:wrap}.v2 .c-type .meta .op{display:none}.v2 .c-type .meta .paddr,.v2 .c-type .meta .pname{white-space:nowrap}
+  .v2 .c-time{grid-area:time;font-size:var(--text-xs);color:var(--color-text-2)}
+  .v2 .c-time .t-abs{display:none}
+  .v2 .c-amt{grid-area:num;display:flex;flex-direction:column;align-items:flex-end;gap:0}
+  .v2 .c-amt .ledger{font-weight:600}
+  .v2 .c-amt .mline{display:flex;flex-direction:column;align-items:flex-end;font-size:var(--text-xs);color:var(--color-text-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .v2 table.tx td.c-op,.v2 table.tx td.c-price,.v2 table.tx td.c-usd,.v2 table.tx td.c-gas{display:none}
+  .v2 .c-amt .mline .val{color:var(--color-fg);font-weight:600;font-size:var(--text-sm)}
+}
+
+/* ---- V3 two-row expandable ---- */
+.v3 table.tx td{height:48px;padding:0 8px}
+.v3 td.c-x,.v3 th.c-x{width:56px;padding:0;text-align:center}
+.v3 .xbtn{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:var(--radius-pill);color:var(--color-muted);transition:background-color var(--dur) var(--ease),color var(--dur) var(--ease)}
+.v3 .xbtn:hover{background:var(--color-elevated);color:var(--color-fg)}
+.v3 .xbtn .i{transition:transform var(--dur) var(--ease)}
+.v3 .xbtn[aria-expanded=true] .i{transform:rotate(180deg)}
+.v3 tr.open td{background:var(--color-elevated);border-bottom-color:transparent}
+.v3 tr.detail td{background:var(--color-elevated);height:auto;padding:0 16px 16px 16px}
+.v3 tr.detail[hidden]{display:none}
+.v3 .dgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:16px;margin:0;padding:16px;border:1px solid var(--color-border);border-radius:var(--radius);background:var(--color-surface)}
+.v3 .dgrid>div{display:flex;flex-direction:column;gap:0;min-width:0}
+.v3 .dgrid>div.wide{grid-column:span 2}
+.v3 .dgrid dt{font-size:var(--text-xs);letter-spacing:.04em;text-transform:uppercase;color:var(--color-muted);font-weight:600}
+.v3 .dgrid dd{margin:0;font-size:var(--text-sm);font-variant-numeric:tabular-nums;min-width:0}
+.v3 .dgrid dd .price{align-items:flex-start}
+.v3 .dgrid dd .party{flex-wrap:wrap;white-space:normal}
+.v3 .dgrid .chainrow{display:inline-flex;align-items:center;gap:8px}
+.v3 .c-time .t-rel{display:none}
+@container frame (max-width:768px){
+  .v3 table.tx thead{display:none}
+  .v3 table.tx,.v3 table.tx tbody{display:block}
+  .v3 table.tx tbody tr.row{display:grid;grid-template-columns:40px minmax(0,1fr) auto 44px;grid-template-areas:"type tok usd x" "type amt amt x" "type time time x";column-gap:8px;padding:8px 8px 8px 16px;border-bottom:1px solid var(--color-border);align-items:center}
+  .v3 table.tx tbody tr.row:last-child{border-bottom:0}
+  .v3 table.tx tr.row td{display:block;padding:0;border:0;height:auto;background:transparent}
+  .v3 table.tx tr.flag{background:var(--color-loss-tint)}.v3 table.tx tr.flag td{background:transparent}
+  .v3 tr.open{background:var(--color-elevated)}
+  .v3 .c-type{grid-area:type;align-self:start}
+  .v3 .tpill{width:40px;height:40px;padding:0;justify-content:center}.v3 .tpill .tl{display:none}.v3 .tpill .i{width:20px;height:20px}
+  .v3 .c-tok{grid-area:tok;min-width:0;overflow:hidden}
+  .v3 .c-time{grid-area:time;font-size:var(--text-xs);color:var(--color-text-2)}
+  .v3 .c-time .t-abs{display:none}.v3 .c-time .t-rel{display:block}
+  .v3 .c-amt{grid-area:amt;text-align:right;contain:inline-size}
+  .v3 .c-usd{grid-area:usd;text-align:right}
+  .v3 td.c-x{grid-area:x;width:44px}
+  .v3 tr.detail{display:block}
+  .v3 tr.detail td{display:block;padding:0 16px 16px 16px;height:auto}
+  .v3 .dgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .v3 .dgrid>div.wide{grid-column:1 / -1}
+}
+
+/* ---- V4 card grid ---- */
+.v4 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.tcard{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius);display:flex;flex-direction:column;min-width:0;transition:border-color var(--dur) var(--ease)}
+.tcard:hover{border-color:var(--color-border-strong)}
+.tcard.flag{background:var(--color-loss-tint)}
+.tcard header{display:flex;align-items:center;gap:8px;padding:8px 16px;min-height:48px;border-bottom:1px solid var(--color-border)}
+.tcard header .when{font-size:var(--text-sm);font-weight:600;white-space:nowrap}
+.tcard header .chain{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:var(--text-xs);color:var(--color-text-2);white-space:nowrap}
+.tcard header .chain .clogo{width:16px;height:16px}
+.tcard .legs{display:flex;flex-direction:column;padding:8px 16px;gap:8px;flex:1}
+.tcard .leg{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-areas:"logo sym amt" "logo meta val";column-gap:8px;align-items:center;min-height:48px}
+.tcard .leg .tok-wrap{grid-area:logo}
+.tcard .leg .tlogo{width:32px;height:32px}
+.tcard .leg .lsym{grid-area:sym;font-weight:600;display:flex;align-items:center;gap:8px;min-width:0}
+.tcard .leg .lsym .tsym{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tcard .leg .meta{grid-area:meta;font-size:var(--text-xs);color:var(--color-text-2);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tcard .leg .amt{grid-area:amt;font-size:var(--text-sm)}
+.tcard .leg .val{grid-area:val;text-align:right;font-size:var(--text-sm);font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tcard .leg .val.faint{font-weight:400}
+.tcard footer{display:flex;align-items:center;gap:16px;padding:8px 16px;min-height:48px;border-top:1px solid var(--color-border);font-size:var(--text-xs);color:var(--color-text-2);flex-wrap:wrap}
+.tcard footer .party{font-size:var(--text-xs);min-width:0;flex:1 1 auto}
+.tcard footer .party .cp .plogo,.tcard footer .party .cp .identicon{width:24px;height:24px}
+.tcard footer .party .cp .pname{font-size:var(--text-xs)}
+.tcard footer .gas{white-space:nowrap;font-variant-numeric:tabular-nums}
+.tcard footer .hash{margin-left:auto}
+@container frame (max-width:768px){
+  .v4 .grid{grid-template-columns:1fr;gap:0}
+  .v4 .grid .tcard{border-left:0;border-right:0;border-radius:0;border-bottom:0}
+  .v4 .grid .tcard:last-child{border-bottom:1px solid var(--color-border)}
+  .tcard footer{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"party party" "gas hash";column-gap:16px;row-gap:0;align-items:center}
+  .tcard footer .party{grid-area:party;min-height:32px}
+  .tcard footer .gas{grid-area:gas}
+  .tcard footer .hash{grid-area:hash;margin-left:0;justify-self:end}
+  .tcard .leg .lsym{flex-wrap:wrap;row-gap:0}
+}
+
+/* ---- compare table ---- */
+table.cmp{width:100%;border-collapse:separate;border-spacing:0;font-size:var(--text-sm)}
+table.cmp th{background:var(--color-elevated);font-size:var(--text-xs);color:var(--color-muted);font-weight:600;text-align:left;padding:8px;height:40px;border-bottom:1px solid var(--color-border);text-transform:uppercase;letter-spacing:.04em;vertical-align:middle}
+table.cmp td{padding:8px;border-bottom:1px solid var(--color-border);vertical-align:top;line-height:1.5}
+table.cmp tbody tr:last-child td{border-bottom:0}
+table.cmp td:first-child{font-weight:600;white-space:nowrap}
+table.cmp .yes{color:var(--color-gain);font-weight:600}
+table.cmp .part{color:var(--color-text-2);font-weight:600}
+
+@media (max-width:768px){
+  .page{padding:16px;gap:16px}
+  .vcard{padding:16px}
+  .topnav{padding:0 16px}
+  .topnav .brand{display:none}
+  .intro h1{font-size:var(--text-md)}
+  .seg button{height:46px}
+  .btn{height:48px}
+  table.tx th{height:44px}
+  .tbl-card.cmp-card{overflow-x:auto}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<nav class="topnav" aria-label="Variants">
+  <span class="brand">Transfers Table Variants</span>
+  <a class="jump" href="#v1">1 Classic Dense</a>
+  <a class="jump" href="#v2">2 Token-First Ledger</a>
+  <a class="jump" href="#v3">3 Two-Row Expandable</a>
+  <a class="jump" href="#v4">4 Card Grid</a>
+  <a class="jump" href="#compare">Compare</a>
+</nav>
+<main id="main" class="page">
+  <div class="intro">
+    <h1>Transfers Table Variants</h1>
+    <p>Four layouts for the transfers table with a Price column, each rendered from the 20 sample transfers (hood, base, arb, op, monad). Price is the per-token price at the time of the transfer as sent by the feed; Approve rows show the token's current price instead. Flagged tokens carry a text badge and count as $0.</p>
+    <p class="status" id="status" role="status" aria-live="polite">Loading sample data…</p>
+  </div>
+
+  <section class="vcard" id="v1" aria-labelledby="h-v1">
+    <div class="vhead">
+      <h2 id="h-v1"><span class="n">1</span>Classic Dense</h2>
+      <p class="why">The current column order, tightened: 48px rows, 13px tabular numerals right-aligned, hairline under rows only. Price sits between Token and Amount so a swap reads as two aligned lines: token, its price, its amount.</p>
+      <p class="best"><strong>Best for</strong> desk users who already know the table and want more rows per screen without learning a new layout.</p>
+    </div>
+    <div class="vbar">
+      <div class="seg" role="group" aria-label="Preview width for variant 1">
+        <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-view="phone" aria-pressed="false">Phone 390</button>
+      </div>
+      <p class="vnote">Nine columns. 24h change omitted: it does not fit at this density.</p>
+    </div>
+    <div class="render" data-render="desktop"><div class="frame v1" data-variant="v1"></div></div>
+    <div class="render" data-render="phone" hidden><div class="phone"><div class="frame v1" data-variant="v1"></div></div></div>
+  </section>
+
+  <section class="vcard" id="v2" aria-labelledby="h-v2">
+    <div class="vhead">
+      <h2 id="h-v2"><span class="n">2</span>Token-First Ledger</h2>
+      <p class="why">Token leads the row, then one numeric block reads left to right as amount × price = value. Counterparty and tx hash drop to a muted line under the type pill, so the eye lands on what moved and what it was worth.</p>
+      <p class="best"><strong>Best for</strong> reviewing value: “was that swap at a fair price” or “how much did this airdrop claim to be worth”.</p>
+    </div>
+    <div class="vbar">
+      <div class="seg" role="group" aria-label="Preview width for variant 2">
+        <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-view="phone" aria-pressed="false">Phone 390</button>
+      </div>
+      <p class="vnote">Seven columns. 24h change shown next to the price.</p>
+    </div>
+    <div class="render" data-render="desktop"><div class="frame v2" data-variant="v2"></div></div>
+    <div class="render" data-render="phone" hidden><div class="phone"><div class="frame v2" data-variant="v2"></div></div></div>
+  </section>
+
+  <section class="vcard" id="v3" aria-labelledby="h-v3">
+    <div class="vhead">
+      <h2 id="h-v3"><span class="n">3</span>Two-Row Expandable</h2>
+      <p class="why">A compact primary row (time, type, token, amount, value) and a chevron. Expanding a row reveals a detail grid with price, 24h change, from and to, gas, tx hash and chain. The same markup collapses to a phone list.</p>
+      <p class="best"><strong>Best for</strong> phones and fast scanning of long histories where price and counterparty matter only for a few rows.</p>
+    </div>
+    <div class="vbar">
+      <div class="seg" role="group" aria-label="Preview width for variant 3">
+        <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-view="phone" aria-pressed="false">Phone 390</button>
+      </div>
+      <p class="vnote">Five columns visible. Expansion is a button with aria-expanded; the first row starts open.</p>
+    </div>
+    <div class="render" data-render="desktop"><div class="frame v3" data-variant="v3"></div></div>
+    <div class="render" data-render="phone" hidden><div class="phone"><div class="frame v3" data-variant="v3"></div></div></div>
+  </section>
+
+  <section class="vcard" id="v4" aria-labelledby="h-v4">
+    <div class="vhead">
+      <h2 id="h-v4"><span class="n">4</span>Card Grid</h2>
+      <p class="why">Each transfer is a card: a header with type, time and chain, a body with one line per token leg (logo, symbol, amount, price, value), and a footer with counterparty, gas and tx hash. Two columns on desktop, one on phones.</p>
+      <p class="best"><strong>Best for</strong> wallets with a few transfers, or a phone-first product. Density is the trade-off: about 6 transfers per desktop screen versus 15 or more in the tables.</p>
+    </div>
+    <div class="vbar">
+      <div class="seg" role="group" aria-label="Preview width for variant 4">
+        <button type="button" data-view="desktop" aria-pressed="true">Desktop</button>
+        <button type="button" data-view="phone" aria-pressed="false">Phone 390</button>
+      </div>
+      <p class="vnote">Everything visible, nothing sortable. 24h change shown next to the symbol.</p>
+    </div>
+    <div class="render" data-render="desktop"><div class="frame v4" data-variant="v4"></div></div>
+    <div class="render" data-render="phone" hidden><div class="phone"><div class="frame v4" data-variant="v4"></div></div></div>
+  </section>
+
+  <section class="vcard" id="compare" aria-labelledby="h-cmp">
+    <div class="vhead">
+      <h2 id="h-cmp">Compare</h2>
+      <p class="why">Phone fit was checked at 390px with the longest sample amount, 5,584.861358978389 CASHCAT, at full precision.</p>
+    </div>
+    <div class="tbl-card cmp-card">
+      <table class="cmp">
+        <thead><tr><th scope="col">Variant</th><th scope="col">Columns without expanding</th><th scope="col">Row height</th><th scope="col">Phone fit at 390</th><th scope="col">Scan speed</th><th scope="col">Best use</th></tr></thead>
+        <tbody>
+          <tr><td>1 Classic Dense</td><td>Time, Type, From → To, Token, Price, Amount, USD Value, Gas, Tx (9)</td><td>48px, swaps still 48</td><td><span class="yes">Yes</span>: value beside the token, amount on its own line, price beside the time</td><td>High on desktop: familiar order, every value on one screen. Medium on phone.</td><td>Power users at a desk, long histories</td></tr>
+          <tr><td>2 Token-First Ledger</td><td>Time, Token, Type + counterparty and tx, Amount, Price, USD Value, Gas (7)</td><td>64px (72 for swaps)</td><td><span class="yes">Yes</span>: amount, then price = value, stack on the right</td><td>High for value questions: one left-to-right equation per row. Counterparty needs a second look.</td><td>Price and value review, token audits</td></tr>
+          <tr><td>3 Two-Row Expandable</td><td>Time, Type, Token, Amount, USD Value (5)</td><td>48px collapsed, about 150px open</td><td><span class="yes">Yes</span>: same three-line row as variant 1 plus a 44px chevron; details open as a 2-column grid</td><td>Highest for “what happened”; price, gas and counterparty cost one click each.</td><td>Phones, quick checks, wallets with hundreds of rows</td></tr>
+          <tr><td>4 Card Grid</td><td>All fields, no columns</td><td>About 168px per card (224 for swaps), 2 per row on desktop</td><td><span class="yes">Yes</span>: one card per row, footer wraps</td><td>Low: about 6 transfers per desktop screen; slow to compare values down a column.</td><td>Few transfers, phone-first, token detail pages</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ---------- formatters (same as index.html) ---------- */
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+const shortAddr = (a, n = 4) => a ? `${a.slice(0, 2 + n)}…${a.slice(-n)}` : '-';
+const USD_FMT = {};
+const usdFmt = digits => USD_FMT[digits] || (USD_FMT[digits] = new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD', minimumFractionDigits: digits, maximumFractionDigits: digits }));
+const INT_FMT = new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 });
+const DECIMAL_SEP = (new Intl.NumberFormat(undefined).formatToParts(1.1).find(p => p.type === 'decimal') || { value: '.' }).value;
+const DATE_FMT = {
+  time: new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }),
+  date: new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' })
+};
+const fmtUsd = v => {
+  if (v == null || isNaN(v)) return '-';
+  if (v === 0) return usdFmt(0).format(0);
+  const abs = Math.abs(v);
+  const digits = abs >= 1000 ? 0 : abs >= 1 ? 2 : abs >= 0.01 ? 4 : 6;
+  return (v < 0 ? '−' : '') + usdFmt(digits).format(abs);
+};
+const fmtAmt = v => {
+  if (v == null || isNaN(v)) return '-';
+  const abs = Math.abs(v);
+  // full precision: keep every digit JS knows about, group the integer part only
+  let str = String(abs);
+  if (/e/i.test(str)) str = abs.toFixed(20).replace(/0+$/, '').replace(/\.$/, '');
+  const [int, frac] = str.split('.');
+  return INT_FMT.format(Number(int)) + (frac ? DECIMAL_SEP + frac : '');
+};
+/* price per token: >= 1 -> 2 dp; < 1 -> enough decimals for 4 significant digits (capped at 12), never scientific */
+const fmtPrice = v => {
+  if (v == null || isNaN(v)) return '-';
+  if (v === 0) return usdFmt(2).format(0);
+  const abs = Math.abs(v);
+  if (abs >= 1) return usdFmt(2).format(abs);
+  const lead = Math.floor(-Math.log10(abs));
+  return usdFmt(Math.min(12, Math.max(2, lead + 4))).format(abs);
+};
+const fmtPct = (v, digits = 1) => v == null || isNaN(v) ? '-' : Math.abs(v) > 9.99 ? (v > 0 ? '>+999%' : '<−999%') : (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v * 100).toFixed(digits) + '%';
+const fmtGas = v => v == null ? '-' : v < 0.01 ? '<' + usdFmt(2).format(0.01) : fmtUsd(v);
+function fmtTime(ts) { return DATE_FMT.time.format(new Date(ts * 1000)); }
+function fmtDate(ts) { return DATE_FMT.date.format(new Date(ts * 1000)); }
+function fmtRel(ts, now = Date.now() / 1000) {
+  const s = Math.max(0, now - ts);
+  if (s < 60) return 'just now';
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  if (s < 86400 * 30) return `${Math.floor(s / 86400)}d ago`;
+  return fmtDate(ts);
+}
+
+/* icons: one stroke family, 24 viewBox (subset of index.html) */
+const ICON = {
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
+  key: '<circle cx="8" cy="15" r="4"/><path d="m10.9 12.1 9.1-9.1M17 7l3 3M14 10l2 2"/>',
+  settings: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  ext: '<path d="M14 5h5v5M19 5l-8 8M19 14v4a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h4"/>',
+  chevron: '<path d="m6 9 6 6 6-6"/>',
+  sort: '<path d="M8 4v16M8 20l-3-3M8 20l3-3M16 20V4M16 4l-3 3M16 4l3 3"/>',
+  sortDown: '<path d="M12 5v14M12 19l-5-5M12 19l5-5"/>',
+  warn: '<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 2.6 17a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>',
+  arrowRight: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+  arrowInbound: '<path d="M19 5 5 19M5 10v9h9"/>',
+  arrowOutbound: '<path d="M5 19 19 5M10 5h9v9"/>',
+  swap: '<path d="M4 8h13M14 5l3 3-3 3M20 16H7M10 13l-3 3 3 3"/>'
+};
+const icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICON[n]}</svg>`;
+const typeIcon = { swap: 'swap', send: 'arrowOutbound', receive: 'arrowInbound', approve: 'key', contract: 'settings' };
+
+/* deterministic identicon: 5x5 symmetric, low-chroma hue from the address */
+function hashStr(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h; }
+function identicon(addr, size = 28) {
+  const a = String(addr || '').toLowerCase();
+  let h = hashStr(a);
+  const hue = h % 360;
+  const fg = `hsl(${hue} 18% 52%)`, bg = `hsl(${hue} 20% 94%)`;
+  let cells = '';
+  for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) {
+    h = (h * 1103515245 + 12345) >>> 0;
+    if ((h >> 16) & 1) { cells += `<rect x="${x}" y="${y}" width="1" height="1"/>`; if (x < 2) cells += `<rect x="${4 - x}" y="${y}" width="1" height="1"/>`; }
+  }
+  return `<span class="identicon" style="width:${size}px;height:${size}px;background:${bg}"><svg viewBox="-.6 -.6 6.2 6.2" shape-rendering="crispEdges" fill="${fg}" aria-hidden="true">${cells}</svg></span>`;
+}
+
+/* ---------- chain registry (snapshot only) ---------- */
+const chains = new Map();
+const chainName = id => { const c = chains.get(id); return c ? c.name : String(id || '-'); };
+const explorerTx = (id, hash) => { const c = chains.get(id); return c && c.explorer_host ? `${c.explorer_host.replace(/\/$/, '')}/tx/${hash}` : ''; };
+const chainLogo = (id, size = 16) => {
+  const c = chains.get(id); const letter = escapeHtml(String(id || '?')[0].toUpperCase());
+  return c && c.logo_url
+    ? `<img class="clogo" style="width:${size}px;height:${size}px" width="${size}" height="${size}" src="${c.logo_url}" alt="" loading="lazy">`
+    : `<span class="clogo lm" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .42)}px">${letter}</span>`;
+};
+/* token logo with a 16px chain badge (bottom-right, hairline ring) */
+const tokLogo = (t, chain, px = 24) => {
+  const src = t.logo_url || t.thumbnail_url || (t.collection && t.collection.logo_url) || '';
+  const sym = escapeHtml((t.optimized_symbol || t.symbol || t.name || '?')[0]);
+  const img = src ? `<img class="tlogo" src="${src}" alt="" width="${px}" height="${px}" loading="lazy" style="width:${px}px;height:${px}px">` : `<span class="tlogo lm" style="width:${px}px;height:${px}px">${sym}</span>`;
+  return `<span class="tok-wrap" title="${escapeHtml(chainName(chain))}">${img}<span class="chain-badge">${chainLogo(chain, 16)}</span></span>`;
+};
+
+/* ---------- row normalisation (same rules as index.html, plus price per leg) ---------- */
+let raw = null;
+function tokenOf(id, chain) {
+  const t = raw.token_dict && raw.token_dict[id];
+  if (!t) return { id, chain, symbol: shortAddr(id, 3), optimized_symbol: shortAddr(id, 3), price: null, logo_url: '', unknown: true };
+  if (t.is_erc721 || t.is_erc1155) return { ...t, chain: t.chain || chain, symbol: t.symbol || (t.collection && t.collection.name) || t.name, optimized_symbol: t.symbol || t.name, price: t.price != null ? t.price : 0, nft: true, is_scam: t.is_scam || (t.collection && t.collection.is_scam), is_suspicious: t.is_suspicious || (t.collection && t.collection.is_suspicious) };
+  return { ...t, chain: t.chain || chain };
+}
+const tokenFlags = t => { const f = []; if (t.is_scam) f.push('scam'); else if (t.is_suspicious) f.push('suspicious'); if (t.unknown) f.push('unknown'); return f; };
+function normalize(data, me) {
+  me = me.toLowerCase();
+  return (data.history_list || []).map(h => {
+    const sends = h.sends || [], recs = h.receives || [];
+    const proj = h.project_id && data.project_dict ? data.project_dict[h.project_id] : null;
+    let type, tlabel;
+    if (h.token_approve) { type = 'approve'; tlabel = 'Approve'; }
+    else if (sends.length && recs.length) { type = 'swap'; tlabel = 'Swap'; }
+    else if (sends.length) { type = 'send'; tlabel = 'Send'; }
+    else if (recs.length) { type = 'receive'; tlabel = 'Receive'; }
+    else { type = 'contract'; tlabel = 'Contract call'; }
+    const legs = [];
+    const priceOf = (t, p) => p != null ? p : t.price != null ? t.price : null;
+    const usdOf = (t, amt, price) => (t.is_scam || t.is_suspicious) ? 0 : amt * (price || 0);
+    sends.forEach(s => { const t = tokenOf(s.token_id, h.chain); const price = priceOf(t, s.price); legs.push({ dir: 'out', chain: h.chain, token: t, amount: s.amount, price, priceNow: false, usd: usdOf(t, s.amount, price), addr: s.to_addr }); });
+    recs.forEach(r => { const t = tokenOf(r.token_id, h.chain); const price = priceOf(t, r.price); legs.push({ dir: 'in', chain: h.chain, token: t, amount: r.amount, price, priceNow: false, usd: usdOf(t, r.amount, price), addr: r.from_addr }); });
+    if (h.token_approve) { const t = tokenOf(h.token_approve.token_id, h.chain); legs.push({ dir: 'allow', chain: h.chain, token: t, amount: h.token_approve.value, price: t.price != null ? t.price : null, priceNow: true, usd: 0, addr: h.token_approve.spender }); }
+    const usdOut = legs.filter(l => l.dir === 'out').reduce((a, l) => a + l.usd, 0);
+    const usdIn = legs.filter(l => l.dir === 'in').reduce((a, l) => a + l.usd, 0);
+    const cpAddr = h.other_addr || (h.token_approve && h.token_approve.spender) || (h.tx && (h.tx.to_addr.toLowerCase() === me ? h.tx.from_addr : h.tx.to_addr)) || '';
+    const flags = new Set(); legs.forEach(l => tokenFlags(l.token).forEach(f => flags.add(f))); if (h.is_scam) flags.add('scam');
+    const cex = h.cex_id && data.cex_dict ? data.cex_dict[h.cex_id] : null;
+    return {
+      id: h.id, hash: h.id, chain: h.chain, time: h.time_at,
+      type, tlabel, txName: h.tx && h.tx.name, status: h.tx ? h.tx.status : 1,
+      cp: { addr: cpAddr, name: proj ? proj.name : cex ? cex.name : null, logo: proj ? proj.logo_url : cex ? cex.logo_url : '', kind: proj ? 'project' : cex ? 'exchange' : 'address' },
+      legs, usdIn, usdOut, usd: type === 'receive' ? usdIn : type === 'approve' ? 0 : usdOut || usdIn,
+      gas: h.tx && h.tx.usd_gas_fee != null ? +h.tx.usd_gas_fee || 0 : 0, flags: [...flags], inbound: type === 'receive'
+    };
+  }).sort((a, b) => b.time - a.time);
+}
+
+/* ---------- shared cell builders ---------- */
+const flagBadge = t => { const f = tokenFlags(t); return f.includes('scam') ? `<span class="chip neg">${icon('warn')}Scam</span>` : f.includes('suspicious') ? `<span class="chip warn">${icon('warn')}Suspicious</span>` : ''; };
+const symOf = t => escapeHtml(t.optimized_symbol || t.symbol);
+const chgHtml = t => { let v = t.price_24h_change; if (v == null || isNaN(v)) return ''; if (Math.abs(v) < 0.0005) v = 0; const c = v > 0 ? 'pos' : v < 0 ? 'neg' : 'flat'; return `<span class="chg ${c}" title="24h change">${v === 0 ? '0.0%' : fmtPct(v)}</span>`; };
+const typePill = r => `<span class="tpill ${r.type}" title="${escapeHtml(r.txName || r.tlabel)}">${icon(typeIcon[r.type])}<span class="tl">${escapeHtml(r.tlabel)}</span></span>${r.status !== 1 ? ` <span class="status-fail">${icon('warn')}Failed</span>` : ''}`;
+const timeCell = r => `<span class="t-abs">${fmtTime(r.time)}</span><span class="t-rel">${fmtRel(r.time)} · ${escapeHtml(chainName(r.chain))}</span>`;
+const tokLine = (l, px = 24) => `<a class="tl" href="index.html#token/${escapeHtml(l.chain)}/${encodeURIComponent(l.token.id)}" title="Open ${symOf(l.token)} on ${escapeHtml(chainName(l.chain))}">${tokLogo(l.token, l.chain, px)}<span class="tsym">${symOf(l.token)}</span>${flagBadge(l.token)}</a>`;
+const tokenCell = (r, px = 24) => `<span class="tok">${r.legs.map(l => tokLine(l, px)).join('')}</span>`;
+const amtLine = l => `<span class="${l.dir === 'out' ? 'out' : l.dir === 'in' ? 'in' : 'neu'}">${l.dir === 'out' ? '−' : l.dir === 'in' ? '+' : ''}${fmtAmt(l.amount)}<span class="sym">${symOf(l.token)}${l.dir === 'allow' ? ' allowance' : ''}</span></span>`;
+const amtCell = r => `<span class="amt">${r.legs.length ? r.legs.map(amtLine).join('') : '<span class="neu">-</span>'}</span>`;
+const priceLine = (l, withChg) => `<span>${fmtPrice(l.price)}${l.priceNow && l.price != null ? '<span class="now">now</span>' : ''}${withChg ? chgHtml(l.token) : ''}</span>`;
+const priceCell = (r, withChg = false) => `<span class="price">${r.legs.length ? r.legs.map(l => priceLine(l, withChg)).join('') : '<span class="faint">-</span>'}</span>`;
+const usdCell = r => r.type === 'approve' ? '<span class="faint" style="font-weight:600">-</span>' : fmtUsd(r.usd);
+const pLogo = cp => cp.logo ? `<img class="plogo" src="${cp.logo}" alt="" width="28" height="28" loading="lazy">` : identicon(cp.addr, 28);
+function partyCell(r) {
+  const cp = `<span class="cp">${pLogo(r.cp)}<span class="pname trunc">${escapeHtml(r.cp.name || (r.cp.kind === 'address' ? shortAddr(r.cp.addr) : ''))}</span>${r.cp.name ? `<span class="paddr" translate="no">${shortAddr(r.cp.addr)}</span>` : ''}</span>`;
+  const you = `<span class="you">You</span>`, ar = r.type === 'swap' ? icon('swap', 'arrow') : icon('arrowRight', 'arrow');
+  return `<span class="party">${r.inbound ? cp + ar + you : you + ar + cp}</span>`;
+}
+function hashLink(r) {
+  const ex = explorerTx(r.chain, r.hash);
+  return ex
+    ? `<a class="hash" href="${ex}" target="_blank" rel="noopener" title="${r.hash}" translate="no">${shortAddr(r.hash, 4)}${icon('ext')}</a>`
+    : `<button type="button" class="hash" data-copy="${r.hash}" aria-label="Copy transaction hash" translate="no">${shortAddr(r.hash, 4)}${icon('copy')}</button>`;
+}
+const th = (label, opts = {}) => `<th scope="col" class="${opts.cls || ''}" ${opts.sorted ? 'aria-sort="descending"' : ''}>${opts.sortable ? `<button type="button">${label}${icon(opts.sorted ? 'sortDown' : 'sort')}</button>` : label}</th>`;
+const rowClass = r => r.flags.includes('scam') ? 'flag' : '';
+
+/* ---------- variant 1: classic dense ---------- */
+function v1Html(rows) {
+  const head = th('Time', { sortable: true, sorted: true }) + th('Type', { sortable: true }) + th('From → To') + th('Token') + th('Price', { cls: 'num', sortable: true }) + th('Amount', { cls: 'num', sortable: true }) + th('USD Value', { cls: 'num', sortable: true }) + th('Gas', { cls: 'num', sortable: true }) + th('Tx');
+  const body = rows.map(r => `<tr class="${rowClass(r)}">
+    <td class="c-time">${timeCell(r)}</td>
+    <td class="c-type">${typePill(r)}</td>
+    <td class="c-party">${partyCell(r)}</td>
+    <td class="c-token">${tokenCell(r)}</td>
+    <td class="c-price num">${priceCell(r)}</td>
+    <td class="c-amt num">${amtCell(r)}</td>
+    <td class="c-usd num">${usdCell(r)}</td>
+    <td class="c-gas num">${fmtGas(r.gas)}</td>
+    <td class="c-hash">${hashLink(r)}</td>
+  </tr>`).join('');
+  return `<div class="tbl-card"><div class="tbl-wrap"><table class="tx" translate="no"><caption class="sr">Transfers, classic dense layout</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+
+/* ---------- variant 2: token-first ledger ---------- */
+function v2Html(rows) {
+  const head = th('Time', { sortable: true, sorted: true }) + th('Token', { sortable: true }) + th('Type') + th('Amount', { cls: 'num', sortable: true }) + `<th scope="col" class="c-op"><span class="sr">times</span></th>` + th('Price', { cls: 'num', sortable: true }) + `<th scope="col" class="c-op"><span class="sr">equals</span></th>` + th('USD Value', { cls: 'num', sortable: true }) + th('Gas', { cls: 'num', sortable: true });
+  const meta = r => {
+    const cp = r.cp.name ? `<span class="pname">${escapeHtml(r.cp.name)}</span><span class="paddr" translate="no">${shortAddr(r.cp.addr)}</span>` : `<span class="paddr" translate="no">${shortAddr(r.cp.addr)}</span>`;
+    return `<span class="meta">${r.inbound ? cp + icon('arrowRight', 'arrow') + 'You' : 'You' + icon('arrowRight', 'arrow') + cp}<span class="op">·</span>${hashLink(r)}</span>`;
+  };
+  const ledger = (r, fn) => `<span class="ledger">${r.legs.length ? r.legs.map(fn).join('') : '<span class="faint">-</span>'}</span>`;
+  const valLine = l => `<span>${l.dir === 'allow' ? '<span class="faint">-</span>' : fmtUsd(l.usd)}</span>`;
+  const body = rows.map(r => `<tr class="${rowClass(r)}">
+    <td class="c-time">${timeCell(r)}</td>
+    <td class="c-tok">${tokenCell(r, 28)}</td>
+    <td class="c-type">${typePill(r)}${meta(r)}</td>
+    <td class="c-amt num">${amtCell(r)}<span class="mline">${r.legs.map(l => `<span>${fmtPrice(l.price)}${l.priceNow && l.price != null ? ' now' : ''}${l.dir === 'allow' ? '' : ` = <span class="val">${fmtUsd(l.usd)}</span>`}</span>`).join('')}</span></td>
+    <td class="c-op" aria-hidden="true">×</td>
+    <td class="c-price num">${priceCell(r, true)}</td>
+    <td class="c-op" aria-hidden="true">=</td>
+    <td class="c-usd num">${ledger(r, valLine)}</td>
+    <td class="c-gas num">${fmtGas(r.gas)}</td>
+  </tr>`).join('');
+  return `<div class="tbl-card"><div class="tbl-wrap"><table class="tx" translate="no"><caption class="sr">Transfers, token-first ledger layout</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+
+/* ---------- variant 3: two-row expandable ---------- */
+function v3Html(rows, prefix) {
+  const head = th('Time') + th('Type') + th('Token') + th('Amount', { cls: 'num' }) + th('USD Value', { cls: 'num' }) + `<th scope="col" class="c-x"><span class="sr">Details</span></th>`;
+  const body = rows.map((r, i) => {
+    const id = `${prefix}-d${i}`, open = i === 0;
+    return `<tr class="row ${rowClass(r)} ${open ? 'open' : ''}">
+      <td class="c-time">${timeCell(r)}</td>
+      <td class="c-type">${typePill(r)}</td>
+      <td class="c-tok">${tokenCell(r)}</td>
+      <td class="c-amt num">${amtCell(r)}</td>
+      <td class="c-usd num">${usdCell(r)}</td>
+      <td class="c-x"><button type="button" class="xbtn" aria-expanded="${open}" aria-controls="${id}" aria-label="${open ? 'Hide' : 'Show'} details for ${escapeHtml(r.tlabel)} ${fmtTime(r.time)}">${icon('chevron')}</button></td>
+    </tr>
+    <tr class="detail ${rowClass(r)}" id="${id}" ${open ? '' : 'hidden'}><td colspan="6"><dl class="dgrid">
+      <div><dt>Price</dt><dd>${priceCell(r)}</dd></div>
+      <div><dt>24h</dt><dd>${r.legs.map(l => chgHtml(l.token)).filter(Boolean).join('<br>') || '<span class="faint">-</span>'}</dd></div>
+      <div class="wide"><dt>From → To</dt><dd>${partyCell(r)}</dd></div>
+      <div><dt>Gas</dt><dd class="c-gas">${fmtGas(r.gas)}</dd></div>
+      <div><dt>Tx</dt><dd>${hashLink(r)}</dd></div>
+      <div><dt>Chain</dt><dd><span class="chainrow">${chainLogo(r.chain, 16)}${escapeHtml(chainName(r.chain))}</span></dd></div>
+    </dl></td></tr>`;
+  }).join('');
+  return `<div class="tbl-card"><div class="tbl-wrap"><table class="tx" translate="no"><caption class="sr">Transfers, two-row expandable layout</caption><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div></div>`;
+}
+
+/* ---------- variant 4: card grid ---------- */
+function v4Html(rows) {
+  const leg = l => `<div class="leg">${tokLogo(l.token, l.chain, 32)}
+    <span class="lsym"><span class="tsym">${symOf(l.token)}</span>${flagBadge(l.token)}${chgHtml(l.token)}</span>
+    <span class="meta">${l.priceNow ? 'now ' : 'at '}${fmtPrice(l.price)}</span>
+    ${amtCell({ legs: [l] })}
+    <span class="val ${l.dir === 'allow' ? 'faint' : ''}">${l.dir === 'allow' ? '-' : fmtUsd(l.usd)}</span>
+  </div>`;
+  const cards = rows.map(r => `<article class="tcard ${rowClass(r)}" aria-label="${escapeHtml(r.tlabel)} ${fmtTime(r.time)}">
+    <header>${typePill(r)}<span class="when">${fmtTime(r.time)}</span><span class="chain">${chainLogo(r.chain, 16)}${escapeHtml(chainName(r.chain))}</span></header>
+    <div class="legs">${r.legs.length ? r.legs.map(leg).join('') : '<span class="faint">No token moved</span>'}</div>
+    <footer>${partyCell(r)}<span class="gas">Gas ${fmtGas(r.gas)}</span>${hashLink(r)}</footer>
+  </article>`).join('');
+  return `<div class="grid">${cards}</div>`;
+}
+
+/* ---------- page wiring ---------- */
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+const skeleton = () => `<div class="tbl-card"><table class="tx"><tbody>${Array.from({ length: 6 }, () => `<tr class="skeleton"><td><span class="sk" style="width:90px"></span></td><td><span class="sk" style="width:70px;height:32px"></span></td><td><span class="sk" style="width:180px"></span></td><td class="num"><span class="sk" style="width:90px"></span></td><td class="num"><span class="sk" style="width:70px"></span></td></tr>`).join('')}</tbody></table></div>`;
+function renderAll(rows) {
+  $$('.frame').forEach((f, i) => {
+    const v = f.dataset.variant;
+    f.innerHTML = v === 'v1' ? v1Html(rows) : v === 'v2' ? v2Html(rows) : v === 'v3' ? v3Html(rows, `f${i}`) : v4Html(rows);
+  });
+}
+function showError(msg) {
+  $$('.frame').forEach(f => { f.innerHTML = `<div class="tbl-card"><div class="empty"><h3>Couldn’t Load the Sample</h3><p>${escapeHtml(msg)} Serve this folder over HTTP (for example <span class="mono">python3 -m http.server</span>) and reload.</p><button type="button" class="btn sm" data-retry>Retry</button></div></div>`; });
+  $('#status').textContent = 'Sample data failed to load.';
+}
+async function load() {
+  $$('.frame').forEach(f => { f.innerHTML = skeleton(); });
+  $('#status').textContent = 'Loading sample data…';
+  try {
+    const [cl, hist] = await Promise.all([
+      fetch('sample/chain_list.json', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error('chain_list.json HTTP ' + r.status); return r.json(); }),
+      fetch('sample/history_all.json', { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error('history_all.json HTTP ' + r.status); return r.json(); })
+    ]);
+    (Array.isArray(cl) ? cl : cl.data && cl.data.chains || []).forEach(c => chains.set(String(c.id), c));
+    raw = hist;
+    const rows = normalize(hist, '0x42a8000000000000000000000000000000000000');
+    renderAll(rows);
+    const byChain = {}; rows.forEach(r => { byChain[r.chain] = (byChain[r.chain] || 0) + 1; });
+    $('#status').textContent = `${rows.length} transfers loaded: ${Object.entries(byChain).map(([c, n]) => `${chainName(c)} ${n}`).join(', ')}.`;
+  } catch (e) { showError(e.message + '.'); }
+}
+document.addEventListener('click', e => {
+  const seg = e.target.closest('.seg button[data-view]');
+  if (seg) {
+    const card = seg.closest('.vcard');
+    $$('.seg button', card).forEach(b => b.setAttribute('aria-pressed', String(b === seg)));
+    $$('.render', card).forEach(r => { r.hidden = r.dataset.render !== seg.dataset.view; });
+    return;
+  }
+  const x = e.target.closest('.xbtn');
+  if (x) {
+    const open = x.getAttribute('aria-expanded') !== 'true';
+    x.setAttribute('aria-expanded', String(open));
+    x.setAttribute('aria-label', x.getAttribute('aria-label').replace(/^(Show|Hide)/, open ? 'Hide' : 'Show'));
+    const detail = document.getElementById(x.getAttribute('aria-controls'));
+    detail.hidden = !open;
+    x.closest('tr').classList.toggle('open', open);
+    return;
+  }
+  const c = e.target.closest('[data-copy]');
+  if (c) { navigator.clipboard.writeText(c.dataset.copy).then(() => { $('#status').textContent = 'Transaction hash copied.'; }).catch(() => { $('#status').textContent = 'Copy failed. Select the hash manually.'; }); return; }
+  if (e.target.closest('[data-retry]')) load();
+});
+/* highlight the nav item for the section in view */
+const jumps = $$('.topnav a.jump');
+const io = new IntersectionObserver(entries => {
+  entries.forEach(en => { if (en.isIntersecting) jumps.forEach(a => a.setAttribute('aria-current', a.getAttribute('href') === '#' + en.target.id ? 'true' : 'false')); });
+}, { rootMargin: '-50% 0px -45% 0px' });
+$$('section[id]').forEach(s => io.observe(s));
+load();
+</script>
+</body>
+</html>

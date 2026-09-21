@@ -1,93 +1,104 @@
-# Scan Transactions — design system (v3, XCap / crystal-prism-moss-cherry)
+# Scan Transactions — design system (v4, applied from `openai-DESIGN.md`)
 
-Visual world: the user's pinned **XCap** system (Vite + Tailwind v4 + shadcn-style, `src/styles.css`). Monochrome, high-contrast, hairline-bounded surfaces; gain/loss are the only chromatic colours. v2's UX structure is unchanged (hero card, range seg, area chart, 4 stat cards, coloured type pills, 56px rows, token route, sidebar, mobile tab bar); only the visual system changed. This file mirrors the Tailwind `@theme` so the real app can use the classes directly.
+**Source of truth: `mockup/openai-DESIGN.md`.** This file is its application to Scan Transactions: it restates the measured tokens, records the neutrals and status colours we had to derive (and why), and maps every component onto the system. When the two disagree, `openai-DESIGN.md` wins. v3's UX structure is unchanged (hero + range seg + chart, chain chips + Hide-scam switch, 4 stat cards, transfers table with type pills, token route, holdings/counterparties, sidebar wallet list, Add-wallet and Bulk-add dialogs, settings page, bottom tab bar on phones, full-precision amounts, Undo toasts); only the visual system changed.
 
 ## Mode
 
-**Operate.** Quiet monochrome chrome; the headline number and the gain/loss chart are the only loud elements. Meaning is carried by contrast, weight and two semantic colours, never by hue elsewhere.
+**Light, flat, monochrome.** White page, white surfaces separated by 1px borders or a #f7f7f8 tint. No box-shadows, no gradients, no hairline-shadow trick, no dark-mode media query. Colour exists for money direction only (gain / loss); everything else is black, white and #8e8ea0.
 
-## Tokens (exact, from `styles.css`)
+## Tokens
 
 ```css
 :root{
-  --color-bg:#0a0a0a; --color-surface:#111113; --color-elevated:#161618;
-  --color-fg:#f4f4f5; --color-muted:#a1a1aa; --color-subtle:#71717a;
-  --color-border:rgba(244,244,245,.10); --color-border-strong:rgba(244,244,245,.18);   /* fg 10% / 18% */
-  --color-accent:#e8e8ec; --color-accent-fg:#0a0a0a; --color-accent-hover:#f4f4f5;      /* primary buttons are white */
-  --color-gain:#34d399; --color-loss:#fb7185; --color-ring:#d4d4d8;
-  /* derived, used by the mockup */
-  --color-gain-tint:rgba(52,211,153,.15); --color-loss-tint:rgba(251,113,133,.15);     /* = gain/15, loss/15 */
-  --color-gain-tint-2:rgba(52,211,153,.25); --color-loss-tint-2:rgba(251,113,133,.25); /* danger hover = loss/25 */
-  --color-fill:rgba(244,244,245,.06); --color-fill-2:rgba(244,244,245,.12);
-  --shadow-hair:0 0 0 1px rgba(244,244,245,.10); --shadow-hair-strong:0 0 0 1px rgba(244,244,245,.18);
-  --shadow-pop:0 0 0 1px rgba(244,244,245,.10),0 16px 40px rgba(0,0,0,.6);
-  --font-sans:"Geist","Segoe UI",system-ui,sans-serif; --font-mono:"Geist Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
-  --radius-xs:4px; --radius-sm:8px; --radius-md:12px; --radius-lg:16px; --radius-xl:24px; --radius-pill:999px;
-  --ease:cubic-bezier(.16,1,.3,1); --dur:.15s;
-  --side-w:272px; --top-h:72px; --tab-h:64px;
+  /* measured in openai-DESIGN.md */
+  --color-bg:#ffffff; --color-surface:#ffffff;
+  --color-fg:#000000;                          /* body, values, headings   (spec "text-muted", used as text) */
+  --color-primary:#8e8ea0; --color-on-primary:#ffffff;
+  --color-muted:#8e8ea0;                       /* labels, icons, placeholders, secondary accents (spec "text") */
+  --font-sans:system-ui,sans-serif;
+  --radius:5px;
+  --ease:ease; --dur:400ms;
+  /* derived — nothing in the spec fits */
+  --color-elevated:#f7f7f8;                    /* tinted surface: hover rows, table head, seg track, preview box */
+  --color-text-2:#6b6b7b;                      /* primary darkened until 4.5:1 — small secondary copy (12–14px) */
+  --color-primary-hover:#7d7d90;               /* primary darkened one step for hover */
+  --color-border:rgba(142,142,160,.25);        /* primary @ 25% — every 1px divider and control border */
+  --color-border-strong:rgba(142,142,160,.5);  /* primary @ 50% — hover borders, dialog/toast edge, chart baseline */
+  --color-fill:rgba(142,142,160,.08); --color-fill-2:rgba(142,142,160,.16);  /* chart empty bars, skeleton, selection */
+  --color-gain:#1f7a4d; --color-gain-tint:rgba(31,122,77,.10); --color-gain-tint-2:rgba(31,122,77,.18);
+  --color-loss:#b3261e; --color-loss-tint:rgba(179,38,30,.08); --color-loss-tint-2:rgba(179,38,30,.16);
+  --font-mono:ui-monospace,SFMono-Regular,Menlo,monospace;   /* addresses, hashes, token ids, request preview only */
+  --text-xs:12px; --text-sm:14px; --text-base:16px; --text-md:24px; --text-lg:32px; --text-xl:48px;
+  --side-w:256px; --top-h:72px; --tab-h:64px; --ctl-h:40px; --ctl-sm:32px;
 }
 ```
 
-Google Fonts: `Geist:wght@400;500;600`, `Geist+Mono:wght@400;500`. Body 14px / 1.5, `font-feature-settings:"tnum"`. Cards never use solid borders: `bg-surface rounded-xl shadow-[var(--shadow-hair)]`.
+`--color-subtle` remains as an alias of `--color-muted` for older inline styles.
 
-## Colour semantics
+### Why the derived colours
 
-- **gain / loss are the only chromatic colours.** Receive · incoming · positive → gain. Send · outgoing · negative · scam · failed → loss.
-- Type pills: Receive = gain/15 + gain; Send = loss/15 + loss; Swap = elevated + fg (hairline); Approve and contract calls = elevated + muted with icon.
-- Delta pills: gain/15 + gain, loss/15 + loss, flat = elevated + muted.
-- Links, active tab (2px white underline), selected wallet (3px white bar + elevated), sort-active header, chart-hover row inset → **fg white**, never blue.
-- Chart: cumulative net flow area in gain or loss with gradient to the zero baseline; Volume bars fg, Gas bars muted; empty days fill-2.
-- Text: fg on surfaces for values; muted (#a1a1aa, 7:1) for secondary body copy; subtle (#71717a, 3.9:1 on surface) **only** for 11px uppercase labels, placeholders and the tab-bar idle state. Row flag wash = loss at 6%.
+| Token | Reason |
+|---|---|
+| `--color-elevated` #f7f7f8 | The spec allows "background colour shifts" for grouping; this is the lightest tint that still reads against white without a shadow. |
+| `--color-text-2` #6b6b7b | #8e8ea0 measures **3.2:1** on white (the spec's own Accessibility section flags it). It stays for 12px uppercase labels, icons, placeholders and accents, but any running secondary copy at 12–14px (sub-lines, hints, table meta, relative times) uses this darkened primary at **5.2:1**. |
+| borders | Derived from the primary at low alpha so dividers, control borders and chart grid share one hue. |
+| `--color-gain` #1f7a4d / `--color-loss` #b3261e | The spec has no status colours. These are the two muted, low-chroma greens/reds that pass AA on white (**5.3:1** and **6.5:1**) and on the `--color-elevated` tint. They are used only for money direction (receive / send, +/− amounts, net-flow line, delta pills, flagged-row wash) and for form errors / the Untrack action. Everything else stays monochrome. |
+
+### Contrast (on #ffffff)
+
+| Pair | Ratio | Use |
+|---|---|---|
+| #000000 text | 21:1 | body, values, headings |
+| #6b6b7b text | 5.2:1 | secondary copy 12–14px |
+| #8e8ea0 text / icons | 3.2:1 | 12px uppercase labels, icons, placeholders, non-text UI (passes 3:1 for UI components; **not** used for body or numbers) |
+| #ffffff on #8e8ea0 | 3.2:1 | primary buttons, selected chips/segs/tabs — per spec; fails 4.5:1 for 14px text, see "Open decisions" |
+| #1f7a4d / #b3261e | 5.3:1 / 6.5:1 | gain / loss text |
+| focus ring #8e8ea0 | 3.2:1 | 2px outline, 2px offset; black on primary-filled controls |
 
 ## Typography
 
-- Geist for everything; Geist Mono for addresses, hashes, token/contract ids and the request preview only. Numbers are Geist with tabular figures.
-- Headline number: `--text-6xl` (60px) desktop → 48px ≤960 → 36px ≤760, weight 500, tracking −.025em, tabular-nums.
-- Labels: 11px uppercase, +.06em, subtle, weight 500 (stat labels, hero label, table headers, section labels, form labels).
-- Titles: page/card titles 24px/500; section titles 18px/500; sidebar/row names 14px/500. Maximum weight anywhere is 500 (600 reserved for the wordmark if needed).
+- `system-ui, sans-serif` everywhere; monospace only for identifiers. No web fonts, no `<link>` to Google Fonts.
+- Line-height **1.5 at every size.** Weights: 700 (display), 600 (headings, emphasised values, control labels), 400 (body). No 500.
+- Scale: **display 48/700** (hero headline; 32 below 768) · **heading 32/600** (Settings page title) · **24/600** derived subheading (wallet / token name, dialog titles, stat values) · **body 16/400** (base) · **14** (controls, table rows, sub-lines) · **12** (uppercase labels at +.04em, hints, meta, chips, pills).
+- Numbers: tabular figures (`font-feature-settings:"tnum"` on body). Full-precision amounts are never rounded.
 
-## Components (as built)
+## Spacing, radius, motion, breakpoint
 
-| Component | Spec (mirrors `button.tsx` / `input.tsx`) |
+- **8px grid.** Paddings 8/16/24/48, gaps 8/16/24, table rows 56, table header 40, controls 40 (32 small) on desktop and 48 (44 small) below 768, chips 32, pills 24, tabs 48, sidebar 256, top bar 72 (64 on phones), tab bar 64. The only off-grid values are 44px touch targets below 768 and 1px borders.
+- **Radius:** buttons, chips, pills, segmented controls and single-line inputs are fully rounded (`--radius-pill: 999px`, as on openai.com). Cards, dialogs, textareas, tables and tooltips stay 5px. Round (50%) only for avatars, identicons, token/chain/project logos and status dots.
+- **Motion: 400ms `ease` for every transition and animation** (hover colour, drawer, dialog fade/slide, toast, chart bar dimming, skeleton pulse). `prefers-reduced-motion` collapses all of it.
+- **One breakpoint, 768px.** ≥768: sidebar + top bar + full 8-column table. <768: sidebar becomes a drawer with scrim, bottom tab bar, single-column layout, 3-column card rows in the table, stats 2×2 (via `auto-fit, minmax(160px,1fr)` rather than a second breakpoint), 32px hero headline, 48px controls.
+
+## Components
+
+| Component | Spec |
 |---|---|
-| `.btn` | h-44, rounded-md (12px), text-sm 500; default/`.primary` = accent bg + accent-fg, hover fg; `.outline` = transparent + hairline, hover elevated; `.ghost` = transparent, hover elevated (`.quiet` = muted text); `.danger` = loss/15 + loss, hover loss/25; `.sm` h-36 text-xs; `.icon` square; `active:scale(.96)`; disabled opacity .4 |
-| `.input` / `.select` | h-44 rounded-md bg-elevated hairline shadow; hover hairline 18%; focus 2px ring/70; invalid 1px loss; placeholder subtle |
-| Focus | `box-shadow:0 0 0 2px rgba(212,212,216,.7)` everywhere (`:focus-visible`) |
-| `.chip` | h-28 rounded-sm elevated + hairline, muted text; `.fg`; `.pos/.neg` tints; `.sm` h-24 |
-| `.pill` | h-26 pill, text-xs 500, trend icon |
-| `.card` / hero | surface, rounded-xl (24px), hairline, 28px padding; identity row → uppercase label + 60px headline + delta pill + muted sub-line; range seg; metric seg; 220px chart |
-| `.seg` | elevated track + hairline, 36px options, selected = white bg + black text |
-| `.stat` | surface card, 20px padding: 36px elevated icon tile (gain/loss tint for net flow), uppercase label, 30px value, delta pill + note |
-| `table.tx` | inside `.tbl-card` (surface, rounded-xl, hairline); header 11px uppercase subtle; rows 56px, 14px, hairline dividers; hover elevated; chart-hover = 3px fg inset; ≤760px 3-column row grid with 40px type tiles |
-| Sidebar | surface, 1px hairline edge; uppercase "Tracked wallets" label; `.witem` 56px, selected = elevated + 3px white bar; "Add wallet" = outline (primary lives in the header) |
-| Header | mark (32px hairline circle) + name + 11px uppercase section label; search; actions right = outline Refresh / Settings + white "Add wallet" |
-| Bottom `.tabbar` | ≤760px, 64px, surface + top hairline, active = fg |
-| Toast | bottom-right elevated card with check icon and hairline; optional action button (used for Undo after removing a wallet, 6s); above the tab bar on phones |
-| Add-wallet dialog `.dlg` | native `<dialog>` (top layer), centred, max-w 440, surface + hairline, 24px radius, backdrop rgba(10,10,10,.7) + 2px blur; 150ms fade + .96→1 scale in/out (none under reduced motion); ≤640px bottom sheet with top radius 24 and safe-area padding. Header = 18px/500 "Add Wallet" + muted description + ghost × (top-right, 36px). Body = Address (mono, live helper line with identicon + short address + "Already tracked as …" chip, inline `role=alert` error) and Label (optional). Footer right-aligned ghost Cancel + white primary, disabled until valid; Enter submits, Esc/backdrop/× close, focus returns to the trigger; on phones focus lands on × rather than the input |
-| Sign-in card | centred max-w 400, surface, hairline, 28px padding: 48px mark, 24px title, muted copy, white Google button, "or with email" label divider, hairline inputs, outline email submit, guest link muted |
+| `.btn` | 40px (48 <768), 5px radius, 1px border, 14/600. `.primary` = primary bg + white, hover `--color-primary-hover`, focus ring black; `.outline` = white + border, hover elevated; `.ghost` = transparent, hover elevated (`.quiet` = text-2); `.danger` = white + loss border + loss text, hover loss tint; `.sm` 32px (44 <768) 12px; `.icon` square; disabled opacity .4 |
+| `.input` / `.select` / `textarea.input` | 40px (48 <768), white, 1px border, hover border-strong, focus 2px primary outline + primary border, invalid loss border, placeholder muted. Select has explicit `background-color` and `color` |
+| Focus | `:focus-visible{outline:2px solid #8e8ea0;outline-offset:2px}` globally; black outline on primary-filled controls (primary button, selected chip/seg/tab, toast action); inset (−2px) on seg / tab-strip buttons |
+| `.chip` | 32px, 5px radius, white + border, 12/600 text-2; `.fg` black; `.pos/.neg` tint + status colour; `.sm` 24px |
+| `.cchip` (chain filter) | 32px, white + border, 16px logo, count at 80%; selected (`aria-pressed`) = primary bg + white; `.scam` is a `role=switch` with the same selected style |
+| `.pill` (delta) | 24px, 5px radius, 12/600, trend icon; gain/loss tint or elevated flat |
+| `.tpill` (type) | 32px, 5px radius, icon + label; Receive = gain tint, Send = loss tint, Swap = white + border-strong + black, Approve / contract = white + border + text-2; 40×40 icon tile below 768 |
+| `.card` / hero | white, 5px radius, 1px border, 24px padding (16 <768). Identity row (56px identicon, 24/600 name, mono address, status, chips) → chain chips → uppercase 12px label + **48/700 headline** + delta pill + 14px sub-line → range `.seg` → chart label + metric `.seg` → 224px chart (176 <768) |
+| `.seg` | bordered white track, 40px options, selected = primary bg + white text |
+| `.stat` | white card, 16px padding: 32px elevated icon tile (primary icon; gain/loss tint for net flow), 12px uppercase label, **24/600 value**, delta pill + 12px note. Grid `auto-fit, minmax(160px,1fr)` |
+| Tabs | 48px, 14/600, text-2 → black; selected = 2px primary underline + count badge inverted to primary |
+| `table.tx` | inside `.tbl-card` (white, 5px radius, 1px border); header 40px elevated tint, 12px uppercase muted, sort-active black; rows 56px, 14px, 8px cell padding, 1px dividers; hover / chart-hover = elevated tint (+2px inset primary marker); flagged rows = loss tint. Counterparty cell stacks name over short address; swap rows stack the out / in tokens (24px logos) so they line up with the two amount lines. Fits 1440 without horizontal scroll; scrolls narrower. <768: 3-column card rows (40px type tile · party + time · amount + USD) |
+| Chart | net-flow line 2px gain/loss with flat 10% fill (no gradient); volume bars primary, gas bars border-strong, empty days fill; grid = border; tooltip = white + border-strong |
+| Sidebar | white, 1px right border; 72px head with uppercase label; `.witem` 56px, selected = elevated + 2px primary left bar; two outline buttons "Add Wallet" / "Bulk Add"; footer Settings nav item + 12px "Local · N wallets" |
+| Header | 32px primary circle mark + name + 12px uppercase section label; search 40px with `/` kbd; actions = outline Refresh / Settings / Bulk Add + primary "Add Wallet" |
+| Bottom `.tabbar` | <768, 64px + safe-area, white, 1px top border; active = black text + 2px primary top border |
+| Toast | bottom-right white card, 1px border-strong, primary check icon, 48px min height; optional primary action (Undo, 6s); above the tab bar on phones; `role=status aria-live=polite` |
+| `.dlg` (Add Wallet) | native `<dialog>`, max-w 440, white, 1px border-strong, 5px radius, backdrop rgba(0,0,0,.4), 400ms fade + 8px slide (none under reduced motion); <768 bottom sheet. 24/600 title, 14px text-2 description, ghost × top-right (32 / 44px). Address (mono, live helper, inline `role=alert` error) + Label (optional); footer ghost Cancel + primary submit disabled until valid |
+| `.dlg.wide` (Bulk Add) | same shell at 560; `.dlg-tabs` bordered seg (Upload File / Paste); `.dropz` elevated + 1px dashed border-strong, primary icon, `:focus-within` ring; preview table 40px rows with sticky elevated header; Ready = gain, Invalid = loss, Duplicate / Already tracked = text-2 (text carries the meaning) |
+| Settings | 32/600 title; sections = 224px label column + body, 1px dividers, 24px padding; `.preview` boxes elevated + border; wallet list `.wtable` white + border, 56px rows, inline rename input 40px; sticky save bar with Revert (ghost) + Save Changes (primary) |
 
-## Chains: registry, badges and the chip filter
+## Chains, routes, storage, conventions
 
-- One request covers every chain (`id`, `start_time`, `page_count`; no `chain_id`). Chain is a property of each row, never a selector. There is no chain picker.
-- `Chains.load()` (names, logos, explorer hosts only) tries `https://api.debank.com/chain/list`, then `<apiBase origin>/v1/chain/list`, then `sample/chain_list.json`, then the embedded snapshot; cached 24h in `localStorage` `scantx.chains.v1`; Settings shows count / source / cache time with Refresh.
-- **Chain badge** `.tok-wrap .chain-badge`: 16px round chain logo overlaid bottom-right of every token logo (table rows, holdings, token lists, token header) with a 2px surface ring; the wrapper carries the chain name as `title`. Chain name also appears in the row's secondary line ("2h ago · Base") and holdings sub-line.
-- **Chip filter** `.chain-chips`: horizontally scrollable row in the hero — `All 20` then one `.cchip` per chain seen in the loaded rows (20px logo, name, count), multi-select toggle (`aria-pressed`), selected = white on black. Selecting every chain collapses back to All. Stats, chart, tabs, tables and lists all respect it; the Transfers-tab chain `<select>` mirrors the same state; state lives in the URL (`?chain=hood,base`, `?tab=`).
-- Sidebar / Settings wallet rows show a stack of the chains seen in that wallet's last loaded history (`w.seenChains`, max 4 + `+n`); nothing until loaded.
-- Explorer links use the row's chain (`explorer_host/tx/hash`); no host → copy-hash button.
-- Flagged tokens (`is_scam` / `is_suspicious`, including NFT collections) keep their amounts but contribute $0 to volume, net flow and holdings value; the volume card says "flagged tokens excluded". Percent pills clamp at ±999%.
+Unchanged from v3: chain registry (`Chains.load()` → DeBank / Rabby / sample / embedded, cached 24h), 16px chain badge on every token logo, URL-synced chip filter (`?chain=`, `?tab=`), routes `#<walletId>` / `#token/<chain>/<tokenId>` / `?add=1` / `?import=1`, `localStorage` `scantx.v1`, flagged tokens excluded from USD totals, and the Web Interface Guidelines conventions (skip link, `aria-label` on icon buttons, explicit image dimensions, `autocomplete`/`inputmode`, inline `role=alert` errors, `translate="no"` on identifiers, `touch-action: manipulation`, `overscroll-behavior: contain`, safe-area insets, Undo for destructive actions, `beforeunload` on unsaved settings, `<meta name="theme-color" content="#ffffff">`, `color-scheme: light`).
 
-## Routes (index.html)
+## Open decisions
 
-`#<walletId>` wallet · `#token/<chain>/<tokenId>` token detail (token ids repeat across chains) (breadcrumb, header, price + 24h pill, net position, scoped chart/stats/history) · `?tab=transfers|holdings` · `?add=1` opens add-wallet.
-
-## Motion
-
-150ms ease-out on colour/shadow/transform; `active:scale(.96)` on buttons; drawer/toast 250ms with `--ease`; skeleton 1.2s; `prefers-reduced-motion` collapses everything.
-
-## Breakpoints
-
-≤1280px hide counterparty sub-address · ≤1180px stats 2×2 · ≤960px sidebar → drawer, single column, 48px headline, wordmark drops its section label · ≤760px bottom tab bar, 36px headline, row grid, header keeps mark + search + white "+" only.
-
-## Web Interface Guidelines conventions (vercel-labs)
-
-Skip link to `main`; every icon button has `aria-label`; decorative SVG/img carry `aria-hidden` / `alt=""` with explicit width/height; inputs have `name`, `type`/`inputmode`, `autocomplete`, `autocapitalize="off"` + `spellcheck="false"` on addresses/emails, placeholders end with `…`; errors are inline with `role="alert"` and focus the field; toasts are `role="status" aria-live="polite"`; `touch-action: manipulation` and transparent tap highlight on controls; `overscroll-behavior: contain` on dialog, drawer and chip row; safe-area insets on drawer, sheet and tab bar; buttons and headings in Title Case; identifiers (addresses, hashes, request preview) are `translate="no"`; destructive actions (untrack, remove, clear data) use Undo or a second click; unsaved Settings warn on `beforeunload`; tab and chain filter are URL-synced; token navigation uses real `<a href="#token/…">` links.
+- **White on #8e8ea0 is 3.2:1**, not the ~8:1 the spec estimates. Primary buttons, selected chips/segs/tabs and the tab-bar count badge use it as the spec and brief direct; if AA for 14px text is required, switch `--color-on-primary` to #000000 (6.5:1) or darken the primary to ≈#6b6b7b for filled controls.
+- Full-precision amounts plus the counterparty column make the 8-column table exactly 1150px at 1440 with the 256px sidebar; below that it scrolls horizontally until 768 (by design, single breakpoint).

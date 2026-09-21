@@ -1,81 +1,50 @@
-import { useState, type FormEvent } from "react";
-import { useI18n } from "../i18n";
-import { useStore, type Family } from "../store";
-import { hasPlaceholder } from "../feed";
-import { Dialog } from "./Dialog";
-import { Icon } from "./Icon";
-import { useToast } from "./Toast";
-import { Dropdown } from "./Dropdown";
+import { useState, type FormEvent } from 'react';
+import { useI18n } from '../i18n';
+import { detectEndpoint, useStore } from '../store';
+import { hasPlaceholder } from '../feed';
+import { Dialog } from './Dialog';
+import { Icon } from './Icon';
+import { useToast } from './Toast';
 
-const FAMILIES: Family[] = ["evm", "sol"];
-
-export function SettingsDialog({
-  open,
-  onClose,
-}: {
-  open: boolean;
-  onClose: () => void;
-}) {
+export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
-  const { settings, addEndpoint, updateEndpoint, removeEndpoint, setPageSize } =
-    useStore();
+  const { settings, addEndpoint, updateEndpoint, removeEndpoint, setPageSize } = useStore();
   const { toast } = useToast();
-  const [name, setName] = useState("");
-  const [family, setFamily] = useState<Family>("evm");
-  const [url, setUrl] = useState("");
+  const [url, setUrl] = useState('');
   const [err, setErr] = useState<string | null>(null);
 
-  const valid = /^https:\/\//i.test(url.trim()) && hasPlaceholder(url);
-
+  /* ปุ่มเพิ่มติดทันทีที่มีข้อความ — ตรวจความถูกต้องตอนกดส่ง ไม่ใช่ตอนพิมพ์ */
   function submit(e: FormEvent) {
     e.preventDefault();
-    if (!valid) return setErr(t("settings.badUrl"));
-    addEndpoint({
-      name: name.trim() || t(`family.${family}`),
-      url: url.trim(),
-      family,
-    });
-    toast(t("settings.added"));
-    setName("");
-    setUrl("");
+    const detected = hasPlaceholder(url) ? detectEndpoint(url) : null;
+    if (!detected) return setErr(t('settings.badUrl'));
+    addEndpoint({ ...detected, url: url.trim() });
+    toast(t('settings.added'));
+    setUrl('');
     setErr(null);
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={t("settings.title")}>
+    <Dialog open={open} onClose={onClose} title={t('settings.title')}>
       <div className="stack">
         {settings.endpoints.length === 0 ? (
-          <p className="hint">{t("settings.none")}</p>
+          <p className="hint">{t('settings.none')}</p>
         ) : (
-          <ul className="wallets" aria-label={t("settings.list")}>
+          <ul className="wallets" aria-label={t('settings.list')}>
             {settings.endpoints.map((ep) => (
               <li key={ep.id} className="wallet">
                 <label className="wallet-check">
-                  <input
-                    type="checkbox"
-                    checked={ep.enabled}
-                    onChange={(e) =>
-                      updateEndpoint(ep.id, { enabled: e.target.checked })
-                    }
-                    aria-label={t("settings.enable", { name: ep.name })}
-                  />
+                  <input type="checkbox" checked={ep.enabled} onChange={(e) => updateEndpoint(ep.id, { enabled: e.target.checked })} aria-label={t('settings.enable', { name: ep.name })} />
                 </label>
                 <div className="wallet-meta">
                   <span className="wallet-label">
-                    {ep.name}{" "}
-                    <span className="chip">{t(`family.${ep.family}`)}</span>
+                    {ep.name} <span className="chip">{t(`family.${ep.family}`)}</span>
                   </span>
                   <span className="wallet-addr" title={ep.url}>
                     {ep.url}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="btn btn-icon"
-                  onClick={() => removeEndpoint(ep.id)}
-                  aria-label={t("settings.remove", { name: ep.name })}
-                  title={t("settings.remove", { name: ep.name })}
-                >
+                <button type="button" className="btn btn-icon" onClick={() => removeEndpoint(ep.id)} aria-label={t('settings.remove', { name: ep.name })} title={t('settings.remove', { name: ep.name })}>
                   <Icon name="trash" />
                 </button>
               </li>
@@ -83,13 +52,13 @@ export function SettingsDialog({
           </ul>
         )}
 
-        <form onSubmit={submit} aria-labelledby="ep-add-h">
+        <form onSubmit={submit} aria-labelledby="ep-add-h" noValidate>
           <h3 id="ep-add-h" className="panel-title">
-            {t("settings.add")}
+            {t('settings.add')}
           </h3>
           <div className="field">
             <label className="label" htmlFor="ep-url">
-              {t("settings.endpoint")}
+              {t('settings.endpoint')}
             </label>
             <div className="inline">
               <input
@@ -105,15 +74,10 @@ export function SettingsDialog({
                 }}
                 autoComplete="off"
                 spellCheck={false}
-                required
-                aria-invalid={err ? "true" : undefined}
+                aria-invalid={err ? 'true' : undefined}
               />
-              <button
-                type="submit"
-                className="btn btn-primary"
-                disabled={!valid}
-              >
-                {t("settings.addBtn")}
+              <button type="submit" className="btn btn-primary" disabled={url.trim() === ''}>
+                {t('settings.addBtn')}
               </button>
             </div>
             {err && (
@@ -126,31 +90,13 @@ export function SettingsDialog({
 
         <div className="field" style={{ maxWidth: 120 }}>
           <label className="label" htmlFor="set-page">
-            {t("settings.pageSize")}
+            {t('settings.pageSize')}
           </label>
-          <input
-            id="set-page"
-            name="pageSize"
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            className="input"
-            value={settings.pageSize}
-            onChange={(e) =>
-              setPageSize(
-                Math.min(
-                  100,
-                  Math.max(1, Number(e.target.value.replace(/\D/g, "")) || 20),
-                ),
-              )
-            }
-            autoComplete="off"
-            spellCheck={false}
-          />
+          <input id="set-page" name="pageSize" type="text" inputMode="numeric" pattern="[0-9]*" className="input" value={settings.pageSize} onChange={(e) => setPageSize(Math.min(100, Math.max(1, Number(e.target.value.replace(/\D/g, '')) || 20)))} autoComplete="off" spellCheck={false} />
         </div>
         <div className="dlg-actions">
           <button type="button" className="btn" onClick={onClose}>
-            {t("dialog.close")}
+            {t('dialog.close')}
           </button>
         </div>
       </div>

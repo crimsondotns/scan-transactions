@@ -21,6 +21,9 @@ export interface Endpoint {
   url: string;
   family: Family;
   enabled: boolean;
+  /** header ยืนยันตัวตน (เลือกใส่) — อยู่ใน localStorage เครื่องนี้เท่านั้น */
+  authHeader?: string;
+  apiKey?: string;
 }
 
 export interface Settings {

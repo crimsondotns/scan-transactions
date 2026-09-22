@@ -17,6 +17,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const [url, setUrl] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [family, setFamily] = useState<Family | 'auto'>('auto');
+  const [authHeader, setAuthHeader] = useState('');
+  const [apiKey, setApiKey] = useState('');
   const [chainUrl, setChainUrl] = useState(settings.chainListUrl);
   const [chainErr, setChainErr] = useState<string | null>(null);
   const [priceUrl, setPriceUrlText] = useState(settings.priceUrl);
@@ -27,9 +29,11 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     e.preventDefault();
     const detected = detectEndpoint(url);
     if (!detected) return setErr(t('settings.badUrl'));
-    addEndpoint({ ...detected, family: family === 'auto' ? detected.family : family, url: url.trim() });
+    addEndpoint({ ...detected, family: family === 'auto' ? detected.family : family, url: url.trim(), authHeader: authHeader.trim() || undefined, apiKey: apiKey.trim() || undefined });
     toast(t('settings.added'));
     setUrl('');
+    setAuthHeader('');
+    setApiKey('');
     setErr(null);
   }
 
@@ -78,6 +82,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                     <Dropdown size="sm" value={ep.family} onChange={(f) => updateEndpoint(ep.id, { family: f })} label={t('settings.family')} options={FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))} />
                   </span>
                   <span className="wallet-addr" title={ep.url}>
+                    {ep.apiKey && <Icon name="lock" width={12} height={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />}
                     {ep.enabled ? t('settings.priority', { n: settings.endpoints.filter((x) => x.enabled).indexOf(ep) + 1 }) : t('settings.disabled')} · {ep.url}
                   </span>
                 </div>
@@ -124,6 +129,20 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 {err}
               </span>
             )}
+          </div>
+          <div className="inline auth-row">
+            <div className="field">
+              <label className="label" htmlFor="ep-hdr">
+                {t('settings.authHeader')}
+              </label>
+              <input id="ep-hdr" name="authHeader" type="text" className="input mono" value={authHeader} onChange={(e) => setAuthHeader(e.target.value)} autoComplete="off" spellCheck={false} />
+            </div>
+            <div className="field">
+              <label className="label" htmlFor="ep-key">
+                {t('settings.apiKey')}
+              </label>
+              <input id="ep-key" name="apiKey" type="password" className="input mono" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" spellCheck={false} />
+            </div>
           </div>
         </form>
 

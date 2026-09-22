@@ -471,6 +471,15 @@ input[type='file'].input::file-selector-button {
   color: var(--color-tertiary);
 }
 
+/* ช่อง header/API key ใต้ URL — สองช่องเท่ากัน */
+.auth-row {
+  align-items: flex-end;
+}
+.auth-row .field {
+  flex: 1;
+  min-width: 0;
+}
+
 /* รายการแหล่งข้อมูลใน Settings (settings panel): ไม่มีกรอบรอบการ์ด — แถวคั่นด้วย hairline
    grip ลากจัดลำดับ · ไอคอนชนิด · ชื่อ+รูปแบบที่อยู่ · ลำดับ/URL · สวิตช์เปิดปิด · ลบ */
 .sources {

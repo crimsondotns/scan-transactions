@@ -67,7 +67,7 @@ test('csv: quotes, embedded commas, CRLF, multi-line cell', () => {
 
 test('buildUrl fills every placeholder', () => {
   assert.equal(buildUrl('https://a.invalid/?id={address}&s={start}&c={count}&b={cursor}', '0xAB', { start: 5, cursor: 'sig' }, 9), 'https://a.invalid/?id=0xAB&s=5&c=9&b=sig');
-  assert.equal(buildUrl('https://a.invalid/{address}?s={start}&b={cursor}', 'x', null, 9), 'https://a.invalid/x?s=0&b=');
+  assert.equal(buildUrl('https://a.invalid/{address}?s={start}&b={cursor}', 'x', null, 9), 'https://a.invalid/x?s=0');
 });
 
 const SOL = '7xKXtg2CW87d97TXJSDpbD5jBkheTqA83TZRuJosgAsU';
@@ -141,4 +141,11 @@ test('price cache: remembers newest price per token, fills USD, builds price req
   assert.equal(await refreshPrice('https://example.invalid/p', 'arb', null, 'ETH'), 2734.64); // สดอยู่ → ไม่ยิงซ้ำ
   assert.equal(calls.length, 1);
   assert.equal(await refreshPrice('', 'arb', null, 'ETH'), 2734.64); // ไม่มี URL → ใช้แคช
+});
+
+test('sol family composes address into the path and drops empty cursor params', () => {
+  assert.equal(buildUrl('https://example.invalid/tx/', 'So1ana', null, 30, 'sol'), 'https://example.invalid/tx/So1ana?limit=30');
+  assert.equal(buildUrl('https://example.invalid/tx', 'So1ana', { start: 1, cursor: 'sig1' }, 30, 'sol'), 'https://example.invalid/tx/So1ana?limit=30&before=sig1');
+  assert.equal(buildUrl('https://example.invalid/tx?x=1', 'So1ana', null, 5, 'sol'), 'https://example.invalid/tx/So1ana?x=1&limit=5');
+  assert.equal(buildUrl('https://example.invalid/h', '0xabc', null, 20), 'https://example.invalid/h?id=0xabc&start_time=0&page_count=20');
 });

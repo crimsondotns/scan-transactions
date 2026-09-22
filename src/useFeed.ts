@@ -52,7 +52,7 @@ export function useFeed(settings: Settings) {
           const c = mode === 'older' ? cur.next[ep.id] : null;
           if (mode === 'older' && c === null) return { ep, page: null, error: null };
           try {
-            return { ep, page: await fetchPage(ep.url, w.id, w.address, c ?? null, settings.pageSize), error: null };
+            return { ep, page: await fetchPage(ep.url, w.id, w.address, c ?? null, settings.pageSize, { family: ep.family, authHeader: ep.authHeader, apiKey: ep.apiKey }), error: null };
           } catch (e) {
             return { ep, page: null, error: e instanceof FeedError ? e : new FeedError('net') };
           }

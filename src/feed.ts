@@ -83,25 +83,47 @@ export function hasPlaceholder(tpl: string): boolean {
  * base URL ที่ไม่มี {address} → แอปต่อ query ให้เอง (id / start_time / page_count)
  * ต่อท้าย ? หรือ & ที่มีอยู่แล้วให้ถูกต้อง
  */
-export function toTemplate(url: string): string {
+/**
+ * URL ที่ไม่มี placeholder → ประกอบให้ตามตระกูล:
+ *  evm: ?id={address}&start_time={start}&page_count={count}
+ *  sol: /{address}?limit={count}&before={cursor}  (ที่อยู่อยู่ใน path)
+ */
+export function toTemplate(url: string, family: 'evm' | 'sol' = 'evm'): string {
   const u = url.trim();
   if (hasPlaceholder(u)) return u;
+  if (family === 'sol') {
+    const [base, query = ''] = u.split('?');
+    const sep = query ? `?${query}&` : '?';
+    return `${base!.replace(/\/$/, '')}/{address}${sep}limit={count}&before={cursor}`;
+  }
   const sep = u.endsWith('?') || u.endsWith('&') ? '' : u.includes('?') ? '&' : '?';
   return `${u}${sep}id={address}&start_time={start}&page_count={count}`;
 }
 
-export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number): string {
-  return toTemplate(tpl)
+export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number, family: 'evm' | 'sol' = 'evm'): string {
+  let t = toTemplate(tpl, family);
+  // ไม่มี cursor → ตัดพารามิเตอร์ที่ถือ {cursor} ทิ้งทั้งคู่ (ไม่ส่ง before= ว่างๆ)
+  if (!cur) t = t.replace(/[?&][^&=]+=\{cursor\}/g, (m) => (m.startsWith('?') ? '?' : '')).replace(/\?&/, '?').replace(/[?&]$/, '');
+  return t
     .replaceAll('{address}', encodeURIComponent(address))
     .replaceAll('{start}', String(cur?.start ?? 0))
     .replaceAll('{cursor}', cur ? encodeURIComponent(cur.cursor) : '')
     .replaceAll('{count}', String(count));
 }
 
-export async function fetchPage(tpl: string, walletId: string, address: string, cur: Cursor | null, count: number): Promise<Page> {
+export interface FetchOpts {
+  family?: 'evm' | 'sol';
+  /** header ยืนยันตัวตนที่ผู้ใช้ตั้งเอง (ชื่อ + ค่า) — เก็บในเครื่องเท่านั้น */
+  authHeader?: string;
+  apiKey?: string;
+}
+
+export async function fetchPage(tpl: string, walletId: string, address: string, cur: Cursor | null, count: number, opts: FetchOpts = {}): Promise<Page> {
   let res: Response;
+  const headers: Record<string, string> = { accept: 'application/json' };
+  if (opts.authHeader && opts.apiKey) headers[opts.authHeader] = opts.apiKey;
   try {
-    res = await fetch(buildUrl(tpl, address, cur, count), { headers: { accept: 'application/json' } });
+    res = await fetch(buildUrl(tpl, address, cur, count, opts.family), { headers });
   } catch {
     throw new FeedError('net');
   }

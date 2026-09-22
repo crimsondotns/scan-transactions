@@ -171,7 +171,9 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
                 const primary = mainMove(r);
                 const chainLogo = chainInfo.get(r.chain)?.logo ?? r.chainLogo ?? null;
                 const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
-                const subtitle = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || (r.counterpartyName ?? '');
+                const base = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || (r.counterpartyName ?? '');
+                // ชื่อโปรโตคอล/คู่สัญญาต่อท้าย (USDC · Lifiprotocol) — ถ้ามี
+                const subtitle = r.counterpartyName && base !== r.counterpartyName ? (base ? `${base} · ${r.counterpartyName}` : r.counterpartyName) : base;
                 const native = r.nativeSymbol ?? chainInfo.get(r.chain)?.symbol ?? r.chain.toUpperCase();
                 const isSel = r.key === selected;
                 return (

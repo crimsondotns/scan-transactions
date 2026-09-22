@@ -44,6 +44,8 @@ export interface SlipData {
   /** ส่วนต่างสวอป (USD) / ค่าเครือข่าย (USD) — แสดงผลอย่างเดียว */
   swapCost?: number | null;
   feeUsd?: number | null;
+  /** ชื่อโปรโตคอล/คู่สัญญา — แสดงผลอย่างเดียว */
+  protocol?: string | null;
   /** เวลาออกสลิป (ms) */
   issued: number;
 }
@@ -61,6 +63,7 @@ export interface SlipExtra {
   usdOfMove?: (m: TxRow['moves'][number]) => number | null;
   swapCost?: number | null;
   feeUsd?: number | null;
+  protocol?: string | null;
 }
 
 export function slipData(row: TxRow, wallet: { address: string; label: string } | undefined, chainName: string, native: string, url: string | null, extra: SlipExtra = {}): SlipData {
@@ -86,6 +89,7 @@ export function slipData(row: TxRow, wallet: { address: string; label: string } 
     chainLogo,
     swapCost: extra.swapCost ?? null,
     feeUsd: extra.feeUsd ?? null,
+    protocol: extra.protocol ?? null,
     issued: Date.now(),
   };
 }
@@ -217,6 +221,7 @@ interface Labels {
   received: string;
   sent: string;
   swapCost: string;
+  protocol: string;
   wallet: string;
   from: string;
   to: string;
@@ -435,6 +440,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     // Wallet / From / To / Status
     kv(L.wallet, d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
     if (d.from && d.from.toLowerCase() !== d.wallet.toLowerCase()) kv(L.from, shortAddr(d.from));
+    if (d.protocol) kv(L.protocol, d.protocol);
     if (d.to && d.to.toLowerCase() !== d.wallet.toLowerCase()) kv(L.to, shortAddr(d.to));
     kv(L.status, ok ? `${L.statusOk} ✓` : `${L.statusFailed} ✗`);
     y += 2;

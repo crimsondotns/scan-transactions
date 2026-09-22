@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { parseCsv } from '../src/importWallets.ts';
 import { detectEndpoint, parseAddress } from '../src/store.ts';
 import { rowValue } from '../src/components/TxTable.tsx';
-import { applyTokenMeta, buildUrl, fetchPage, lookalike, parseTokenMeta, toTemplate, unknownTokens } from '../src/feed.ts';
+import { applyTokenMeta, buildUrl, fetchPage, lookalike, parseTokenMeta, prettyProjectId, toTemplate, unknownTokens } from '../src/feed.ts';
 import { metaUrl } from '../src/tokens.ts';
 
 const ME = '0x42a8000000000000000000000000000000000000';
@@ -164,4 +164,11 @@ test('token metadata: batch URL, tolerant parser, merge into rows', async () => 
   assert.equal(rows[0]!.moves[0]!.symbol, 'USDC');
   assert.equal(rows[0]!.moves[0]!.name, 'USD Coin');
   assert.equal(rows[0]!.moves[0]!.logo, 'https://img.invalid/usdc.png');
+});
+
+test('protocol name falls back to project_id when project_dict lacks it', async () => {
+  mock({ history_list: [{ id: '0xp', idx: 0, chain: 'arb', time_at: 1789891479, project_id: 'arb_lifiprotocol', other_addr: '0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae', sends: [{ amount: 880, price: 1, token_id: '0xaf88d065e77c8cc2239327c5edb3a432268e5831', to_addr: '0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae' }], receives: [], tx: { name: 'swapAndStartBridgeTokensViaLiFiIntentEscrowV2', status: 1, from_addr: ME, to_addr: '0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae', eth_gas_fee: 0.000056, usd_gas_fee: 0.148 } }], token_dict: {}, project_dict: {} });
+  const page = await fetchPage('https://x.invalid/{address}', 'w', ME, null, 20);
+  assert.equal(page.rows[0]!.counterpartyName, 'Lifiprotocol');
+  assert.equal(prettyProjectId('eth_uniswap-v3', 'eth'), 'Uniswap V3');
 });

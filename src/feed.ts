@@ -227,7 +227,8 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
       flagged,
       moves,
       counterparty: other,
-      counterpartyName: project ? str(project.name) : null,
+      // ชื่อโปรโตคอล: จาก project_dict ก่อน ไม่มีค่อยเดาจาก project_id (ตัด prefix เชน เช่น arb_lifiprotocol → Lifiprotocol)
+      counterpartyName: (project ? str(project.name) : null) ?? (projectId ? prettyProjectId(projectId, chain) : null),
       from: str(tx.from_addr),
       to: str(tx.to_addr),
       contract: projectId || approve || type === 'swap' || type === 'contract' ? str(tx.to_addr) : null,
@@ -355,6 +356,16 @@ function cursorOf(rows: TxRow[]): Cursor | null {
   if (!rows.length) return null;
   const oldest = rows.reduce((m, r) => (r.time > 0 && r.time < m.time ? r : m), rows[0]!);
   return { start: oldest.time, cursor: oldest.hash };
+}
+
+/** arb_lifiprotocol → "Lifiprotocol", eth_uniswap3 → "Uniswap3" — ใช้เมื่อแหล่งข้อมูลไม่ส่ง project_dict มาให้ */
+export function prettyProjectId(id: string, chain: string): string {
+  const body = id.startsWith(`${chain}_`) ? id.slice(chain.length + 1) : id.replace(/^[a-z0-9]+_/, '');
+  return body
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((w) => w[0]!.toUpperCase() + w.slice(1))
+    .join(' ');
 }
 
 function shortId(id: string): string {

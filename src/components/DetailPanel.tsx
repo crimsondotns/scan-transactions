@@ -208,7 +208,13 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
           ))}
           {!isSwap && row.from && <AddrRow label={t('detail.from')} addr={row.from} />}
           {!isSwap && row.to && <AddrRow label={t('detail.to')} addr={row.to} />}
+          {row.counterpartyName && <Row label={t('detail.protocol')}>{row.counterpartyName}</Row>}
           {row.contract && <AddrRow label={t('detail.contract')} addr={row.contract} />}
+          {row.name && row.type !== 'swap' && row.name !== row.counterpartyName && (
+            <Row label={t('detail.method')}>
+              <span className="mono">{row.name}</span>
+            </Row>
+          )}
           <Row label={t('tx.col.hash')}>
             <span className="ev-addr">
               <span className="mono" title={row.hash}>
@@ -257,7 +263,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
       </div>
 
       <div className="drawer-foot">
-        <button type="button" className="btn" onClick={() => onSlip(slipData(row, wallet, chainName, native, txUrl, { chainLogo, usdOfMove: moveUsd, swapCost, feeUsd: gasUsd }))}>
+        <button type="button" className="btn" onClick={() => onSlip(slipData(row, wallet, chainName, native, txUrl, { chainLogo, usdOfMove: moveUsd, swapCost, feeUsd: gasUsd, protocol: row.counterpartyName }))}>
           <Icon name="receipt" />
           {t('slip.open')}
         </button>

@@ -1,3 +1,4 @@
+import { rememberPrice } from './prices';
 /**
  * ดึงประวัติจาก URL แม่แบบที่ผู้ใช้ใส่เอง แล้วแปลงเป็นแถวกลางของแอป
  *
@@ -157,6 +158,7 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
         const symbol = str(tok.optimized_symbol) ?? str(tok.display_symbol) ?? str(tok.symbol) ?? shortId(tokenId);
         const bad = tok.is_scam === true || tok.is_suspicious === true || lookalike(symbol);
         if (bad) flagged = true;
+        rememberPrice(chain, tokenId.startsWith('0x') || tokenId.length > 20 ? tokenId : null, symbol, price, time);
         moves.push({
           dir,
           amount,
@@ -187,13 +189,18 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
 
     // เหรียญพื้นเมือง: key ใน token_dict = ชื่อเชน (hood → ETH, hyper → HYPE)
     const native = isObj(tokens[chain]) ? (tokens[chain] as Dict) : {};
+    const nativeSymbol = str(native.optimized_symbol) ?? str(native.symbol);
+    rememberPrice(chain, null, nativeSymbol ?? '', num(native.price), time);
+    const gasNative = num(tx.eth_gas_fee);
+    const gasUsd = num(tx.usd_gas_fee);
+    if (gasNative && gasUsd) rememberPrice(chain, null, nativeSymbol ?? '', gasUsd / gasNative, time);
     rows.push({
       key: `${walletId}:${chain}:${hash}:${num(item.idx) ?? 0}`,
       hash,
       walletId,
       chain,
       chainLogo: httpUrl(item.chain_logo_url),
-      nativeSymbol: str(native.optimized_symbol) ?? str(native.symbol),
+      nativeSymbol,
       time,
       type,
       name,
@@ -206,8 +213,8 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
       to: str(tx.to_addr),
       contract: projectId || approve || type === 'swap' || type === 'contract' ? str(tx.to_addr) : null,
       nonce: num(tx.nonce),
-      gasUsd: num(tx.usd_gas_fee),
-      gasNative: num(tx.eth_gas_fee),
+      gasUsd,
+      gasNative,
       raw: item,
     });
   }
@@ -229,7 +236,10 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
     const amount = str(item.tokenDecimal) || raw > 1e15 ? raw / 10 ** decimals : raw;
     const out = from === address;
     const symbol = str(item.tokenSymbol) ?? str(item.symbol) ?? '';
-    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, name: str(item.tokenName), usd: null, price: num(item.price) ?? num(item.tokenPrice), tokenId: str(item.contractAddress) ?? str(item.token_id), flagged: lookalike(symbol), logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) }] : [];
+    const flatChain = str(item.chain) ?? '—';
+    const flatPrice = num(item.price) ?? num(item.tokenPrice);
+    rememberPrice(flatChain, str(item.contractAddress) ?? str(item.token_id) ?? null, symbol, flatPrice, time);
+    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, name: str(item.tokenName), usd: null, price: flatPrice, tokenId: str(item.contractAddress) ?? str(item.token_id), flagged: lookalike(symbol), logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) }] : [];
     const gasPrice = num(item.gasPrice);
     const gasUsed = num(item.gasUsed);
     rows.push({
@@ -280,7 +290,10 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
         other ??= dir === 'out' ? to || null : from || null;
         const amount = native ? (num(m.amount) ?? 0) / 1e9 : (num(m.tokenAmount) ?? num(m.amount) ?? 0);
         const symbol = native ? 'SOL' : (str(m.symbol) ?? shortId(str(m.mint) ?? ''));
-        moves.push({ dir, amount, symbol, name: str(m.name), usd: num(m.usd), price: num(m.price) ?? num(m.priceUsd), tokenId: native ? null : str(m.mint), flagged: lookalike(symbol), logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
+        const solUsd = num(m.usd);
+        const solPrice = num(m.price) ?? num(m.priceUsd) ?? (solUsd !== null && amount ? solUsd / amount : null);
+        rememberPrice(str(item.chain) ?? 'sol', native ? null : str(m.mint), symbol, solPrice, time);
+        moves.push({ dir, amount, symbol, name: str(m.name), usd: solUsd, price: solPrice, tokenId: native ? null : str(m.mint), flagged: lookalike(symbol), logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
       }
     };
     push(item.nativeTransfers, true);

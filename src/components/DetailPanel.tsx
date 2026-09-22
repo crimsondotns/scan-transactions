@@ -4,6 +4,7 @@ import { useI18n } from '../i18n';
 import type { Move, TxRow } from '../feed';
 import type { Wallet } from '../store';
 import type { ChainMap } from '../chains';
+import { usdOf } from '../prices';
 import { formatAmount, formatAmountFull, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
@@ -42,12 +43,15 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   const isSwap = ins.length > 0 && outs.length > 0;
   const single = real[0] ?? row.moves[0] ?? null;
   // ค่าใช้จ่ายของสวอป: มูลค่าที่ส่งออก − มูลค่าที่ได้รับ (ค่าธรรมเนียมสวอป/slippage/ราคาขยับ) แยกจากค่าเครือข่าย
-  const sumUsd = (ms: Move[]) => (ms.every((m) => m.usd !== null) ? ms.reduce((a, m) => a + (m.usd ?? 0), 0) : null);
+  // มูลค่า USD ของแต่ละขา: ที่แหล่งให้มาก่อน ไม่มีค่อยใช้ราคาล่าสุดจากแคช (ไม่ยิงขอราคาแยก)
+  const moveUsd = (m: Move) => usdOf(m.amount, m.usd, row.chain, m.tokenId, m.symbol);
+  const sumUsd = (ms: Move[]) => (ms.every((m) => moveUsd(m) !== null) ? ms.reduce((a, m) => a + (moveUsd(m) ?? 0), 0) : null);
   const sentUsd = isSwap ? sumUsd(outs) : null;
   const recvUsd = isSwap ? sumUsd(ins) : null;
   const swapCost = sentUsd !== null && recvUsd !== null ? sentUsd - recvUsd : null;
   const swapPct = swapCost !== null && sentUsd ? (swapCost / sentUsd) * 100 : null;
-  const totalCost = swapCost !== null ? swapCost + (row.gasUsd ?? 0) : row.gasUsd;
+  const gasUsd = row.gasNative !== null ? usdOf(row.gasNative, row.gasUsd, row.chain, null, native) : row.gasUsd;
+  const totalCost = swapCost !== null ? swapCost + (gasUsd ?? 0) : gasUsd;
 
   async function copy(text: string) {
     try {
@@ -70,9 +74,12 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
         <span className="ev-symbol">{m.symbol}</span>
         <span className="ev-net">{t('detail.on', { chain: chainName })}</span>
       </span>
-      <span className="ev-amount" data-dir={m.dir} title={`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`}>
-        {m.dir === 'in' ? '+' : '−'}
-        {formatAmountFull(m.amount)}
+      <span className="ev-amount-wrap">
+        <span className="ev-amount" data-dir={m.dir} title={`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`}>
+          {m.dir === 'in' ? '+' : '−'}
+          {formatAmountFull(m.amount)}
+        </span>
+        {moveUsd(m) !== null && <span className="ev-amount-usd">{formatUsdExact(moveUsd(m) as number)}</span>}
       </span>
     </div>
   );
@@ -210,8 +217,10 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
             {row.gasNative !== null ? (
               <span>
                 {formatFeeNative(row.gasNative, native)}
-                {row.gasUsd !== null && <span className="ev-sub">{formatFeeUsd(row.gasUsd)}</span>}
+                {gasUsd !== null && ` (${formatFeeUsd(gasUsd)})`}
               </span>
+            ) : gasUsd !== null ? (
+              <span>{formatFeeUsd(gasUsd)}</span>
             ) : (
               <span className="ev-sub">{t('detail.feePaidBySender')}</span>
             )}

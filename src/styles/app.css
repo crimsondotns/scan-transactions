@@ -1404,18 +1404,14 @@ th[aria-sort='descending'] .th-btn {
 .ev-value .mono {
   font-size: var(--size-body-lg);
 }
-.ev-addr {
+/* ค่าที่คลิกเพื่อคัดลอก (ที่อยู่ / hash) — ไม่มีปุ่มแยก ข้อความเองคือปุ่ม */
+.ev-copy {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-}
-.ev-addr .btn-icon {
-  min-height: 32px;
-  min-width: 32px;
-}
-.ev-addr .btn-icon svg {
-  width: 17px;
-  height: 17px;
+  gap: var(--space-2);
+  font-size: inherit;
+  font-weight: inherit;
+  text-align: right;
 }
 
 /* ปุ่มล่างแผง */

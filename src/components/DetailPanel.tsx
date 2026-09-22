@@ -7,7 +7,6 @@ import type { ChainMap } from '../chains';
 import { REFRESH_MS, priceOf, refreshPrice, usdOf } from '../prices';
 import { formatPrice, formatAmount, formatAmountFull, formatAmountShort, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
-import { CopyButton } from './CopyButton';
 import { Logo } from './Logo';
 import { Identicon } from './Identicon';
 import { useToast } from './Toast';
@@ -146,12 +145,9 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
     short ??= known(addr);
     return (
       <Row label={label}>
-        <span className="ev-addr">
-          <span className="mono" title={addr}>
-            {short ?? shortAddr(addr)}
-          </span>
-          <CopyButton text={addr} label={t('tx.copy', { what: String(label) })} onCopied={() => toast(t('tx.copied'))} />
-        </span>
+        <button type="button" className="copyable-number mono ev-copy" title={addr} aria-label={t('tx.copy', { what: String(label) })} onClick={() => void copyValue(addr)}>
+          {short ?? shortAddr(addr)}
+        </button>
       </Row>
     );
   };
@@ -235,12 +231,9 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
             </Row>
           )}
           <Row label={t('tx.col.hash')}>
-            <span className="ev-addr">
-              <span className="mono" title={row.hash}>
-                {shortHash(row.hash)}
-              </span>
-              <CopyButton text={row.hash} label={t('tx.copy', { what: t('tx.col.hash') })} onCopied={() => toast(t('tx.copied'))} />
-            </span>
+            <button type="button" className="copyable-number mono ev-copy" title={row.hash} aria-label={t('tx.copy', { what: t('tx.col.hash') })} onClick={() => void copyValue(row.hash)}>
+              {shortHash(row.hash)}
+            </button>
           </Row>
           {row.nonce !== null && <Row label={t('detail.nonce')}>{row.nonce}</Row>}
         </div>

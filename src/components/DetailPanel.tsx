@@ -66,7 +66,8 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
   const kind = protocolKind(row);
   /* ลิงก์ explorer: จาก chain list ก่อน ไม่มีค่อยดูว่าแหล่งข้อมูลแนบ URL มากับแถวไหม; ไม่มีทั้งคู่ → ปุ่มปิด (ไม่ซ่อน) */
   const rawUrl = ['tx_url', 'explorer_url', 'url', 'link'].map((k) => row.raw[k]).find((v): v is string => typeof v === 'string' && /^https:\/\//i.test(v)) ?? null;
-  const host = chain?.explorer?.replace(/\/$/, '') ?? (rawUrl ? new URL(rawUrl).origin : null);
+  // explorer จาก chain list / Custom chains: รับทั้ง host เปล่า และที่วางมาพร้อม /tx/ ท้าย → ลิงก์ = host/tx/<hash|signature>
+  const host = chain?.explorer?.replace(/\/+$/, '').replace(/\/tx$/i, '') ?? (rawUrl ? new URL(rawUrl).origin : null);
   const txUrl = chain?.explorer ? `${host}/tx/${row.hash}` : rawUrl;
   const explorerName = host ? host.replace(/^https?:\/\/(www\.)?/, '') : '';
 

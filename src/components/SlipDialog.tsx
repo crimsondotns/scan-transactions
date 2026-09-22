@@ -23,7 +23,14 @@ export function useSlipLabels() {
     code: t('slip.code'),
     issued: t('slip.issued'),
     type: t(`tx.type.${d.type}` as 'tx.type.send'),
-    status: d.status === 'failed' ? t('tx.failed') : t('detail.executed'),
+    status: t('detail.status'),
+    statusOk: t('detail.executed'),
+    statusFailed: t('tx.failed'),
+    success: t('slip.success'),
+    failed: t('slip.failedTitle'),
+    received: t('slip.received'),
+    sent: t('slip.sent'),
+    swapCost: t('detail.swapCost'),
     verifyHint: t('slip.verifyHint'),
   });
 }

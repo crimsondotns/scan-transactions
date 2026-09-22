@@ -7,8 +7,8 @@
  */
 import QRCode from 'qrcode';
 import type { TxRow } from './feed';
-import { formatAmountFull, formatFeeNative, formatStamp, formatUsdExact, shortAddr } from './format';
-import { chainStyle, tokenColor } from './chainStyle';
+import { formatAmountFull, formatFeeNative, formatFeeUsd, formatStamp, formatUsdExact, shortAddr } from './format';
+import { tokenColor } from './chainStyle';
 import { identiconHue } from './components/Identicon';
 
 export interface SlipMove {
@@ -41,6 +41,9 @@ export interface SlipData {
   /** โลโก้โทเคนหลัก / โลโก้เชน (https) — แสดงผลอย่างเดียว ไม่อยู่ในแฮช */
   tokenLogo?: string | null;
   chainLogo?: string | null;
+  /** ส่วนต่างสวอป (USD) / ค่าเครือข่าย (USD) — แสดงผลอย่างเดียว */
+  swapCost?: number | null;
+  feeUsd?: number | null;
   /** เวลาออกสลิป (ms) */
   issued: number;
 }
@@ -53,7 +56,16 @@ export interface SlipRecord {
 const KEY = 'xcap.scan.slips';
 const MAX_BYTES = 4 * 1024 * 1024;
 
-export function slipData(row: TxRow, wallet: { address: string; label: string } | undefined, chainName: string, native: string, url: string | null, chainLogo: string | null = null, usdOfMove: (m: TxRow['moves'][number]) => number | null = () => null): SlipData {
+export interface SlipExtra {
+  chainLogo?: string | null;
+  usdOfMove?: (m: TxRow['moves'][number]) => number | null;
+  swapCost?: number | null;
+  feeUsd?: number | null;
+}
+
+export function slipData(row: TxRow, wallet: { address: string; label: string } | undefined, chainName: string, native: string, url: string | null, extra: SlipExtra = {}): SlipData {
+  const usdOfMove = extra.usdOfMove ?? (() => null);
+  const chainLogo = extra.chainLogo ?? null;
   return {
     v: 1,
     hash: row.hash,
@@ -72,6 +84,8 @@ export function slipData(row: TxRow, wallet: { address: string; label: string } 
     url,
     tokenLogo: (row.moves.find((m) => m.amount !== 0 && m.logo) ?? row.moves.find((m) => m.logo))?.logo ?? null,
     chainLogo,
+    swapCost: extra.swapCost ?? null,
+    feeUsd: extra.feeUsd ?? null,
     issued: Date.now(),
   };
 }
@@ -172,24 +186,37 @@ export async function verifySlip(code: string, data: SlipData | null): Promise<{
 }
 
 /* ----------------------------- วาดภาพ ----------------------------- */
+/*
+ * แบบ "Thermal receipt" (mock 2a ที่ผู้ใช้เลือก 2026-09-22): กว้าง 320 ขอบล่างหยัก เส้นประคั่น
+ * หัว XCap Scan กลาง → เช็คเขียว + Transaction successful → วันที่ · เชน → Received/Sent ตัวเลขใหญ่ (เขียวเฉพาะขาเข้า)
+ * → บล็อกสินทรัพย์ (โลโก้โทเคน + ตราเชน, จำนวนสีหมึก ไม่ซ้ำสีเขียว) + ค่าเครือข่าย/ส่วนต่างสวอป → Wallet/To/Status
+ * → hash เต็ม → QR → รหัสยืนยัน — สีที่ใช้: เขียว/แดงสถานะ + โลโก้เท่านั้น
+ */
 
 const FONT = "'Suisse Intl', -apple-system, BlinkMacSystemFont, sans-serif";
-const W = 640;
-const PAD = 44;
+const W = 320;
+const PAD = 22;
 const INK = '#000000';
 const MUTED = 'rgba(0,0,0,0.6)';
-const LINE = 'rgba(0,0,0,0.12)';
+const DASH = 'rgba(0,0,0,0.3)';
+const SCALLOP_R = 6;
+const SCALLOP_STEP = 16;
 
 export type SlipAction = 'download' | 'copy' | 'print' | 'share' | 'verify';
-/* สีประจำฟังก์ชัน/เชน — ค่าจริงอ่านจาก tokens.css ตอนวาด ตรงนี้แค่ค่าสำรอง */
+/* สีประจำฟังก์ชัน — ค่าจริงอ่านจาก tokens.css ตอนวาด ตรงนี้แค่ค่าสำรอง */
 const FN_FALLBACK: Record<SlipAction, string> = { download: '#0066ff', copy: '#059669', print: '#9333ea', share: '#f59e0b', verify: '#10b981' };
 const FN_GLYPH: Record<SlipAction, string> = { download: '⤓', copy: '❐', print: '⎙', share: '⤴', verify: '✓' };
 
 interface Labels {
   title: string;
-  /** คำว่า "on" ในชื่อเรื่อง NEST on HyperEVM */
+  /** คำว่า "on" ใน "on HyperEVM" */
   on: string;
   action: Record<SlipAction, string>;
+  success: string;
+  failed: string;
+  received: string;
+  sent: string;
+  swapCost: string;
   wallet: string;
   from: string;
   to: string;
@@ -201,6 +228,8 @@ interface Labels {
   issued: string;
   type: string;
   status: string;
+  statusOk: string;
+  statusFailed: string;
   verifyHint: string;
 }
 
@@ -221,11 +250,8 @@ function loadImage(url: string | null | undefined): Promise<HTMLImageElement | n
   });
 }
 
-const STRIPE = 6;
-
 /** รูปวงกลม — ไม่มีรูปก็วาดวงกลมสีพร้อมตัวอักษรแรก (เหมือน <Logo>) */
-function circleImage(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, x: number, y: number, size: number, name: string, color: string, dry: boolean) {
-  if (dry) return;
+function circleImage(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null, x: number, y: number, size: number, name: string, color: string) {
   ctx.save();
   ctx.beginPath();
   ctx.arc(x + size / 2, y + size / 2, size / 2, 0, Math.PI * 2);
@@ -247,7 +273,7 @@ function circleImage(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null
   ctx.restore();
 }
 
-/** วาดสลิปลง canvas ใหม่ (ความละเอียด 2 เท่า) — สีขาว/ดำเสมอ ไม่ตามธีมหน้าจอ เพราะเป็นเอกสาร */
+/** วาดสลิปลง canvas ใหม่ (ความละเอียด 2 เท่า) — พื้นขาวเสมอ ไม่ตามธีมหน้าจอ เพราะเป็นเอกสาร; นอกขอบหยักโปร่งใส */
 export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction | null = null): Promise<HTMLCanvasElement> {
   try {
     await Promise.all([document.fonts.load(`400 16px ${FONT}`), document.fonts.load(`600 16px ${FONT}`)]);
@@ -255,21 +281,17 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     /* ฟอนต์ไม่มา → ใช้สำรอง */
   }
   const d = rec.data;
-  const cs = chainStyle(d.chain, d.chainName);
-  const [tokenImg, chainImg, ...moveImgs] = await Promise.all([loadImage(d.tokenLogo), loadImage(d.chainLogo), ...d.moves.map((m) => loadImage(m.logo))]);
+  const [chainImg, ...moveImgs] = await Promise.all([loadImage(d.chainLogo), ...d.moves.map((m) => loadImage(m.logo))]);
   const POSITIVE = tokenColor('positive', '#16a34a');
-  const primary = d.moves.find((m) => m.dir === 'out') ?? d.moves[0] ?? null;
-  const swapIn = d.moves.find((m) => m.dir === 'in');
-  const isSwap = !!primary && !!swapIn && primary.dir === 'out';
-  const titleText = primary ? (isSwap ? `${primary.symbol} → ${swapIn!.symbol}` : primary.symbol) : L.title;
-  // สีเฉพาะสลิป: เชน → พื้นหัวสลิปย้อมจาง, โทเคน → แถบ accent ซ้าย (hue จากสัญลักษณ์ เหมือน identicon)
-  const chainColor = cs ? tokenColor(cs.token, '#000000') : '#000000';
-  const tokenAccent = `hsl(${identiconHue(primary?.symbol ?? d.chain)} 60% 52%)`;
+  const DANGER = tokenColor('danger', '#dc2626');
+  const ins = d.moves.filter((m) => m.dir === 'in');
+  const outs = d.moves.filter((m) => m.dir === 'out');
+  const ordered = [...outs, ...ins];
+  // ตัวเลขใหญ่: ขาเข้า (สวอป/รับ) เป็น "Received +x" เขียว; มีแต่ขาออก → "Sent −x" สีหมึก
+  const lead = ins[0] ?? outs[0] ?? null;
   const qr = document.createElement('canvas');
-  await QRCode.toCanvas(qr, d.url ?? d.hash, { margin: 0, width: 104, color: { dark: INK, light: '#ffffff' } });
+  await QRCode.toCanvas(qr, d.url ?? d.hash, { margin: 0, width: 96, color: { dark: INK, light: '#ffffff' } });
 
-  // วัดสูงก่อน: วาดสองรอบ (รอบแรก dry run บน canvas ชั่วคราว)
-  let headerBottom = 0;
   const draw = (ctx: CanvasRenderingContext2D, dry: boolean): number => {
     let y = PAD;
     const text = (s: string, x: number, yy: number, size: number, weight = 400, color = INK, align: CanvasTextAlign = 'left') => {
@@ -279,7 +301,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       ctx.textBaseline = 'alphabetic';
       if (!dry) ctx.fillText(s, x, yy);
     };
-    const wrap = (s: string, x: number, yy: number, size: number, maxW: number, weight = 400, color = INK): number => {
+    const wrap = (s: string, x: number, yy: number, size: number, maxW: number, weight = 400, color = INK, align: CanvasTextAlign = 'left'): number => {
       ctx.font = `${weight} ${size}px ${FONT}`;
       const lines: string[] = [];
       let cur = '';
@@ -290,13 +312,20 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
         } else cur += ch;
       }
       if (cur) lines.push(cur);
-      lines.forEach((ln, i) => text(ln, x, yy + i * size * 1.4, size, weight, color));
-      return lines.length * size * 1.4;
+      lines.forEach((ln, i) => text(ln, x, yy + i * size * 1.45, size, weight, color, align));
+      return lines.length * size * 1.45;
     };
-    const rule = (yy: number) => {
+    const dash = (yy: number) => {
       if (dry) return;
-      ctx.fillStyle = LINE;
-      ctx.fillRect(PAD, yy, W - PAD * 2, 1);
+      ctx.save();
+      ctx.strokeStyle = DASH;
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(PAD, yy + 0.5);
+      ctx.lineTo(W - PAD, yy + 0.5);
+      ctx.stroke();
+      ctx.restore();
     };
     const mark = (x: number, yy: number, s: number) => {
       if (dry) return;
@@ -316,140 +345,156 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       ] as const)
         ctx.strokeRect(x + cx * k, yy + cy * k, 3 * k, 3 * k);
     };
+    const kv = (label: string, value: string, size = 12, weight = 400, color = INK) => {
+      text(label, PAD, y + 12, size, 400, MUTED);
+      text(value, W - PAD, y + 12, size, weight, color, 'right');
+      y += 20;
+    };
 
-    // แถบ accent ของโทเคน (ซ้ายเต็มความสูง) + พื้นหัวสลิปย้อมสีเชน — วาดหลังรู้ความสูงจริง (ใน finish)
-    // หัว: เครื่องหมาย + XCap ซ้าย, โลโก้เชน 32px มุมขวาบน
-    mark(PAD, y, 28);
-    text('XCap', PAD + 36, y + 21, 20, 600);
-    circleImage(ctx, chainImg, W - PAD - 32, y - 2, 32, d.chainName, chainColor, dry);
-    y += 52;
-    // โลโก้โทเคน 48px + ชื่อเรื่อง "NEST on HyperEVM" + วันเวลา/สถานะ
-    circleImage(ctx, tokenImg, PAD, y, 48, primary?.symbol ?? d.chain, tokenAccent, dry);
-    const tx = PAD + 60;
-    text(`${titleText} ${L.on} ${d.chainName}`, tx, y + 22, 24, 600);
-    text(formatStamp(d.time), tx, y + 44, 13, 400, MUTED);
-    ctx.font = `500 13px ${FONT}`;
-    const stW = ctx.measureText(L.status).width + 24;
+    // หัว: XCap Scan กลาง
+    ctx.font = `600 15px ${FONT}`;
+    const brand = 'XCap Scan';
+    const bw = ctx.measureText(brand).width + 28;
+    mark(W / 2 - bw / 2, y - 2, 20);
+    text(brand, W / 2 - bw / 2 + 28, y + 13, 15, 600);
+    y += 34;
+    // เช็คเขียว / กากบาทแดง + สถานะ
+    const ok = d.status === 'ok';
     if (!dry) {
-      ctx.strokeStyle = LINE;
-      ctx.lineWidth = 1;
+      ctx.fillStyle = ok ? POSITIVE : DANGER;
       ctx.beginPath();
-      ctx.roundRect(W - PAD - stW, y + 11, stW, 26, 13);
+      ctx.arc(W / 2, y + 24, 24, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.beginPath();
+      if (ok) {
+        ctx.moveTo(W / 2 - 9, y + 25);
+        ctx.lineTo(W / 2 - 3, y + 31);
+        ctx.lineTo(W / 2 + 10, y + 17);
+      } else {
+        ctx.moveTo(W / 2 - 8, y + 16);
+        ctx.lineTo(W / 2 + 8, y + 32);
+        ctx.moveTo(W / 2 + 8, y + 16);
+        ctx.lineTo(W / 2 - 8, y + 32);
+      }
       ctx.stroke();
     }
-    text(L.status, W - PAD - stW / 2, y + 29, 13, 500, INK, 'center');
-    y += 72;
-    headerBottom = y;
+    y += 62;
+    text(ok ? L.success : L.failed, W / 2, y + 6, 16, 600, INK, 'center');
     y += 24;
+    text(`${formatStamp(d.time)} · ${d.chainName}`, W / 2, y + 4, 12, 400, MUTED, 'center');
+    y += 18;
+    dash(y);
+    y += 20;
 
-    // สินทรัพย์ — โครงเดียวกับแผงรายละเอียด (โลโก้+ตราเชน / สัญลักษณ์ / on เชน / จำนวนเต็มทศนิยม + USD) แต่ไม่มีพื้นเทา
-    // สวอป: ขาออกก่อน แล้วเส้นเชื่อม + ⇄ แล้วขาเข้า
-    const ordered = [...d.moves.filter((m) => m.dir === 'out'), ...d.moves.filter((m) => m.dir === 'in')];
-    ordered.forEach((m, i) => {
-      if (i > 0 && !dry) {
-        // เส้นเชื่อมจากโลโก้บนถึงโลโก้ล่าง + ไอคอน ⇄ ตรงกลาง
-        ctx.fillStyle = tokenColor('divider', '#d9d9d9');
-        ctx.fillRect(PAD + 20, y - 4, 1, 44);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(PAD + 9, y + 9, 22, 18);
-        text('⇄', PAD + 20, y + 24, 16, 400, MUTED, 'center');
+    // ตัวเลขใหญ่
+    if (lead) {
+      const isIn = lead.dir === 'in';
+      text(isIn ? L.received : L.sent, W / 2, y + 4, 12, 400, MUTED, 'center');
+      y += 14;
+      const big = `${isIn ? '+' : '−'}${formatAmountFull(lead.amount)} ${lead.symbol}`;
+      ctx.font = `700 26px ${FONT}`;
+      const size = ctx.measureText(big).width > W - PAD * 2 ? 20 : 26;
+      text(big, W / 2, y + 26, size, 700, isIn ? POSITIVE : INK, 'center');
+      y += 36;
+      if (lead.usd !== null && lead.usd !== undefined) {
+        text(`≈ ${formatUsdExact(lead.usd)}`, W / 2, y + 4, 12, 400, MUTED, 'center');
+        y += 16;
       }
-      if (i > 0) y += 40;
-      const img = moveImgs[d.moves.indexOf(m)] ?? null;
-      circleImage(ctx, img, PAD, y, 40, m.symbol, tokenAccent, dry);
+      y += 6;
+      dash(y);
+      y += 16;
+    }
+
+    // บล็อกสินทรัพย์: โลโก้โทเคน 36 + ตราเชน 14 / สัญลักษณ์ + on เชน / จำนวน (สีหมึก) + USD
+    ordered.forEach((m) => {
       if (!dry) {
+        circleImage(ctx, moveImgs[d.moves.indexOf(m)] ?? null, PAD, y, 36, m.symbol, `hsl(${identiconHue(m.symbol)} 60% 52%)`);
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(PAD + 32, y + 32, 10, 0, Math.PI * 2);
+        ctx.arc(PAD + 29, y + 29, 9, 0, Math.PI * 2);
         ctx.fill();
+        circleImage(ctx, chainImg, PAD + 22, y + 22, 14, d.chainName, INK);
       }
-      circleImage(ctx, chainImg, PAD + 24, y + 24, 16, d.chainName, chainColor, dry);
-      text(m.symbol, PAD + 52, y + 18, 20, 600);
-      text(`${L.on} ${d.chainName}`, PAD + 52, y + 36, 13, 400, MUTED);
-      const sign = m.dir === 'in' ? '+' : '−';
-      text(`${sign}${formatAmountFull(m.amount)}`, W - PAD, y + 20, 22, 600, m.dir === 'in' ? POSITIVE : INK, 'right');
-      if (m.usd !== null && m.usd !== undefined) text(formatUsdExact(m.usd), W - PAD, y + 38, 12, 400, MUTED, 'right');
-      y += 44;
+      text(m.symbol, PAD + 46, y + 16, 14, 600);
+      text(`${L.on} ${d.chainName}`, PAD + 46, y + 31, 11, 400, MUTED);
+      text(`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)}`, W - PAD, y + 16, 15, 600, INK, 'right');
+      if (m.usd !== null && m.usd !== undefined) text(formatUsdExact(m.usd), W - PAD, y + 31, 11, 400, MUTED, 'right');
+      y += 46;
     });
-    if (!ordered.length) y += 8;
+    if (ordered.length) y += 4;
+    if (d.fee !== null) kv(L.fee, `${formatFeeNative(d.fee, d.feeSymbol)}${d.feeUsd !== null && d.feeUsd !== undefined ? ` (${formatFeeUsd(d.feeUsd)})` : ''}`);
+    if (d.swapCost !== null && d.swapCost !== undefined) kv(L.swapCost, formatUsdExact(d.swapCost));
+    y += 2;
+    dash(y);
     y += 16;
-    rule(y);
-    y += 24;
 
-    // แถวข้อมูล
-    const row = (label: string, value: string | null, long = false) => {
-      if (!value) return;
-      text(label, PAD, y + 13, 13, 500, MUTED);
-      if (long) y += wrap(value, PAD, y + 36, 14, W - PAD * 2) + 24;
-      else {
-        text(value, W - PAD, y + 13, 14, 400, INK, 'right');
-        y += 30;
-      }
-    };
-    // เชน: สัญลักษณ์สีประจำเชนหน้าชื่อ (สีเดียวกับในแผงรายละเอียด)
-    text(L.chain, PAD, y + 13, 13, 500, MUTED);
-    text(d.chainName, W - PAD, y + 13, 14, 400, INK, 'right');
-    if (cs) {
-      ctx.font = `400 14px ${FONT}`;
-      const nameW = ctx.measureText(d.chainName).width;
-      text(cs.glyph, W - PAD - nameW - 8, y + 13, 16, 700, tokenColor(cs.token, '#000000'), 'right');
-    }
-    y += 30;
-    row(L.wallet, d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
-    row(L.from, d.from ? shortAddr(d.from) : null);
-    row(L.to, d.to ? shortAddr(d.to) : null);
-    row(L.fee, d.fee !== null ? formatFeeNative(d.fee, d.feeSymbol) : null);
-    row(L.time, formatStamp(d.time));
-    row(L.hash, d.hash, true);
-    y += 4;
-    rule(y);
-    y += 24;
+    // Wallet / From / To / Status
+    kv(L.wallet, d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
+    if (d.from && d.from.toLowerCase() !== d.wallet.toLowerCase()) kv(L.from, shortAddr(d.from));
+    if (d.to && d.to.toLowerCase() !== d.wallet.toLowerCase()) kv(L.to, shortAddr(d.to));
+    kv(L.status, ok ? `${L.statusOk} ✓` : `${L.statusFailed} ✗`);
+    y += 2;
+    dash(y);
+    y += 18;
 
-    // ท้าย: QR + รหัสยืนยัน
-    if (!dry) ctx.drawImage(qr, PAD, y, 104, 104);
-    const fx = PAD + 124;
-    text(L.code, fx, y + 14, 13, 500, MUTED);
-    text(rec.code, fx, y + 40, 18, 600);
-    text(`${L.issued} ${formatStamp(Math.floor(d.issued / 1000))}`, fx, y + 66, 12, 400, MUTED);
-    y += 78 + wrap(L.verifyHint, fx, y + 88, 12, W - fx - PAD, 400, MUTED);
-    y += 24;
+    // hash เต็ม (ตัดบรรทัด) กลาง
+    y += wrap(d.hash, W / 2, y + 8, 10, W - PAD * 2, 400, MUTED, 'center') + 8;
+    // QR กลาง
+    if (!dry) ctx.drawImage(qr, W / 2 - 48, y, 96, 96);
+    y += 116;
+    text(L.code, W / 2, y + 4, 11, 400, MUTED, 'center');
+    y += 20;
+    text(rec.code, W / 2, y + 4, 15, 600, INK, 'center');
+    y += 22;
+    text(`${L.issued} ${formatStamp(Math.floor(d.issued / 1000))}`, W / 2, y + 4, 10, 400, MUTED, 'center');
+    y += 16;
+    y += wrap(L.verifyHint, W / 2, y + 8, 10, W - PAD * 2, 400, MUTED, 'center') + 6;
+
     // ตราฟังก์ชันที่ทำกับสลิปนี้ (Downloaded ⤓ / Verified ✓ …) — สีประจำฟังก์ชัน
     if (action) {
       const color = tokenColor(`fn-${action}`, FN_FALLBACK[action]);
-      ctx.font = `600 13px ${FONT}`;
+      ctx.font = `600 12px ${FONT}`;
       const label = `${L.action[action]} ${FN_GLYPH[action]}`;
-      const lw = ctx.measureText(label).width + 28;
+      const lw = ctx.measureText(label).width + 24;
       if (!dry) {
         ctx.strokeStyle = color;
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.roundRect(W - PAD - lw, y, lw, 28, 14);
+        ctx.roundRect(W / 2 - lw / 2, y + 8, lw, 26, 13);
         ctx.stroke();
       }
-      text(label, W - PAD - lw / 2, y + 19, 13, 600, color, 'center');
+      text(label, W / 2, y + 25, 12, 600, color, 'center');
       y += 40;
     }
-    y += 16;
+    y += 22;
     return y;
   };
 
   const probe = document.createElement('canvas').getContext('2d')!;
-  const H = Math.ceil(draw(probe, true));
+  const H = Math.ceil(draw(probe, true)) + SCALLOP_R;
   const canvas = document.createElement('canvas');
   canvas.width = W * 2;
   canvas.height = H * 2;
   const ctx = canvas.getContext('2d')!;
   ctx.scale(2, 2);
+  // กระดาษขาว ขอบล่างหยัก (ครึ่งวงกลมเว้า) — นอกนั้นโปร่งใส
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(W, 0);
+  ctx.lineTo(W, H - SCALLOP_R);
+  for (let x = W; x > 0; x -= SCALLOP_STEP) ctx.arc(x - SCALLOP_STEP / 2, H - SCALLOP_R, SCALLOP_R, 0, Math.PI, true);
+  ctx.lineTo(0, H - SCALLOP_R);
+  ctx.closePath();
+  ctx.clip();
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, W, H);
-  // พื้นหัวสลิปย้อมสีเชน (โปร่ง 8%) + แถบ accent โทเคนซ้าย
-  ctx.globalAlpha = 0.08;
-  ctx.fillStyle = chainColor;
-  ctx.fillRect(0, 0, W, headerBottom);
-  ctx.globalAlpha = 1;
-  ctx.fillStyle = tokenAccent;
-  ctx.fillRect(0, 0, STRIPE, H);
   draw(ctx, false);
+  ctx.restore();
   return canvas;
 }
 

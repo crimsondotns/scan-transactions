@@ -16,7 +16,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 export function App() {
   const { t } = useI18n();
   const { wallets, settings } = useStore();
-  const { feeds, loadMany, forget } = useFeed(settings);
+  const { feeds, loadMany, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selected, setSelected] = useState<TxRow | null>(null);
   const [sideOpen, setSideOpen] = useState(true);
@@ -29,18 +29,24 @@ export function App() {
   const hasEndpoint = enabledEps.length > 0;
   const active = useMemo(() => wallets.filter((w) => w.enabled), [wallets]);
 
-  /* กระเป๋าใหม่ที่ยังไม่เคยโหลด → โหลดให้เองเมื่อมีแหล่งข้อมูล; แหล่งข้อมูลเปลี่ยน → โหลดใหม่ทั้งหมด */
+  /* โหลดแบบขี้เกียจ: ไม่ยิงตอนเปิดหน้า — ยิงเมื่อผู้ใช้เลือกกระเป๋าเท่านั้น และใช้แคชถ้าเคยโหลดแล้ว
+     แหล่งข้อมูลเปลี่ยน → ล้างแคช (ไม่โหลดใหม่เอง) */
   const epKey = enabledEps.map((e) => `${e.id}:${e.url}:${e.family}`).join('|');
   const lastKey = useRef(epKey);
   useEffect(() => {
-    if (!hasEndpoint) return;
-    const changed = lastKey.current !== epKey;
+    if (lastKey.current === epKey) return;
     lastKey.current = epKey;
-    const todo = (changed ? active : active.filter((w) => !feeds[w.id])).filter((w) => endpointsFor(w, settings).length);
-    if (todo.length) void loadMany(todo, 'reset');
-    // feeds ตั้งใจไม่อยู่ใน deps — ไม่งั้นวนโหลดซ้ำทุกครั้งที่ state เปลี่ยน
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasEndpoint, epKey, active, loadMany]);
+    reset();
+  }, [epKey, reset]);
+
+  const selectWallet = useCallback(
+    (id: string | null) => {
+      setActiveWallet(id);
+      const w = id ? wallets.find((x) => x.id === id) : undefined;
+      if (w && hasEndpoint && endpointsFor(w, settings).length) void ensure(w);
+    },
+    [wallets, hasEndpoint, settings, ensure]
+  );
 
   const rows = useMemo(
     () =>
@@ -84,7 +90,7 @@ export function App() {
 
       <div className="layout" data-drawer={selected !== null} data-side={sideOpen}>
         <aside className="side">
-          <WalletPanel feeds={feeds} activeId={activeWallet} onSwitch={setActiveWallet} onRemove={forget} />
+          <WalletPanel feeds={feeds} activeId={activeWallet} onSwitch={selectWallet} onRemove={forget} />
           <p className="hint">{t('foot.local')}</p>
         </aside>
 
@@ -99,6 +105,14 @@ export function App() {
           ) : wallets.length === 0 ? (
             <div className="empty">
               <h2>{t('tx.emptyWallets')}</h2>
+            </div>
+          ) : !activeWallet && !active.some((w) => feeds[w.id]) ? (
+            <div className="empty">
+              <h2>{t('tx.emptyPick')}</h2>
+              <button type="button" className="btn" disabled={!active.length} onClick={() => void loadMany(active, 'reset')}>
+                <Icon name="refresh" />
+                {t('tx.loadAll')}
+              </button>
             </div>
           ) : (
             <>
@@ -119,7 +133,7 @@ export function App() {
                   ))}
                 </div>
               )}
-              <TxTable rows={rows} wallets={active} chains={chains} wallet={activeWallet ?? ''} onWallet={(id) => setActiveWallet(id || null)} selected={selected?.key ?? null} onSelect={setSelected} />
+              <TxTable rows={rows} wallets={active} chains={chains} wallet={activeWallet ?? ''} onWallet={(id) => selectWallet(id || null)} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} />
               {anyOlder && (
                 <div className="tfoot">
                   <button type="button" className="btn" disabled={anyLoading} onClick={() => void loadMany(active, 'older')}>

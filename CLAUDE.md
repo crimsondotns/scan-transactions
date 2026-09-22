@@ -48,3 +48,9 @@ pnpm dev · pnpm typecheck · pnpm check · pnpm test · pnpm build
 ```
 
 Do not declare work done while any of these is red.
+
+## Lazy loading (2026-09-22)
+
+- ไม่ยิงแหล่งข้อมูลตอนเปิดหน้าหรือตอนเพิ่ม/นำเข้ากระเป๋า — ยิงเฉพาะเมื่อผู้ใช้คลิกกระเป๋า (แผงซ้ายหรือ dropdown ในตาราง) หรือกด "Load all wallets" เอง
+- `useFeed.feeds[walletId]` คือแคชในหน่วยความจำ: `ensure(w)` โหลดเฉพาะเมื่อยัง `loaded`/`loading` ไม่เป็นจริง; แหล่งข้อมูลเปลี่ยน → `reset()` ล้างแคช ไม่โหลดใหม่เอง
+- สถานะโหลดต่อกระเป๋า: วงหมุน `.spinner` ในแถวกระเป๋า ตารางขึ้น "Loading…" ระหว่างรอ

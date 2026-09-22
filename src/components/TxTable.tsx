@@ -44,7 +44,7 @@ function mainMove(r: TxRow) {
   return real.find((m) => m.usd !== null) ?? real[0] ?? r.moves[0] ?? null;
 }
 
-export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, selected, onSelect }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; wallet: string; onWallet: (id: string) => void; selected: string | null; onSelect: (r: TxRow) => void }) {
+export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, selected, onSelect, loading = false }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; wallet: string; onWallet: (id: string) => void; selected: string | null; onSelect: (r: TxRow) => void; loading?: boolean }) {
   const { t } = useI18n();
   const { settings, setHideScam } = useStore();
   const hideScam = settings.hideScam;
@@ -123,7 +123,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
 
       {filtered.length === 0 ? (
         <div className="empty">
-          <p>{rows.length ? t('tx.emptyFiltered') : t('tx.emptyLoaded')}</p>
+          <p>{loading ? t('wallets.loading') : rows.length ? t('tx.emptyFiltered') : t('tx.emptyLoaded')}</p>
         </div>
       ) : (
         <div className="table-wrap">

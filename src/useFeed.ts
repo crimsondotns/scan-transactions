@@ -2,6 +2,7 @@
  * สถานะการโหลดต่อกระเป๋า — แต่ละกระเป๋าถูกยิงไปทุกแหล่งข้อมูลที่เปิดอยู่และตรงตระกูลเชน
  * แถวจากหลายแหล่งรวมกันแล้วตัดซ้ำด้วย key; cursor/error เก็บแยกต่อแหล่ง
  * อยู่ในหน่วยความจำเท่านั้น (รีเฟรชแล้วโหลดใหม่) ไม่มีการจดธุรกรรมลงเครื่อง
+ * โหลดแบบขี้เกียจ: ไม่ยิงตอนเปิดหน้า ยิงเฉพาะเมื่อผู้ใช้เลือกกระเป๋า และกระเป๋าที่โหลดแล้วใช้แคชในหน่วยความจำ
  */
 import { useCallback, useRef, useState } from 'react';
 import { FeedError, fetchPage, type Cursor, type TxRow } from './feed';
@@ -91,6 +92,19 @@ export function useFeed(settings: Settings) {
     [load]
   );
 
+  /** โหลดถ้ายังไม่มีในแคช (เคยโหลดสำเร็จหรือกำลังโหลด → ไม่ยิงซ้ำ) */
+  const ensure = useCallback(
+    (w: Wallet) => {
+      const f = latest.current[w.id];
+      if (f?.loaded || f?.loading) return Promise.resolve();
+      return load(w, 'reset');
+    },
+    [load]
+  );
+
+  /** ล้างแคชทั้งหมด (แหล่งข้อมูลเปลี่ยน) — ไม่โหลดใหม่เอง รอผู้ใช้เลือกกระเป๋า */
+  const reset = useCallback(() => setFeeds({}), []);
+
   const forget = useCallback((id: string) => {
     setFeeds((s) => {
       const { [id]: _drop, ...rest } = s;
@@ -98,7 +112,7 @@ export function useFeed(settings: Settings) {
     });
   }, []);
 
-  return { feeds, load, loadMany, forget };
+  return { feeds, load, loadMany, ensure, reset, forget };
 }
 
 export function hasOlder(f: WalletFeed | undefined): boolean {

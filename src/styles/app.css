@@ -616,6 +616,30 @@ input[type='file'].input::file-selector-button {
 .wallet-state[data-state='error'] {
   color: var(--color-danger);
 }
+.wallet-state[data-state='loading'] {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+/* วงหมุนต่อกระเป๋า — เส้นเดียวสีหมึกจาง */
+.spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-line);
+  border-top-color: var(--color-ink);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
 
 /* ---------- ตารางธุรกรรม ---------- */
 

@@ -167,6 +167,7 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove }: { feeds: Re
                     <span className="wallet-addr">{shortAddr(w.address)}</span>
                   </span>
                   <span className="wallet-state" data-state={state} aria-live="polite">
+                    {state === 'loading' && <span className="spinner" aria-hidden="true" />}
                     {state === 'ok' ? t('wallets.state.ok', { n: f?.rows.length ?? 0 }) : t(`wallets.state.${state}`)}
                   </span>
                 </button>

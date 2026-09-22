@@ -118,22 +118,6 @@ select {
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-line-subtle);
 }
-/* เงาโผล่เฉพาะตอนหน้าเลื่อนแล้ว (data-scrolled จาก App) — ::after ค่อยๆ จางเข้า ไม่กระตุก */
-.top::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: -1px;
-  height: 1px;
-  box-shadow: var(--shadow-sticky);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity var(--motion-base) var(--easing-standard);
-}
-.top[data-scrolled='true']::after {
-  opacity: 1;
-}
 .brand {
   display: inline-flex;
   align-items: center;
@@ -634,6 +618,13 @@ input[type='file'].input::file-selector-button {
   color: var(--color-muted);
   padding: var(--space-4) var(--space-3);
   white-space: nowrap;
+  transition: box-shadow var(--motion-base) var(--easing-standard);
+}
+/* หัวตารางติดอยู่ (data-stuck จาก TxTable) → เงาเบาใต้แถวหัว */
+.tx thead[data-stuck='true'] th {
+  box-shadow: var(--shadow-sticky);
+  /* ตัดเงาด้านข้างของแต่ละเซลล์ทิ้ง ให้เห็นเป็นเส้นเงาเดียวใต้แถวหัว */
+  clip-path: inset(0 0 -12px 0);
 }
 .tx td {
   padding: var(--space-3) var(--space-3);

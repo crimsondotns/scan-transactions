@@ -23,14 +23,6 @@ export function App() {
   const { feeds, loadMany, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importing, setImporting] = useState(false);
-  /* หัวเว็บติดขอบบน: มีเงาเฉพาะเมื่อเลื่อนหน้าแล้ว */
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 2);
-    on();
-    window.addEventListener('scroll', on, { passive: true });
-    return () => window.removeEventListener('scroll', on);
-  }, []);
   /* หน้า: #/ = แดชบอร์ด, #/w/<id> = ธุรกรรมของกระเป๋า — เก็บใน hash ให้ปุ่มย้อนกลับของเบราว์เซอร์ทำงาน */
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -113,7 +105,7 @@ export function App() {
       <a className="skip" href="#main">
         {t('nav.skip')}
       </a>
-      <header className="top" data-scrolled={scrolled}>
+      <header className="top">
         <span className="brand">
           <XCapMark />
           {t('app.name')} <span className="brand-sub">{t('app.sub')}</span>

@@ -6,7 +6,6 @@ import { XCapMark } from './components/XCapMark';
 import { Icon } from './components/Icon';
 import { Identicon } from './components/Identicon';
 import { shortAddr } from './format';
-import { WalletSidebar } from './components/WalletSidebar';
 import { WalletTable } from './components/WalletTable';
 import { RecentTable } from './components/RecentTable';
 import { TxTable } from './components/TxTable';
@@ -32,24 +31,6 @@ export function App() {
   const pageWallet = hash.startsWith('#/w/') ? decodeURIComponent(hash.slice(4)) : null;
   const page: 'dashboard' | 'wallet' = pageWallet ? 'wallet' : 'dashboard';
   const [selected, setSelected] = useState<TxRow | null>(null);
-  /* แผงกระเป๋าย่อเป็นไอคอน (60px) — จำไว้ในเครื่อง */
-  const [sideOpen, setSideOpen] = useState(() => {
-    try {
-      return localStorage.getItem('xcap.scan.side') !== 'collapsed';
-    } catch {
-      return true;
-    }
-  });
-  const toggleSide = useCallback(() => {
-    setSideOpen((o) => {
-      try {
-        localStorage.setItem('xcap.scan.side', o ? 'collapsed' : 'open');
-      } catch {
-        /* ไม่มี storage */
-      }
-      return !o;
-    });
-  }, []);
   /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const closeDetail = useCallback(() => setSelected(null), []);
@@ -128,9 +109,6 @@ export function App() {
           {t('app.name')} <span className="brand-sub">{t('app.sub')}</span>
         </span>
         <span className="top-spacer" />
-        <button type="button" className="btn btn-icon side-toggle" onClick={toggleSide} aria-expanded={sideOpen} aria-label={t('nav.toggleSide')} title={t('nav.toggleSide')}>
-          <Icon name="panelLeft" />
-        </button>
         <span className="top-status" data-ok={hasEndpoint}>
           {hasEndpoint ? t('status.endpointSet', { n: enabledEps.length }) : t('status.noEndpoint')}
         </span>
@@ -141,12 +119,7 @@ export function App() {
         <LangMenu />
       </header>
 
-      <div className="layout" data-drawer={selected !== null} data-side={sideOpen}>
-        <aside className="side">
-          <WalletSidebar feeds={feeds} activeId={pageWallet} collapsed={!sideOpen} onSwitch={openWallet} onRemove={forget} onToggle={toggleSide} hasSource={(w) => endpointsFor(w, settings).length > 0} />
-          <p className="hint">{t('foot.local')}</p>
-        </aside>
-
+      <div className="layout" data-drawer={selected !== null}>
         <main id="main" className="main">
           {!hasEndpoint ? (
             <div className="empty">
@@ -167,7 +140,7 @@ export function App() {
                   ))}
                 </div>
               )}
-              <RecentTable rows={rows} wallets={wallets} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} onLoadAll={() => void loadMany(active, 'reset')} />
+              <RecentTable rows={rows} wallets={wallets} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} hasMore={active.some((w) => hasOlder(feeds[w.id]))} onMore={() => void loadMany(active.filter((w) => hasOlder(feeds[w.id])), 'older')} onLoadAll={() => void loadMany(active, 'reset')} />
             </div>
           ) : (
             <>
@@ -195,14 +168,7 @@ export function App() {
                   ))}
                 </div>
               )}
-              <TxTable rows={walletRows} wallets={active} chains={chains} wallet={pageWallet ?? ''} onWallet={(id) => openWallet(id || null)} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} />
-              {activeWalletObj && hasOlder(feeds[activeWalletObj.id]) && (
-                <div className="tfoot">
-                  <button type="button" className="btn" disabled={anyLoading} onClick={() => void loadMany([activeWalletObj], 'older')}>
-                    {anyLoading ? t('wallets.loading') : t('tx.older')}
-                  </button>
-                </div>
-              )}
+              <TxTable rows={walletRows} wallets={active} chains={chains} wallet={pageWallet ?? ''} onWallet={(id) => openWallet(id || null)} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} hasMore={!!activeWalletObj && hasOlder(feeds[activeWalletObj.id])} onMore={() => activeWalletObj && void loadMany([activeWalletObj], 'older')} />
             </>
           )}
         </main>

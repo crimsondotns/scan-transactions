@@ -170,6 +170,8 @@ const th = {
   'tx.errorNet': 'ติดต่อแหล่งข้อมูลไม่ได้',
   'tx.loadAll': 'โหลดทุกกระเป๋า',
   'tx.older': 'โหลดย้อนหลัง',
+  'tx.loadingMore': 'กำลังโหลดเพิ่ม…',
+  'tx.end': 'ครบแล้ว',
   'tx.reload': 'โหลดใหม่',
 
   'dialog.cancel': 'ยกเลิก',
@@ -343,6 +345,8 @@ const en: Record<MessageKey, string> = {
   'tx.errorNet': 'Could not reach the data source',
   'tx.loadAll': 'Load all wallets',
   'tx.older': 'Load older',
+  'tx.loadingMore': 'Loading more…',
+  'tx.end': 'All loaded',
   'tx.reload': 'Reload',
 
   'dialog.cancel': 'Cancel',

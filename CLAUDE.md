@@ -58,8 +58,13 @@ Do not declare work done while any of these is red.
 ## โครงหน้า 2 หน้า (2026-09-22)
 
 - เส้นทางใน hash: `#/` = แดชบอร์ด, `#/w/<walletId>` = ธุรกรรมของกระเป๋า (ปุ่มย้อนกลับเบราว์เซอร์ใช้ได้; เปิด URL ตรงจะเลือกกระเป๋าให้)
-- Sidebar ซ้าย (`WalletSidebar`, ย่อ 240→60px จำใน `xcap.scan.side`): avatar + label + ที่อยู่ + สถานะ, ตา/ถังขยะ, Import/Add/Clear; คลิกแถว = ไปหน้า 2 ของกระเป๋านั้น (`openWallet`)
+- ไม่มี sidebar (ผู้ใช้ให้ลบ 2026-09-22) — Import/Add/Clear อยู่ที่หัวตารางกระเป๋าในหน้า 1
 - หน้า 1 (`WalletTable` + `RecentTable`): ตารางกระเป๋า Label · Address · Transactions · ตา/ถังขยะ (เรียงได้, 7 แถว + Show all) คลิกแถว = หน้า 2; ตารางธุรกรรมล่าสุด 10 แถวจากทุกกระเป๋าที่โหลดแล้ว Type · From · To · Submitted · Amount · Network fee (+ ปุ่ม Load all wallets) คลิกแถว = แผงขวา
 - หน้า 2: ปุ่มกลับ + ชื่อกระเป๋า + Reload, `TxTable` เดิม (Type · Submitted · Amount · Network fee + ตัวกรอง) เฉพาะกระเป๋านั้น, Load older; คลิกแถว = แผงขวา
 - แผงขวา `DetailPanel` เป็น overlay ทั้งสองหน้า; ไม่มี checkbox ที่ไหนเลย
 - ปุ่ม "View on <explorer>" ในแผงรายละเอียดต้องมีเสมอ: chain list → URL ที่แถวแนบมา → ปุ่ม disabled "No explorer for this chain"; chain list โหลดใหม่ไม่ได้ → ใช้ชุดเก่าต่อ
+
+## Infinite scroll (2026-09-22)
+
+- `src/useInfinite.ts` + `MoreSentinel`: โชว์ทีละชุดจากรายการในเครื่อง (ตารางกระเป๋า 10 · ธุรกรรมล่าสุด 20 · ธุรกรรมของกระเป๋า 25) sentinel ท้ายตารางเข้าใกล้จอ (~80%) → เพิ่มชุดถัดไป; โชว์หมดแล้วและ `hasOlder` → ขอชุดเก่ากว่าจากแหล่ง (cursor ต่อกระเป๋าใน `feeds[id].next`) ระหว่างโหลดไม่ยิงซ้ำ ท้ายตารางมี "Loading more…" ความสูงคงที่ (ไม่กระโดด) และ "All loaded" เฉพาะเมื่อเคยโหลดเพิ่ม
+- ปุ่ม Load older ถูกแทนด้วยการเลื่อน; `resetKey` (ตัวกรอง/เรียง/กระเป๋า) รีเซ็ตจำนวนที่โชว์

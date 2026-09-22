@@ -68,8 +68,6 @@
   --motion-slow: 280ms;
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
 
-  --side-w: 240px;
-  --side-c: 60px;
   --layout-max: 1440px;
   --layout-gutter: clamp(20px, 3vw, 48px);
 

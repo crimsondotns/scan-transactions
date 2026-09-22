@@ -6,17 +6,20 @@ import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative, shortAddr 
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { Identicon } from './Identicon';
+import { useInfinite } from '../useInfinite';
+import { MoreSentinel } from './MoreSentinel';
 
-const LIMIT = 10;
+const PAGE = 20;
 
 /**
  * หน้า 1 ตารางที่ 2: ธุรกรรมล่าสุด (พรีวิว) จากทุกกระเป๋าที่โหลดแล้ว — Type · From · To · Submitted · Amount · Network fee
- * แสดง 10 แถวล่าสุด คลิกแถว = เปิดแผงรายละเอียดขวา (แผงเดิม)
+ * แสดง 20 แถวล่าสุด เลื่อนลงเพิ่มทีละ 20 หมดแล้วขอชุดเก่ากว่าจากทุกกระเป๋า (cursor ต่อกระเป๋า = เวลาแถวสุดท้าย) คลิกแถว = เปิดแผงรายละเอียดขวา (แผงเดิม)
  */
-export function RecentTable({ rows, wallets, chains, selected, onSelect, loading, onLoadAll }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; onLoadAll: () => void }) {
+export function RecentTable({ rows, wallets, chains, selected, onSelect, loading, hasMore, onMore, onLoadAll }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; hasMore: boolean; onMore: () => void; onLoadAll: () => void }) {
   const { t } = useI18n();
   const byAddr = new Map(wallets.map((w) => [w.address.toLowerCase(), w]));
-  const recent = rows.slice(0, LIMIT);
+  const inf = useInfinite({ total: rows.length, page: PAGE, hasMore, loading, fetchMore: onMore });
+  const recent = rows.slice(0, inf.visible);
 
   const Party = ({ addr }: { addr: string | null }) => {
     if (!addr) return <span className="hint">—</span>;
@@ -159,6 +162,7 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
               })}
             </tbody>
           </table>
+          <MoreSentinel sentinel={inf.sentinel} loading={loading && recent.length > 0} exhausted={inf.exhausted} page={PAGE} count={rows.length} />
         </div>
       )}
     </section>

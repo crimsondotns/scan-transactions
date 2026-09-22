@@ -8,13 +8,15 @@ import { AddWalletDialog } from './AddWalletDialog';
 import { ImportDialog } from './ImportDialog';
 import { Identicon } from './Identicon';
 import { ConfirmDialog, type ConfirmState } from './ConfirmDialog';
+import { useInfinite } from '../useInfinite';
+import { MoreSentinel } from './MoreSentinel';
 
 type SortKey = 'label' | 'address' | 'tx';
-const VISIBLE = 7;
+const PAGE = 10;
 
 /**
  * หน้า 1 ตารางที่ 1: รายชื่อกระเป๋า — Label · Address · Transactions · การกระทำ
- * คลิกแถว = ไปหน้า 2 (ธุรกรรมของกระเป๋านั้น); หัวคอลัมน์เรียงได้; แสดง 7 แถวแรก แล้ว "ดูทั้งหมด"
+ * คลิกแถว = ไปหน้า 2 (ธุรกรรมของกระเป๋านั้น); หัวคอลัมน์เรียงได้; แสดง 10 แถวแรก เลื่อนลงแล้วเพิ่มทีละ 10 (cursor = แถวสุดท้ายที่แสดง)
  * ไม่มี checkbox; ตา = ซ่อน/แสดงข้อมูลในตารางธุรกรรม; ถังขยะ = ยืนยันก่อนลบ
  */
 export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSource }: { feeds: Record<string, WalletFeed>; activeId: string | null; onOpen: (id: string) => void; onSwitch: (id: string | null) => void; onRemove: (id: string) => void; hasSource: (w: Wallet) => boolean }) {
@@ -24,7 +26,6 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
   const [importing, setImporting] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmState | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'label', dir: 'asc' });
-  const [showAll, setShowAll] = useState(false);
 
   function remove(w: Wallet) {
     setConfirmDialog({ type: 'deleteWallet', title: t('confirm.deleteTitle'), message: t('confirm.deleteMsg', { label: w.label }), walletId: w.id });
@@ -66,7 +67,8 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wallets, feeds, sort]);
-  const visible = showAll ? sorted : sorted.slice(0, VISIBLE);
+  const inf = useInfinite({ total: sorted.length, page: PAGE, hasMore: false, loading: false, resetKey: `${sort.key}${sort.dir}` });
+  const visible = sorted.slice(0, inf.visible);
 
   function toggleSort(key: SortKey) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'tx' ? 'desc' : 'asc' }));
@@ -87,6 +89,22 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
           {t('wallets.title')}
         </h2>
         <span className="hint">{t('wallets.count', { n: wallets.length })}</span>
+        <span className="top-spacer" />
+        <div className="row-actions">
+          <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
+            <Icon name="upload" />
+            {t('wallets.import')}
+          </button>
+          <button type="button" className="btn" onClick={() => setAdding(true)}>
+            <Icon name="plus" />
+            {t('wallets.add')}
+          </button>
+          {wallets.length > 0 && (
+            <button type="button" className="btn btn-icon" onClick={clear} aria-label={t('wallets.clear')} title={t('wallets.clear')}>
+              <Icon name="trash" />
+            </button>
+          )}
+        </div>
       </div>
 
       <div>
@@ -159,14 +177,7 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
                 })}
               </tbody>
             </table>
-            {sorted.length > VISIBLE && (
-              <div className="tfoot">
-                <button type="button" className="btn" onClick={() => setShowAll((v) => !v)} aria-expanded={showAll}>
-                  {showAll ? t('wallets.showLess') : t('wallets.showMore', { n: sorted.length })}
-                  <Icon name="chevronDown" className={showAll ? 'chev chev-up' : 'chev'} />
-                </button>
-              </div>
-            )}
+            <MoreSentinel sentinel={inf.sentinel} loading={false} exhausted={inf.exhausted} page={PAGE} count={sorted.length} />
           </div>
         )}
       </div>

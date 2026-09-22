@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { useInfinite } from '../useInfinite';
+import { MoreSentinel } from './MoreSentinel';
 import { useI18n } from '../i18n';
 import { useStore, type Wallet } from '../store';
 import type { TxRow, TxType } from '../feed';
@@ -44,7 +46,7 @@ function mainMove(r: TxRow) {
   return real.find((m) => m.usd !== null) ?? real[0] ?? r.moves[0] ?? null;
 }
 
-export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, selected, onSelect, loading = false }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; wallet: string; onWallet: (id: string) => void; selected: string | null; onSelect: (r: TxRow) => void; loading?: boolean }) {
+export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, selected, onSelect, loading = false, hasMore = false, onMore }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; wallet: string; onWallet: (id: string) => void; selected: string | null; onSelect: (r: TxRow) => void; loading?: boolean; hasMore?: boolean; onMore?: () => void }) {
   const { t } = useI18n();
   const { settings, setHideScam } = useStore();
   const hideScam = settings.hideScam;
@@ -56,6 +58,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
   const labels = useMemo(() => new Map(wallets.map((w) => [w.id, w.label])), [wallets]);
   const chains = useMemo(() => [...new Set(rows.map((r) => r.chain))].sort(), [rows]);
 
+  const PAGE = 25;
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = rows.filter((r) => {
@@ -88,6 +91,8 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
       return c * dir || b.time - a.time;
     });
   }, [rows, q, wallet, chain, type, sort, labels, hideScam]);
+  const inf = useInfinite({ total: filtered.length, page: PAGE, hasMore, loading, fetchMore: onMore, resetKey: `${wallet}|${q}|${chain}|${type}|${sort.key}${sort.dir}` });
+  const shown = filtered.slice(0, inf.visible);
 
   function toggleSort(key: SortKey) {
     setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'type' ? 'asc' : 'desc' }));
@@ -137,7 +142,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
               </tr>
             </thead>
             <tbody>
-              {filtered.map((r) => {
+              {shown.map((r) => {
                 const real = r.moves.filter((m) => m.amount !== 0);
                 const ins = real.filter((m) => m.dir === 'in');
                 const outs = real.filter((m) => m.dir === 'out');
@@ -219,6 +224,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
               })}
             </tbody>
           </table>
+          <MoreSentinel sentinel={inf.sentinel} loading={loading && shown.length > 0} exhausted={inf.exhausted} page={PAGE} count={filtered.length} />
         </div>
       )}
     </>

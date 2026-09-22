@@ -147,33 +147,14 @@ select {
 
 .layout {
   display: grid;
-  grid-template-columns: var(--side-w) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--section-pad);
   width: min(100% - 2 * var(--layout-gutter), var(--layout-max));
   margin-inline: auto;
   padding: var(--section-pad) 0 var(--space-16);
-  transition: grid-template-columns var(--motion-slow) var(--easing-standard);
-}
-/* แผงกระเป๋าย่อ = คอลัมน์ 60px ไอคอนอย่างเดียว ตารางขยายเต็ม */
-.layout[data-side='false'] {
-  grid-template-columns: var(--side-c) minmax(0, 1fr);
-}
-.layout[data-side='false'] .side > .hint {
-  display: none;
-}
-.side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  align-self: start;
-  position: sticky;
-  top: calc(64px + var(--section-pad));
 }
 .main {
   min-width: 0;
-}
-.top .side-toggle {
-  display: inline-flex;
 }
 
 /* เปิดแผงขวาแล้วเนื้อหาขยับหลบ ไม่ถูกทับ (จอกว้างพอ) */
@@ -185,30 +166,8 @@ select {
   }
 }
 
-/* มือถือ: คอลัมน์เดียว; ย่อ = เหลือแถวหัว */
+/* มือถือ */
 @media (max-width: 639px) {
-  .layout,
-  .layout[data-side='false'] {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .side .wallets-panel[data-collapsed='true'] {
-    padding-inline: var(--space-4);
-  }
-  .side .wallets-panel[data-collapsed='true'] .panel-title,
-  .side .wallets-panel[data-collapsed='true'] .panel-head .hint {
-    display: block;
-  }
-  .side .wallets-panel[data-collapsed='true'] .panel-head {
-    justify-content: flex-start;
-    margin: 0;
-  }
-  .side .wallets-panel[data-collapsed='true'] .wallets,
-  .side .wallets-panel[data-collapsed='true'] > .hint {
-    display: none;
-  }
-  .side {
-    position: static;
-  }
   .top {
     min-height: 56px;
     gap: var(--space-2);
@@ -414,121 +373,6 @@ input[type='file'].input::file-selector-button {
   flex-wrap: wrap;
 }
 
-/* ---------- แผงกระเป๋า (sidebar) ---------- */
-
-.wallets-panel {
-  overflow: hidden;
-  padding: var(--space-3);
-}
-.wallets-panel .row-actions {
-  flex-wrap: nowrap;
-}
-.wallets-panel .panel-head {
-  gap: var(--space-2);
-}
-.side-chevron .chev {
-  transition: transform var(--motion-slow) var(--easing-standard);
-}
-.wallets-panel[data-collapsed='true'] .side-chevron .chev {
-  transform: rotate(180deg);
-}
-.wallets {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.wallet {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  border-radius: var(--radius-md);
-  transition: background-color var(--motion-fast) var(--easing-standard);
-}
-.wallet:hover {
-  background: var(--color-hover);
-}
-.wallet[data-active='true'] {
-  background: var(--color-soft);
-}
-.wallet[data-active='true']::before {
-  content: '';
-  position: absolute;
-  left: calc(-1 * var(--space-3));
-  top: var(--space-2);
-  bottom: var(--space-2);
-  width: 3px;
-  border-radius: var(--radius-pill);
-  background: var(--color-ink);
-}
-.wallet-switch {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-width: 0;
-  min-height: 56px;
-  padding: var(--space-1);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.wallet-switch:focus-visible {
-  outline: 2px solid var(--color-ink);
-  outline-offset: -2px;
-}
-.wallet-avatar {
-  position: relative;
-  flex: none;
-  display: inline-flex;
-}
-.wallet-badge {
-  display: none;
-  position: absolute;
-  right: -6px;
-  top: -6px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  border-radius: var(--radius-pill);
-  background: var(--color-ink);
-  color: var(--color-bg);
-  font-size: var(--size-tiny, 0.6875rem);
-  line-height: 16px;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-}
-.wallet[data-hidden='true'] .wallet-meta,
-.wallet[data-hidden='true'] .identicon {
-  opacity: 0.45;
-}
-.wallet-meta {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-.wallet-label {
-  font-size: var(--size-body);
-  font-weight: var(--weight-medium);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.wallet-addr {
-  color: var(--color-muted);
-  font-size: var(--size-caption);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .wallet-state {
   display: inline-flex;
   align-items: center;
@@ -573,47 +417,7 @@ input[type='file'].input::file-selector-button {
     animation-duration: 2s;
   }
 }
-.wallet-actions {
-  display: inline-flex;
-  gap: 0;
-  padding-right: var(--space-1);
-}
-.wallet-actions .btn-icon {
-  width: 28px;
-  min-height: 28px;
-}
-/* ย่อ: ไอคอน + badge จำนวนแถว อย่างเดียว */
-.wallets-panel[data-collapsed='true'] {
-  padding-inline: var(--space-2);
-}
-.wallets-panel[data-collapsed='true'] .panel-title,
-.wallets-panel[data-collapsed='true'] .panel-head .hint,
-.wallets-panel[data-collapsed='true'] .row-actions,
-.wallets-panel[data-collapsed='true'] .wallet-meta,
-.wallets-panel[data-collapsed='true'] .wallet-actions,
-.wallets-panel[data-collapsed='true'] > .hint {
-  display: none;
-}
-.wallets-panel[data-collapsed='true'] .panel-head {
-  justify-content: center;
-}
-.wallets-panel[data-collapsed='true'] .wallets {
-  margin: 0;
-}
-.wallets-panel[data-collapsed='true'] .wallet {
-  grid-template-columns: 1fr;
-  justify-items: center;
-}
-.wallets-panel[data-collapsed='true'] .wallet-switch {
-  padding: var(--space-2) 0;
-  min-height: 48px;
-}
-.wallets-panel[data-collapsed='true'] .wallet-badge {
-  display: block;
-}
-.wallets-panel[data-collapsed='true'] .wallet[data-active='true']::before {
-  left: calc(-1 * var(--space-2));
-}
+
 /* ---------- ตารางกระเป๋า / ธุรกรรมล่าสุด (หน้าแดชบอร์ด) ---------- */
 
 .stack-lg {
@@ -928,6 +732,16 @@ input[type='file'].input::file-selector-button {
   font-weight: var(--weight-medium);
 }
 
+.more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-tertiary);
+  font-size: var(--size-caption);
+}
 .tfoot {
   display: flex;
   justify-content: center;

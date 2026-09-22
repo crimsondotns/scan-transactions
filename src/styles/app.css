@@ -1857,6 +1857,39 @@ dialog.dlg::backdrop {
   height: auto;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
+/* ในแผงขวา: พรีวิวไม่จำกัดความสูง (แผงเลื่อนเอง) */
+.drawer .slip-preview {
+  max-height: none;
+  overflow: visible;
+}
+.slip-code {
+  margin-top: var(--space-3);
+  text-align: center;
+}
+.slip-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  width: 100%;
+}
+.slip-actions .btn {
+  justify-content: center;
+  min-width: 0;
+}
+.slip-print {
+  display: none;
+}
+@media print {
+  body:has(.slip-print) > :not(.slip-print) {
+    display: none !important;
+  }
+  .slip-print {
+    display: block;
+    width: 100%;
+    max-width: 160mm;
+    margin: 0 auto;
+  }
+}
 /* ไอคอนของปุ่มสลิป/ตรวจ — ขาวดำตามระบบ (สีอยู่ในภาพสลิปเท่านั้น) */
 .btn[data-fn] svg {
   width: 18px;

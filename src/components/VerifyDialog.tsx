@@ -4,7 +4,7 @@ import { useI18n } from '../i18n';
 import { normalizeCode, verifySlip, type SlipData, type SlipRecord, type Verdict } from '../slip';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
-import { useSlipImage } from './slipExport';
+import { useSlipImage } from './SlipView';
 
 export function VerifyDialog({ open, initial, onClose, seen }: { open: boolean; initial: { code: string; data: SlipData | null } | null; onClose: () => void; seen: (hash: string) => boolean }) {
   const { t } = useI18n();

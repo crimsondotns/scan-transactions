@@ -15,7 +15,6 @@ import { DetailPanel } from './components/DetailPanel';
 import type { TxRow } from './feed';
 import { useChains } from './chains';
 import { SettingsDialog } from './components/SettingsDialog';
-import { useSlipExport } from './components/slipExport';
 import { VerifyDialog } from './components/VerifyDialog';
 import { parseShare } from './slip';
 import { LangMenu } from './components/LangMenu';
@@ -41,7 +40,6 @@ export function App() {
   useEffect(() => {
     if (share) setVerifyOpen(true);
   }, [share]);
-  const exportSlip = useSlipExport();
   const page: 'dashboard' | 'wallet' = pageWallet ? 'wallet' : 'dashboard';
   const [selected, setSelected] = useState<TxRow | null>(null);
   /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
@@ -219,7 +217,7 @@ export function App() {
       {createPortal(
         <>
           {selected !== null && <button type="button" className="drawer-scrim" aria-label={t('dialog.close')} onClick={closeDetail} />}
-          <DetailPanel row={selected} wallets={wallets} chains={chains} settings={settings} onClose={closeDetail} onSlip={(d) => void exportSlip(d)} />
+          <DetailPanel row={selected} wallets={wallets} chains={chains} settings={settings} onClose={closeDetail} />
         </>,
         document.body
       )}

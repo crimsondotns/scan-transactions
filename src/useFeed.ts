@@ -84,7 +84,7 @@ export function useFeed(settings: Settings) {
           }
           // offset สะสมข้ามหน้า (หน้า 2 = offset ของหน้า 1 + จำนวนที่ได้) — start/cursor ใช้ของหน้าล่าสุด
           const before = mode === 'older' ? prev.next[r.ep.id] : null;
-          next[r.ep.id] = grew && r.page.rows.length >= settings.pageSize && r.page.next ? { ...r.page.next, offset: (before?.offset ?? 0) + r.page.next.offset } : null;
+          next[r.ep.id] = grew && r.page.rows.length >= settings.pageSize && r.page.next ? { ...r.page.next, offset: (before?.offset ?? 0) + r.page.next.offset } : (grew && r.page.next?.next ? r.page.next : null);
         }
         return { ...s, [w.id]: { rows, next, errors, loading: false, loaded: true } };
       });

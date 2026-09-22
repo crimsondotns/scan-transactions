@@ -88,6 +88,8 @@ Do not declare work done while any of these is red.
 
 - Settings → "Custom chains": ผู้ใช้ใส่ chain id + ชื่อ + โลโก้ + explorer เอง (`settings.chains`) → `useChains` merge ทับ chain list; ทางเดียวที่โลโก้/explorer ของเชนที่ chain list ไม่มี (เช่น sol) เข้ามาได้ — ห้ามฝัง URL โลโก้ในโค้ด
 
+- รูปแบบคำตอบที่รองรับ: history_list (EVM), flat list, signature list, trade list, `{ transfers[], next }`, `{ "<address>": { userTrades[], next } }` — แหล่งที่ส่ง `next` มาให้ `{offset}`/`{next}` ใช้ token นั้นเลื่อนหน้า (ไม่ใช่จำนวนแถว)
+
 ## Token metadata + สลิป (2026-09-22)
 - แหล่งข้อมูลแต่ละอันมี `metaUrl` (เลือกใส่) — หลังโหลดหน้า โทเคนที่ยังไม่รู้ชื่อ/สัญลักษณ์/โลโก้ (`unknownTokens`) ถูกขอเป็นชุด ≤50 ที่อยู่ เว้น 1.5 วิ (`src/tokens.ts`, แคช localStorage 7 วัน `xcap.scan.tokens`) แล้วเติมลงแถวก่อนแสดง (`applyTokenMeta`) — ไม่ยิงขอราคา/metadata แยกตอน render
 - Solana-family ที่ไม่มี placeholder ประกอบเป็น `?ownerAddress={address}&limit={count}`; แหล่งที่ใช้ path/พารามิเตอร์อื่นให้ผู้ใช้วาง URL ที่มี `{address}` `{count}` `{cursor}` เอง

@@ -66,6 +66,8 @@ export interface Cursor {
   cursor: string;
   /** จำนวนแถวที่ดึงจากแหล่งนี้มาแล้ว (สะสม) → {offset} (เลื่อนหน้าแบบ offset=100, 200, …) */
   offset: number;
+  /** ค่า next ที่แหล่งส่งมาในคำตอบ → {next} (แหล่งที่เลื่อนหน้าด้วย token ของตัวเอง) */
+  next?: string;
 }
 
 export interface Page {
@@ -95,7 +97,7 @@ export function hasPlaceholder(tpl: string): boolean {
  * URL ที่ไม่มี placeholder → ประกอบให้ตามตระกูล:
  *  evm: ?id={address}&start_time={start}&page_count={count}
  *  sol: ?ownerAddress={address}&limit={count}&offset={offset}  (หน้าแรกไม่ส่ง offset)
- * แหล่งที่ใช้ชื่อพารามิเตอร์/รูปแบบอื่น → วาง URL ที่มี {address} {count} {cursor} {start} {offset} เองได้
+ * แหล่งที่ใช้ชื่อพารามิเตอร์/รูปแบบอื่น → วาง URL ที่มี {address} {count} {cursor} {start} {offset} {next} เองได้
  */
 /** พารามิเตอร์ที่ผู้ใช้วางมาแบบว่าง (?ownerAddress หรือ &limit=) → เติม placeholder ลงไปแทนที่จะต่อซ้ำ */
 function fillEmptyParam(url: string, name: string, value: string): string | null {
@@ -137,12 +139,14 @@ export function toTemplate(url: string, family: 'evm' | 'sol' = 'evm'): string {
 export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number, family: 'evm' | 'sol' = 'evm'): string {
   let t = toTemplate(tpl, family);
   // หน้าแรก (ไม่มี cursor) → ตัดพารามิเตอร์ที่ถือ {cursor}/{offset} ทิ้งทั้งคู่ (ไม่ส่ง before= ว่าง / offset=0)
-  if (!cur) t = t.replace(/[?&][^&=]+=\{(cursor|offset)\}/g, (m) => (m.startsWith('?') ? '?' : '')).replace(/\?&/, '?').replace(/[?&]$/, '');
+  if (!cur) t = t.replace(/[?&][^&=]+=\{(cursor|offset|next)\}/g, (m) => (m.startsWith('?') ? '?' : '')).replace(/\?&/, '?').replace(/[?&]$/, '');
   return t
     .replaceAll('{address}', encodeURIComponent(address))
     .replaceAll('{start}', String(cur?.start ?? 0))
     .replaceAll('{cursor}', cur ? encodeURIComponent(cur.cursor) : '')
-    .replaceAll('{offset}', String(cur?.offset ?? 0))
+    // {offset}: แหล่งที่ส่ง next มาให้ใช้ token นั้น (เช่น offset=<next>) ไม่งั้นเป็นจำนวนแถวสะสม
+    .replaceAll('{offset}', cur?.next ? encodeURIComponent(cur.next) : String(cur?.offset ?? 0))
+    .replaceAll('{next}', cur?.next ? encodeURIComponent(cur.next) : '')
     .replaceAll('{count}', String(count));
 }
 
@@ -185,6 +189,9 @@ const httpUrl = (v: unknown): string | null => (typeof v === 'string' && /^https
 
 function normalize(body: unknown, walletId: string, address: string): Page {
   if (isObj(body) && Array.isArray(body.history_list)) return fromHistoryList(body, walletId, address);
+  if (isObj(body) && Array.isArray(body.transfers)) return fromTransferList(body, walletId, address);
+  const pnl = isObj(body) ? (Object.values(body).find((v) => isObj(v) && Array.isArray(v.userTrades)) as Dict | undefined) : undefined;
+  if (pnl) return fromUserTrades(pnl, walletId);
   const list = Array.isArray(body) ? body : isObj(body) ? (['result', 'data', 'activities', 'items', 'transactions', 'txs'].map((k) => body[k]).find(Array.isArray) ?? (isObj(body.data) ? ['activities', 'items', 'list'].map((k) => (body.data as Dict)[k]).find(Array.isArray) : null) ?? null) : null;
   if (!list) throw new FeedError('shape');
   if (list.some((x) => isObj(x) && typeof x.tokenAddress === 'string' && (typeof x.isBuy === 'boolean' || x.solAmount !== undefined))) return fromTradeList(list, walletId);
@@ -448,10 +455,106 @@ function fromTradeList(list: unknown[], walletId: string): Page {
   return { rows, next: cursorOf(rows) };
 }
 
-function cursorOf(rows: TxRow[]): Cursor | null {
+/**
+ * รูปแบบ E: { transfers: [{ txHash, blockTime, assetId, amount, amountRaw, usdVolume, fromAddress, toAddress, feeAmount, feePayer }], next }
+ * การโอนเข้า/ออกของที่อยู่ (รวมเหรียญพื้นเมือง): ทิศจาก from/to, จำนวนเป็นทศนิยมแล้ว, สัญลักษณ์/โลโก้รอ metadata
+ */
+function fromTransferList(body: Dict, walletId: string, address: string): Page {
+  const rows: TxRow[] = [];
+  const chain = str(body.chain) ?? 'sol';
+  for (const item of body.transfers as unknown[]) {
+    if (!isObj(item)) continue;
+    const hash = str(item.txHash) ?? '';
+    const from = str(item.fromAddress);
+    const to = str(item.toAddress);
+    const out = from === address;
+    const mint = str(item.assetId);
+    const amount = num(item.amount) ?? 0;
+    const usd = num(item.usdVolume);
+    const price = usd !== null && amount ? usd / amount : null;
+    const symbol = mint ? shortId(mint) : '';
+    rememberPrice(chain, mint, symbol, price);
+    const fee = num(item.feeAmount);
+    rows.push({
+      key: `${walletId}:${chain}:${hash}:${rows.length}`,
+      hash,
+      walletId,
+      chain,
+      chainLogo: null,
+      nativeSymbol: 'SOL',
+      time: Math.floor(Date.parse(str(item.blockTime) ?? '') / 1000) || (num(item.blockTime) ?? 0),
+      type: out ? 'send' : 'receive',
+      name: '',
+      failed: false,
+      flagged: false,
+      moves: amount ? [{ dir: out ? 'out' : 'in', amount, symbol, name: null, usd, price, tokenId: mint, flagged: false, logo: null }] : [],
+      counterparty: out ? to : from,
+      counterpartyName: null,
+      from,
+      to,
+      contract: null,
+      nonce: null,
+      gasUsd: null,
+      gasNative: fee !== null && str(item.feePayer) === address ? fee : null,
+      raw: item,
+    });
+  }
+  return { rows, next: cursorOf(rows, str(body.next)) };
+}
+
+/**
+ * รูปแบบ F: { "<address>": { userTrades: [{ type: buy|sell, assetId, amount, price, nativeVolume, usdVolume, blockTime, txHash }], next } }
+ * เทรดกับ SOL: buy = จ่าย SOL รับโทเคน, sell = ส่งโทเคน รับ SOL — จำนวนเป็นทศนิยมแล้ว
+ */
+function fromUserTrades(wrap: Dict, walletId: string): Page {
+  const rows: TxRow[] = [];
+  const chain = str(wrap.chain) ?? 'sol';
+  for (const item of wrap.userTrades as unknown[]) {
+    if (!isObj(item)) continue;
+    const hash = str(item.txHash) ?? '';
+    const mint = str(item.assetId) ?? '';
+    const buy = (str(item.type) ?? '').toLowerCase() === 'buy';
+    const amount = num(item.amount) ?? 0;
+    const price = num(item.price);
+    const usd = num(item.usdVolume);
+    const sol = num(item.nativeVolume) ?? 0;
+    const solPrice = sol && usd !== null ? usd / sol : null;
+    const symbol = shortId(mint);
+    rememberPrice(chain, mint, symbol, price);
+    rememberPrice(chain, null, 'SOL', solPrice);
+    const token: Move = { dir: buy ? 'in' : 'out', amount, symbol, name: null, usd, price, tokenId: mint, flagged: false, logo: null };
+    const native: Move = { dir: buy ? 'out' : 'in', amount: sol, symbol: 'SOL', name: null, usd, price: solPrice, tokenId: null, flagged: false, logo: null };
+    rows.push({
+      key: `${walletId}:${chain}:${hash}:${str(item.actionId) ?? rows.length}`,
+      hash,
+      walletId,
+      chain,
+      chainLogo: null,
+      nativeSymbol: 'SOL',
+      time: Math.floor(Date.parse(str(item.blockTime) ?? '') / 1000) || (num(item.blockTime) ?? 0),
+      type: 'swap',
+      name: buy ? 'buy' : 'sell',
+      failed: false,
+      flagged: false,
+      moves: buy ? [native, token] : [token, native],
+      counterparty: null,
+      counterpartyName: null,
+      from: str(item.signerId),
+      to: null,
+      contract: null,
+      nonce: null,
+      gasUsd: null,
+      gasNative: null,
+      raw: item,
+    });
+  }
+  return { rows, next: cursorOf(rows, str(wrap.next)) };
+}
+
+function cursorOf(rows: TxRow[], next?: string | null): Cursor | null {
   if (!rows.length) return null;
   const oldest = rows.reduce((m, r) => (r.time > 0 && r.time < m.time ? r : m), rows[0]!);
-  return { start: oldest.time, cursor: oldest.hash, offset: rows.length };
+  return { start: oldest.time, cursor: oldest.hash, offset: rows.length, ...(next ? { next } : {}) };
 }
 
 /** arb_lifiprotocol → "Lifiprotocol", eth_uniswap3 → "Uniswap3" — ใช้เมื่อแหล่งข้อมูลไม่ส่ง project_dict มาให้ */

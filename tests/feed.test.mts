@@ -234,3 +234,20 @@ test('trade-list shape (Solana): buy/sell legs, raw token units converted once d
   assert.equal(m.rawUnits, undefined);
   assert.ok(Math.abs((m.usd ?? 0) - 25946399.405173 * 0.005438323252110719) < 1e-6);
 });
+
+test('transfers + pnl-activity shapes with next-token paging', async () => {
+  mock({ transfers: [{ txHash: 'h1', blockTime: '2026-09-21T03:11:28.000Z', assetId: 'So11111111111111111111111111111111111111112', amount: 4.627479137, amountRaw: 4627479137, usdVolume: 515.07, fromAddress: SOL, toAddress: 'other', feeAmount: 0.000079934, feePayer: SOL }], next: '1784143601' });
+  let page = await fetchPage('https://d.invalid/transfers/{address}?offset={offset}', 'w', SOL, null, 1);
+  assert.equal(page.rows[0]!.type, 'send');
+  assert.equal(page.rows[0]!.moves[0]!.amount, 4.627479137);
+  assert.equal(page.rows[0]!.gasNative, 0.000079934);
+  assert.equal(page.next?.next, '1784143601');
+  assert.equal(buildUrl('https://d.invalid/transfers/{address}?offset={offset}', SOL, page.next, 1), `https://d.invalid/transfers/${SOL}?offset=1784143601`);
+
+  mock({ [SOL]: { isBlackListed: false, next: '428931412000765000', userTrades: [{ type: 'sell', assetId: 'Mint1', amount: 25946.399405173, price: 0.00543, nativeVolume: 1.265039288, usdVolume: 140.89, blockTime: '2026-09-21T03:18:13.000Z', txHash: 'h2', actionId: 'a1', signerId: SOL }] } });
+  page = await fetchPage('https://d.invalid/pnl-activity?address={address}&offset={offset}', 'w', SOL, null, 1);
+  const r = page.rows[0]!;
+  assert.equal(r.type, 'swap');
+  assert.deepEqual(r.moves.map((m) => [m.dir, m.symbol, m.amount]), [['out', 'Mint1', 25946.399405173], ['in', 'SOL', 1.265039288]]);
+  assert.equal(page.next?.next, '428931412000765000');
+});

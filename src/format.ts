@@ -34,13 +34,10 @@ export function formatAmount(v: number): string {
   return v.toLocaleString(locale, { maximumSignificantDigits: 4 });
 }
 
-/** แบบย่อในแผงรายละเอียด: ≥1 ทศนิยม 2 ตำแหน่ง (51,685.19), <1 เลขนัยสำคัญ 3 ตัว (0.0629) — ค่าเต็มคัดลอกได้จาก data-value */
+/** แบบย่อในแผงรายละเอียด: ทศนิยม 4 ตำแหน่งเสมอ (18,441.2753 · 4.3745) — ค่าเต็มคัดลอกได้จาก data-value */
 export function formatAmountShort(v: number): string {
   if (!Number.isFinite(v)) return '—';
-  const abs = Math.abs(v);
-  if (abs === 0) return '0';
-  if (abs >= 1) return v.toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return v.toLocaleString(locale, { maximumSignificantDigits: 3 });
+  return v.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
 }
 
 /** ตัวเลขเต็มความละเอียดที่ข้อมูลมี (ไม่ปัด) มีตัวคั่นหลัก — ใช้ในแผงรายละเอียด */

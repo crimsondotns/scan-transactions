@@ -102,7 +102,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
           type="button"
           className="ev-amount copyable-number"
           data-dir={m.dir}
-          data-value={`${m.dir === 'in' ? '' : '-'}${m.amount}`}
+          data-value={String(m.amount)}
           title={`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`}
           aria-label={t('tx.copy', { what: `${formatAmountFull(m.amount)} ${m.symbol}` })}
           onClick={(e) => void copyValue(e.currentTarget.dataset.value ?? '')}

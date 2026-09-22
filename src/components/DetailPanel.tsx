@@ -265,7 +265,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
       <div className="drawer-foot">
         <button type="button" className="btn" onClick={() => onSlip(slipData(row, wallet, chainName, native, txUrl, { chainLogo, usdOfMove: moveUsd, swapCost, feeUsd: gasUsd, protocol: row.counterpartyName }))}>
           <Icon name="receipt" />
-          {t('slip.open')}
+          {t('slip.download')}
         </button>
         {txUrl ? (
           <a className="btn btn-primary" href={txUrl} target="_blank" rel="noopener noreferrer">

@@ -1857,13 +1857,6 @@ dialog.dlg::backdrop {
   height: auto;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
-.slip-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-}
-.slip-actions .btn {
-  justify-content: center;
-}
 /* ไอคอนของปุ่มสลิป/ตรวจ — ขาวดำตามระบบ (สีอยู่ในภาพสลิปเท่านั้น) */
 .btn[data-fn] svg {
   width: 18px;
@@ -1900,18 +1893,4 @@ dialog.dlg::backdrop {
 }
 .drawer-foot .btn:first-child:not(:last-child) {
   min-width: 0;
-}
-.slip-print {
-  display: none;
-}
-@media print {
-  body:has(.slip-print) > :not(.slip-print) {
-    display: none !important;
-  }
-  .slip-print {
-    display: block;
-    width: 100%;
-    max-width: 160mm;
-    margin: 0 auto;
-  }
 }

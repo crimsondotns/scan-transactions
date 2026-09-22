@@ -13,6 +13,7 @@ import { useToast } from './Toast';
 import { slipData, type SlipData } from '../slip';
 import { SlipLightbox } from './SlipView';
 import { protocolKind } from '../kind';
+import { riskReasons } from '../risk';
 import { chainStyle } from '../chainStyle';
 
 export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void }) {
@@ -286,6 +287,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
                 feeUsd: gasUsd,
                 protocol: row.counterpartyName,
                 protocolKind: kind ? t(`kind.${kind}`) : null,
+                reasons: riskReasons(row, wallets, t),
               }),
             )
           }

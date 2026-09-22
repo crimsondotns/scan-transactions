@@ -47,6 +47,9 @@ export interface SlipData {
   /** ส่วนต่างสวอป (USD) / ค่าเครือข่าย (USD) — แสดงผลอย่างเดียว */
   swapCost?: number | null;
   feeUsd?: number | null;
+  /** น่าสงสัย/หลอกลวง (อยู่ในแฮช) + เหตุผลที่แสดง (ข้อความตามภาษา ไม่อยู่ในแฮช) */
+  flagged?: boolean;
+  reasons?: string[];
   /** ชื่อโปรโตคอล/คู่สัญญา + ชนิด (Bridge/Aggregator/…) — แสดงผลอย่างเดียว */
   protocol?: string | null;
   protocolKind?: string | null;
@@ -69,6 +72,7 @@ export interface SlipExtra {
   feeUsd?: number | null;
   protocol?: string | null;
   protocolKind?: string | null;
+  reasons?: string[];
 }
 
 export function slipData(row: TxRow, wallet: { address: string; label: string } | undefined, chainName: string, native: string, url: string | null, extra: SlipExtra = {}): SlipData {
@@ -96,13 +100,15 @@ export function slipData(row: TxRow, wallet: { address: string; label: string } 
     feeUsd: extra.feeUsd ?? null,
     protocol: extra.protocol ?? null,
     protocolKind: extra.protocolKind ?? null,
+    flagged: row.flagged,
+    reasons: row.flagged ? (extra.reasons ?? []) : [],
     issued: Date.now(),
   };
 }
 
 /** สตริงที่แฮช: JSON ของฟิลด์ตามลำดับที่กำหนด (ไม่ขึ้นกับลำดับ key ของอ็อบเจ็กต์) */
 function canonical(d: SlipData): string {
-  return JSON.stringify([d.v, d.hash, d.chain, d.type, d.status, d.wallet, d.from, d.to, d.moves.map((m) => [m.dir, m.amount, m.symbol, m.approve ? 1 : 0]), d.fee, d.feeSymbol, d.time, d.issued]);
+  return JSON.stringify([d.v, d.hash, d.chain, d.type, d.status, d.wallet, d.from, d.to, d.moves.map((m) => [m.dir, m.amount, m.symbol, m.approve ? 1 : 0]), d.flagged ? 1 : 0, d.fee, d.feeSymbol, d.time, d.issued]);
 }
 
 export async function slipCode(d: SlipData): Promise<string> {
@@ -227,6 +233,9 @@ interface Labels {
   received: string;
   sent: string;
   approved: string;
+  flaggedTitle: string;
+  why: string;
+  verifyFirst: string;
   swapCost: string;
   protocol: string;
   wallet: string;
@@ -295,6 +304,10 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
   const [chainImg, ...moveImgs] = await Promise.all([loadImage(d.chainLogo), ...d.moves.map((m) => loadImage(m.logo))]);
   const POSITIVE = tokenColor('positive', '#16a34a');
   const DANGER = tokenColor('danger', '#dc2626');
+  const WARN = tokenColor('warn', '#d97706');
+  const WARN_SOFT = tokenColor('warn-soft', '#fef3c7');
+  const WARN_INK = tokenColor('warn-ink', '#78350f');
+  const risky = d.flagged === true;
   const ins = d.moves.filter((m) => m.dir === 'in');
   const outs = d.moves.filter((m) => m.dir === 'out');
   const ordered = [...outs, ...ins];
@@ -372,7 +385,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     // เช็คเขียว / กากบาทแดง + สถานะ
     const ok = d.status === 'ok';
     if (!dry) {
-      ctx.fillStyle = ok ? POSITIVE : DANGER;
+      ctx.fillStyle = risky ? WARN : ok ? POSITIVE : DANGER;
       ctx.beginPath();
       ctx.arc(W / 2, y + 24, 24, 0, Math.PI * 2);
       ctx.fill();
@@ -381,7 +394,17 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.beginPath();
-      if (ok) {
+      if (risky) {
+        // สามเหลี่ยมเตือน + เครื่องหมายตกใจ
+        ctx.moveTo(W / 2, y + 13);
+        ctx.lineTo(W / 2 + 11, y + 33);
+        ctx.lineTo(W / 2 - 11, y + 33);
+        ctx.closePath();
+        ctx.moveTo(W / 2, y + 21);
+        ctx.lineTo(W / 2, y + 26);
+        ctx.moveTo(W / 2, y + 29.5);
+        ctx.lineTo(W / 2, y + 29.6);
+      } else if (ok) {
         ctx.moveTo(W / 2 - 9, y + 25);
         ctx.lineTo(W / 2 - 3, y + 31);
         ctx.lineTo(W / 2 + 10, y + 17);
@@ -394,12 +417,55 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       ctx.stroke();
     }
     y += 62;
-    text(ok ? L.success : L.failed, W / 2, y + 6, 16, 600, INK, 'center');
+    text(risky ? L.flaggedTitle : ok ? L.success : L.failed, W / 2, y + 6, 16, 600, INK, 'center');
     y += 24;
     text(`${formatStamp(d.time)} · ${d.chainName}`, W / 2, y + 4, 12, 400, MUTED, 'center');
     y += 18;
     dash(y);
     y += 20;
+
+    // กล่องเหตุผล (เหลืองอ่อน) — "Why this is flagged" + รายการ
+    if (risky && d.reasons && d.reasons.length) {
+      const bx = PAD;
+      const bw2 = W - PAD * 2;
+      const inner = bw2 - 24;
+      // วัดสูงก่อน
+      const probe2 = ctx;
+      probe2.font = `400 11px ${FONT}`;
+      let bh = 12 + 16;
+      const lines: string[][] = d.reasons.map((r) => {
+        const out: string[] = [];
+        let cur = '';
+        for (const w of r.split(' ')) {
+          const next = cur ? `${cur} ${w}` : w;
+          if (probe2.measureText(next).width > inner - 12 && cur) {
+            out.push(cur);
+            cur = w;
+          } else cur = next;
+        }
+        if (cur) out.push(cur);
+        return out;
+      });
+      for (const ls of lines) bh += ls.length * 15 + 3;
+      bh += 8;
+      if (!dry) {
+        ctx.fillStyle = WARN_SOFT;
+        ctx.beginPath();
+        ctx.roundRect(bx, y, bw2, bh, 8);
+        ctx.fill();
+      }
+      let yy = y + 12;
+      text(L.why, bx + 12, yy + 10, 12, 600, WARN_INK);
+      yy += 22;
+      for (const ls of lines) {
+        text('•', bx + 14, yy + 9, 11, 400, WARN_INK);
+        ls.forEach((ln, i) => text(ln, bx + 24, yy + 9 + i * 15, 11, 400, WARN_INK));
+        yy += ls.length * 15 + 3;
+      }
+      y += bh + 14;
+      dash(y);
+      y += 20;
+    }
 
     // ตัวเลขใหญ่
     if (lead && show.headline) {
@@ -409,7 +475,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       const big = `${lead.approve ? '' : isIn ? '+' : '−'}${formatAmountFull(lead.amount)} ${lead.symbol}`;
       ctx.font = `700 26px ${FONT}`;
       const size = ctx.measureText(big).width > W - PAD * 2 ? 20 : 26;
-      text(big, W / 2, y + 26, size, 700, isIn ? POSITIVE : INK, 'center');
+      text(big, W / 2, y + 26, size, 700, risky ? MUTED : isIn ? POSITIVE : INK, 'center');
       y += 36;
       if (show.usd && lead.usd !== null && lead.usd !== undefined) {
         text(`≈ ${formatUsdExact(lead.usd)}`, W / 2, y + 4, 12, 400, MUTED, 'center');
@@ -431,6 +497,24 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
         circleImage(ctx, chainImg, PAD + 22, y + 22, 14, d.chainName, INK);
       }
       text(m.symbol, PAD + 46, y + 16, 14, 600);
+      if (risky && !dry) {
+        // สามเหลี่ยมแดงเล็กหลังสัญลักษณ์
+        ctx.font = `600 14px ${FONT}`;
+        const sx = PAD + 46 + ctx.measureText(m.symbol).width + 8;
+        ctx.strokeStyle = DANGER;
+        ctx.lineWidth = 1.5;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        ctx.moveTo(sx + 6, y + 5);
+        ctx.lineTo(sx + 12, y + 16);
+        ctx.lineTo(sx, y + 16);
+        ctx.closePath();
+        ctx.moveTo(sx + 6, y + 9.5);
+        ctx.lineTo(sx + 6, y + 12.5);
+        ctx.stroke();
+        ctx.fillStyle = DANGER;
+        ctx.fillRect(sx + 5.3, y + 13.6, 1.4, 1.4);
+      }
       text(`${L.on} ${d.chainName}`, PAD + 46, y + 31, 11, 400, MUTED);
       // แถวสินทรัพย์: 4 ทศนิยม (เหมือนแผงขวา) — ทศนิยมเต็มอยู่ที่ตัวเลขใหญ่ Received/Sent ด้านบนเท่านั้น
       text(`${m.approve ? '' : m.dir === 'in' ? '+' : '−'}${formatAmountShort(m.amount)}`, W - PAD, y + 16, 15, 600, INK, 'right');
@@ -465,7 +549,24 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     if (show.hash) y += wrap(d.hash, W / 2, y + 8, 10, W - PAD * 2, 400, MUTED, 'center') + 8;
     // QR กลาง
     if (show.qr) {
-      if (!dry) ctx.drawImage(qr, W / 2 - 48, y, 96, 96);
+      if (!dry) {
+        if (risky) ctx.globalAlpha = 0.3;
+        ctx.drawImage(qr, W / 2 - 48, y, 96, 96);
+        ctx.globalAlpha = 1;
+        if (risky) {
+          // ป้าย "Verify first" ทับกลาง QR
+          ctx.font = `600 10px ${FONT}`;
+          const lw = ctx.measureText(L.verifyFirst).width + 14;
+          ctx.fillStyle = '#ffffff';
+          ctx.strokeStyle = DANGER;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(W / 2 - lw / 2, y + 39, lw, 18, 4);
+          ctx.fill();
+          ctx.stroke();
+          text(L.verifyFirst, W / 2, y + 52, 10, 600, DANGER, 'center');
+        }
+      }
       y += 116;
     }
     if (show.code) {
@@ -518,6 +619,24 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
   ctx.clip();
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, W, H);
+  if (risky) {
+    // แถบเตือนเหลือง/ขาวเฉียงบนหัวสลิป
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, W, 8);
+    ctx.clip();
+    ctx.fillStyle = WARN;
+    for (let x = -20; x < W + 20; x += 20) {
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x + 10, 0);
+      ctx.lineTo(x + 2, 8);
+      ctx.lineTo(x - 8, 8);
+      ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+  }
   draw(ctx, false);
   ctx.restore();
   return canvas;

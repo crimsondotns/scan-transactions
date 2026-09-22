@@ -7,6 +7,7 @@ import { useStore, type Wallet } from '../store';
 import type { TxRow, TxType } from '../feed';
 import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative } from '../format';
 import { Icon } from './Icon';
+import { protocolKind } from '../kind';
 import { Dropdown } from './Dropdown';
 import { Logo } from './Logo';
 import type { ChainMap } from '../chains';
@@ -173,7 +174,9 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
                 const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
                 const base = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || (r.counterpartyName ?? '');
                 // ชื่อโปรโตคอล/คู่สัญญาต่อท้าย (USDC · Lifiprotocol) — ถ้ามี
-                const subtitle = r.counterpartyName && base !== r.counterpartyName ? (base ? `${base} · ${r.counterpartyName}` : r.counterpartyName) : base;
+                const kind = protocolKind(r);
+                const proto = r.counterpartyName ? (kind ? `${t(`kind.${kind}`)} · ${r.counterpartyName}` : r.counterpartyName) : '';
+                const subtitle = proto && base !== r.counterpartyName ? (base ? `${base} · ${proto}` : proto) : base;
                 const native = r.nativeSymbol ?? chainInfo.get(r.chain)?.symbol ?? r.chain.toUpperCase();
                 const isSel = r.key === selected;
                 return (

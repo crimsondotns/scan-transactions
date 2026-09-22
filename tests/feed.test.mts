@@ -5,6 +5,7 @@ import { detectEndpoint, parseAddress } from '../src/store.ts';
 import { rowValue } from '../src/components/TxTable.tsx';
 import { applyTokenMeta, buildUrl, fetchPage, lookalike, parseTokenMeta, prettyProjectId, toTemplate, unknownTokens } from '../src/feed.ts';
 import { metaUrl } from '../src/tokens.ts';
+import { protocolKind } from '../src/kind.ts';
 
 const ME = '0x42a8000000000000000000000000000000000000';
 const fixture = {
@@ -171,4 +172,14 @@ test('protocol name falls back to project_id when project_dict lacks it', async 
   const page = await fetchPage('https://x.invalid/{address}', 'w', ME, null, 20);
   assert.equal(page.rows[0]!.counterpartyName, 'Lifiprotocol');
   assert.equal(prettyProjectId('eth_uniswap-v3', 'eth'), 'Uniswap V3');
+});
+
+test('protocolKind: bridge beats swap in method name; plain swap with a project is DEX', async () => {
+  mock({ history_list: [
+    { id: '0xb', idx: 0, chain: 'arb', time_at: 1789891479, project_id: 'arb_lifiprotocol', sends: [{ amount: 880, price: 1, token_id: '0xaf88d065e77c8cc2239327c5edb3a432268e5831' }], receives: [], tx: { name: 'swapAndStartBridgeTokensViaLiFiIntentEscrowV2', status: 1, from_addr: ME, to_addr: '0x1231deb6f5749ef6ce6943a275a1d3e7486f4eae' } },
+    { id: '0xs', idx: 0, chain: 'arb', time_at: 1789891400, project_id: 'arb_somedex', sends: [{ amount: 1, price: 1, token_id: '0xaf88d065e77c8cc2239327c5edb3a432268e5831' }], receives: [{ amount: 2, price: 0.5, token_id: '0x0000000000000000000000000000000000000001' }], tx: { name: 'execute', status: 1, from_addr: ME, to_addr: '0x2' } },
+    { id: '0xa', idx: 0, chain: 'arb', time_at: 1789891300, project_id: 'arb_x', sends: [{ amount: 1, price: 1, token_id: '0xaf88d065e77c8cc2239327c5edb3a432268e5831' }], receives: [{ amount: 2, price: 0.5, token_id: '0x0000000000000000000000000000000000000001' }], tx: { name: 'unoswapTo', status: 1, from_addr: ME, to_addr: '0x2' } },
+  ], token_dict: {}, project_dict: {} });
+  const page = await fetchPage('https://x.invalid/{address}', 'w', ME, null, 20);
+  assert.deepEqual(page.rows.map((r) => protocolKind(r)), ['bridge', 'dex', 'aggregator']);
 });

@@ -13,6 +13,7 @@ import { Identicon } from './Identicon';
 import { useToast } from './Toast';
 import { slipData, type SlipData } from '../slip';
 import { useSlipView } from './SlipView';
+import { protocolKind } from '../kind';
 import { chainStyle } from '../chainStyle';
 
 export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void }) {
@@ -65,6 +66,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
   const chainName = chain?.name ?? row.chain;
   const native = row.nativeSymbol ?? chain?.symbol ?? row.chain.toUpperCase();
   const cs = chainStyle(row.chain, chainName);
+  const kind = protocolKind(row);
   const ChainGlyph = () =>
     cs ? (
       <span className="chain-glyph" aria-hidden="true">
@@ -233,7 +235,8 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
               ))}
               {!isSwap && row.from && <AddrRow label={t('detail.from')} addr={row.from} />}
               {!isSwap && row.to && <AddrRow label={t('detail.to')} addr={row.to} />}
-              {row.counterpartyName && <Row label={t('detail.protocol')}>{row.counterpartyName}</Row>}
+              {/* ป้ายเป็นชนิดที่เดาได้ (Bridge / Aggregator / DEX …) ไม่งั้นค่อยเป็น Protocol */}
+          {row.counterpartyName && <Row label={kind ? t(`kind.${kind}`) : t('detail.protocol')}>{row.counterpartyName}</Row>}
               {row.contract && <AddrRow label={t('detail.contract')} addr={row.contract} />}
               {row.name && row.type !== 'swap' && row.name !== row.counterpartyName && (
                 <Row label={t('detail.method')}>
@@ -296,7 +299,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
             <button
               type="button"
               className="btn"
-              onClick={() => setSlip(slipData(row, wallet, chainName, native, txUrl, { chainLogo, usdOfMove: moveUsd, swapCost, feeUsd: gasUsd, protocol: row.counterpartyName }))}
+              onClick={() => setSlip(slipData(row, wallet, chainName, native, txUrl, { chainLogo, usdOfMove: moveUsd, swapCost, feeUsd: gasUsd, protocol: row.counterpartyName, protocolKind: kind ? t(`kind.${kind}`) : null }))}
             >
               <Icon name="receipt" />
               {t('slip.open')}

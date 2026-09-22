@@ -5,6 +5,7 @@ import type { ChainMap } from '../chains';
 import type { Progress } from '../useFeed';
 import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative, shortAddr } from '../format';
 import { Icon } from './Icon';
+import { protocolKind } from '../kind';
 import { Logo } from './Logo';
 import { Identicon } from './Identicon';
 import { SkeletonRows } from './Skeleton';
@@ -102,7 +103,9 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
                 const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
                 const base = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || '';
                 // ชื่อโปรโตคอล/คู่สัญญาต่อท้าย (USDC · Lifiprotocol) — ถ้ามี
-                const subtitle = r.counterpartyName && base !== r.counterpartyName ? (base ? `${base} · ${r.counterpartyName}` : r.counterpartyName) : base;
+                const kind = protocolKind(r);
+                const proto = r.counterpartyName ? (kind ? `${t(`kind.${kind}`)} · ${r.counterpartyName}` : r.counterpartyName) : '';
+                const subtitle = proto && base !== r.counterpartyName ? (base ? `${base} · ${proto}` : proto) : base;
                 return (
                   <tr
                     key={r.key}

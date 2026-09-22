@@ -1,20 +1,35 @@
 /** แผงขวา — รายละเอียดธุรกรรมโครงเดียวกับหน้าอ้างอิง: หัว (ชนิด/เวลา/สถานะ) → สินทรัพย์ → แถวข้อมูล */
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useI18n } from '../i18n';
 import type { Move, TxRow } from '../feed';
-import type { Wallet } from '../store';
+import type { Settings, Wallet } from '../store';
 import type { ChainMap } from '../chains';
-import { usdOf } from '../prices';
-import { formatAmount, formatAmountFull, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
+import { REFRESH_MS, priceOf, refreshPrice, usdOf } from '../prices';
+import { formatPrice, formatAmount, formatAmountFull, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { Identicon } from './Identicon';
 import { useToast } from './Toast';
 
-export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; onClose: () => void }) {
+export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
   const closeBtn = useRef<HTMLButtonElement>(null);
+  const [, setTick] = useState(0);
+  /* ราคาเป็น USD ของโทเคนในธุรกรรมนี้ — ใช้แคชก่อน แล้วดึงใหม่จาก URL ราคา (ถ้าตั้ง) ทุก 5 นาทีระหว่างเปิดแผง */
+  useEffect(() => {
+    if (!row) return;
+    const template = settings.priceUrl;
+    const tokens = [...row.moves.map((m) => ({ tokenId: m.tokenId, symbol: m.symbol })), { tokenId: null, symbol: row.nativeSymbol ?? '' }];
+    let alive = true;
+    const run = () => void Promise.all(tokens.map((x) => refreshPrice(template, row.chain, x.tokenId, x.symbol))).then(() => alive && setTick((n) => n + 1));
+    run();
+    const id = setInterval(run, REFRESH_MS);
+    return () => {
+      alive = false;
+      clearInterval(id);
+    };
+  }, [row, settings.priceUrl]);
 
   useEffect(() => {
     if (!row) return;
@@ -40,6 +55,11 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   const ins = real.filter((m) => m.dir === 'in');
   const outs = real.filter((m) => m.dir === 'out');
   const isSwap = ins.length > 0 && outs.length > 0;
+  // อัตราแลกเปลี่ยนแสดงเป็น USD ต่อ 1 หน่วยของแต่ละโทเคนในธุรกรรม (ไม่แสดงสัดส่วนโทเคนต่อโทเคน)
+  const rateRows = real
+    .filter((m, i, arr) => arr.findIndex((y) => y.symbol === m.symbol) === i)
+    .map((m) => ({ symbol: m.symbol, price: priceOf(row.chain, m.tokenId, m.symbol) ?? m.price }))
+    .filter((x) => x.price !== null && x.price > 0);
   const single = real[0] ?? row.moves[0] ?? null;
   // ค่าใช้จ่ายของสวอป: มูลค่าที่ส่งออก − มูลค่าที่ได้รับ (ค่าธรรมเนียมสวอป/slippage/ราคาขยับ) แยกจากค่าเครือข่าย
   // มูลค่า USD ของแต่ละขา: ที่แหล่งให้มาก่อน ไม่มีค่อยใช้ราคาล่าสุดจากแคช (ไม่ยิงขอราคาแยก)
@@ -160,16 +180,11 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
               }
             />
           )}
-          {isSwap && (
-            <>
-              <Row label={`1 ${ins[0]!.symbol}`}>
-                {formatAmount(outs[0]!.amount / ins[0]!.amount)} {outs[0]!.symbol}
-              </Row>
-              <Row label={`1 ${outs[0]!.symbol}`}>
-                {formatAmount(ins[0]!.amount / outs[0]!.amount)} {ins[0]!.symbol}
-              </Row>
-            </>
-          )}
+          {rateRows.map((x) => (
+            <Row key={x.symbol} label={t('detail.rate', { symbol: x.symbol })}>
+              {formatPrice(x.price)}
+            </Row>
+          ))}
           {!isSwap && row.from && <AddrRow label={t('detail.from')} addr={row.from} />}
           {!isSwap && row.to && <AddrRow label={t('detail.to')} addr={row.to} />}
           {row.contract && <AddrRow label={t('detail.contract')} addr={row.contract} />}

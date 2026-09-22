@@ -121,3 +121,24 @@ test('rowValue: moved value, not net', () => {
   assert.deepEqual(rowValue({ ...base, moves: [mv('in', 5, 3.82)] }), { value: 3.82, sign: '+' });
   assert.equal(rowValue({ ...base, moves: [mv('out', 2, null)] }), null);
 });
+
+test('price cache: remembers newest price per token, fills USD, builds price request URL', async () => {
+  const { rememberPrice, priceOf, usdOf, priceRequestUrl, refreshPrice } = await import('../src/prices.ts');
+  rememberPrice('arb', '0xabc', 'ARROW', 0.43, 100);
+  rememberPrice('arb', '0xabc', 'ARROW', 0.40, 50); // เก่ากว่า → ไม่ทับ
+  assert.equal(priceOf('arb', '0xabc', 'ARROW'), 0.43);
+  assert.equal(usdOf(10, null, 'arb', '0xabc', 'ARROW'), 4.3);
+  assert.equal(usdOf(10, 99, 'arb', '0xabc', 'ARROW'), 99);
+  assert.equal(priceOf('arb', '0xzzz', 'NOPE'), null);
+  assert.equal(priceRequestUrl('https://example.invalid/p/{chain}/{token}', 'arb', '0xabc', 'ARROW'), 'https://example.invalid/p/arb/0xabc');
+  assert.equal(priceRequestUrl('https://example.invalid/p', 'arb', null, 'ETH'), 'https://example.invalid/p?chain=arb&token=ETH');
+  const calls: string[] = [];
+  (globalThis as { fetch: unknown }).fetch = async (u: string) => {
+    calls.push(u);
+    return { ok: true, json: async () => ({ data: { price: '2734.64' } }) };
+  };
+  assert.equal(await refreshPrice('https://example.invalid/p', 'arb', null, 'ETH'), 2734.64);
+  assert.equal(await refreshPrice('https://example.invalid/p', 'arb', null, 'ETH'), 2734.64); // สดอยู่ → ไม่ยิงซ้ำ
+  assert.equal(calls.length, 1);
+  assert.equal(await refreshPrice('', 'arb', null, 'ETH'), 2734.64); // ไม่มี URL → ใช้แคช
+});

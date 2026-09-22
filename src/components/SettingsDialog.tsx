@@ -7,12 +7,14 @@ import { useToast } from './Toast';
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
-  const { settings, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl } = useStore();
+  const { settings, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl } = useStore();
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [chainUrl, setChainUrl] = useState(settings.chainListUrl);
   const [chainErr, setChainErr] = useState<string | null>(null);
+  const [priceUrl, setPriceUrlText] = useState(settings.priceUrl);
+  const [priceErr, setPriceErr] = useState<string | null>(null);
 
   /* ปุ่มเพิ่มติดทันทีที่มีข้อความ — ตรวจความถูกต้องตอนกดส่ง ไม่ใช่ตอนพิมพ์ */
   function submit(e: FormEvent) {
@@ -146,6 +148,64 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                   }}
                   aria-label={t('settings.remove', { name: t('settings.chainList') })}
                   title={t('settings.remove', { name: t('settings.chainList') })}
+                >
+                  <Icon name="trash" />
+                </button>
+              </span>
+            )}
+          </div>
+        </form>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!/^https:\/\//i.test(priceUrl.trim())) return setPriceErr(t('settings.badUrl'));
+            setPriceUrl(priceUrl);
+            setPriceErr(null);
+            toast(t('settings.priceUrlSaved'));
+          }}
+          noValidate
+        >
+          <div className="field">
+            <label className="label" htmlFor="set-price">
+              {t('settings.priceUrl')}
+            </label>
+            <div className="inline">
+              <input
+                id="set-price"
+                name="priceUrl"
+                type="url"
+                inputMode="url"
+                className="input mono"
+                value={priceUrl}
+                onChange={(e) => {
+                  setPriceUrlText(e.target.value);
+                  setPriceErr(null);
+                }}
+                autoComplete="off"
+                spellCheck={false}
+                aria-invalid={priceErr ? 'true' : undefined}
+              />
+              <button type="submit" className="btn btn-primary" disabled={priceUrl.trim() === '' || priceUrl.trim() === settings.priceUrl}>
+                {t('settings.addBtn')}
+              </button>
+            </div>
+            {priceErr && (
+              <span className="error" aria-live="polite">
+                {priceErr}
+              </span>
+            )}
+            {settings.priceUrl && (
+              <span className="hint with-logo">
+                <span className="mono">{settings.priceUrl}</span>
+                <button
+                  type="button"
+                  className="btn btn-icon"
+                  onClick={() => {
+                    setPriceUrl('');
+                    setPriceUrlText('');
+                  }}
+                  aria-label={t('settings.remove', { name: t('settings.priceUrl') })}
+                  title={t('settings.remove', { name: t('settings.priceUrl') })}
                 >
                   <Icon name="trash" />
                 </button>

@@ -44,7 +44,7 @@ export function formatAmountFull(v: number): string {
 export function formatPrice(v: number | null | undefined): string {
   if (v === null || v === undefined || !Number.isFinite(v) || v === 0) return '—';
   const abs = Math.abs(v);
-  const opts = abs >= 1 ? { maximumFractionDigits: 2 } : { maximumSignificantDigits: 4 };
+  const opts = abs >= 1 ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumSignificantDigits: 4 };
   return `${v < 0 ? '-' : ''}$${abs.toLocaleString(locale, opts)}`;
 }
 

@@ -60,6 +60,7 @@
 
   --shadow-none: none;
   --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.04);
+  --color-scrim: rgba(0, 0, 0, 0.4);
 
   --motion-fast: 120ms;
   --motion-base: 180ms;
@@ -122,6 +123,7 @@
     --color-hover: #303030;
     --color-line-hover: rgba(255, 255, 255, 0.4);
     --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.35);
+    --color-scrim: rgba(0, 0, 0, 0.4);
   }
 }
 :root[data-theme='dark'] {
@@ -140,4 +142,5 @@
   --color-hover: #303030;
   --color-line-hover: rgba(255, 255, 255, 0.4);
   --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --color-scrim: rgba(0, 0, 0, 0.4);
 }

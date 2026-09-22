@@ -9,8 +9,14 @@ export function setLocale(lang: keyof typeof LOCALES): void {
 
 export function formatUsd(v: number | null | undefined): string {
   if (v === null || v === undefined || !Number.isFinite(v) || v === 0) return '—';
+  return formatUsdExact(v);
+}
+
+/** เหมือน formatUsd แต่ศูนย์แสดงเป็น $0.00 (ใช้กับส่วนต่าง/ยอดรวมค่าใช้จ่าย) */
+export function formatUsdExact(v: number): string {
+  if (!Number.isFinite(v)) return '—';
   const abs = Math.abs(v);
-  const digits = abs < 1 ? 4 : 2;
+  const digits = abs > 0 && abs < 1 ? 4 : 2;
   return v.toLocaleString(locale, {
     style: 'currency',
     currency: 'USD',

@@ -4,7 +4,7 @@ import { useI18n } from '../i18n';
 import type { Move, TxRow } from '../feed';
 import type { Wallet } from '../store';
 import type { ChainMap } from '../chains';
-import { formatAmount, formatAmountFull, formatFeeNative, formatStamp, shortAddr, shortHash } from '../format';
+import { formatAmount, formatAmountFull, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { Identicon } from './Identicon';
@@ -41,6 +41,13 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   const outs = real.filter((m) => m.dir === 'out');
   const isSwap = ins.length > 0 && outs.length > 0;
   const single = real[0] ?? row.moves[0] ?? null;
+  // ค่าใช้จ่ายของสวอป: มูลค่าที่ส่งออก − มูลค่าที่ได้รับ (ค่าธรรมเนียมสวอป/slippage/ราคาขยับ) แยกจากค่าเครือข่าย
+  const sumUsd = (ms: Move[]) => (ms.every((m) => m.usd !== null) ? ms.reduce((a, m) => a + (m.usd ?? 0), 0) : null);
+  const sentUsd = isSwap ? sumUsd(outs) : null;
+  const recvUsd = isSwap ? sumUsd(ins) : null;
+  const swapCost = sentUsd !== null && recvUsd !== null ? sentUsd - recvUsd : null;
+  const swapPct = swapCost !== null && sentUsd ? (swapCost / sentUsd) * 100 : null;
+  const totalCost = swapCost !== null ? swapCost + (row.gasUsd ?? 0) : row.gasUsd;
 
   async function copy(text: string) {
     try {
@@ -181,8 +188,39 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
               )}
             </span>
           </Row>
-          {row.gasNative !== null && <Row label={t('detail.networkFee')}>{formatFeeNative(row.gasNative, native)}</Row>}
           {row.nonce !== null && <Row label={t('detail.nonce')}>{row.nonce}</Row>}
+        </div>
+
+        <div className="ev-rows ev-group" aria-labelledby="ev-fees">
+          <div id="ev-fees" className="ev-group-title">
+            {t('detail.fees')}
+          </div>
+          {isSwap && sentUsd !== null && <Row label={t('detail.sentValue')}>{formatUsd(sentUsd)}</Row>}
+          {isSwap && recvUsd !== null && <Row label={t('detail.receivedValue')}>{formatUsd(recvUsd)}</Row>}
+          {swapCost !== null && (
+            <Row label={t('detail.swapCost')}>
+              <span>
+                {formatUsdExact(swapCost)}
+                {swapPct !== null && ` (${swapPct.toFixed(2)}%)`}
+                <span className="ev-sub">{t('detail.swapCostHint')}</span>
+              </span>
+            </Row>
+          )}
+          <Row label={t('detail.networkFee')}>
+            {row.gasNative !== null ? (
+              <span>
+                {formatFeeNative(row.gasNative, native)}
+                {row.gasUsd !== null && <span className="ev-sub">{formatFeeUsd(row.gasUsd)}</span>}
+              </span>
+            ) : (
+              <span className="ev-sub">{t('detail.feePaidBySender')}</span>
+            )}
+          </Row>
+          {totalCost !== null && (
+            <Row label={t('detail.totalCost')}>
+              <span className="ev-total">{formatUsdExact(totalCost)}</span>
+            </Row>
+          )}
         </div>
 
       </div>

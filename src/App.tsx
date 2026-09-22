@@ -133,6 +133,7 @@ export function App() {
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      {selected !== null && <button type="button" className="drawer-scrim" aria-label={t('dialog.close')} onClick={closeDetail} />}
       <DetailPanel row={selected} wallets={wallets} chains={chains} onClose={closeDetail} />
     </>
   );

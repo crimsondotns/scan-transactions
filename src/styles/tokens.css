@@ -78,6 +78,8 @@
   /* เงาหัวเว็บตอนติดขอบบนหลังเลื่อน — เบา ไม่ฟุ้ง */
   --shadow-sticky: 0 2px 8px rgba(0, 0, 0, 0.08);
   --color-scrim: rgba(0, 0, 0, 0.4);
+  /* ม่านของ lightbox สลิป — มืดกว่าม่านแผง ให้ภาพเด่น */
+  --color-lightbox: rgba(0, 0, 0, 0.72);
 
   --motion-fast: 120ms;
   --motion-base: 180ms;
@@ -141,6 +143,7 @@
     --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.35);
     --shadow-sticky: 0 2px 8px rgba(0, 0, 0, 0.45);
     --color-scrim: rgba(0, 0, 0, 0.4);
+    --color-lightbox: rgba(0, 0, 0, 0.8);
   }
 }
 :root[data-theme='dark'] {
@@ -162,4 +165,5 @@
   --shadow-soft: 0 2px 10px rgba(0, 0, 0, 0.35);
   --shadow-sticky: 0 2px 8px rgba(0, 0, 0, 0.45);
   --color-scrim: rgba(0, 0, 0, 0.4);
+  --color-lightbox: rgba(0, 0, 0, 0.8);
 }

@@ -1857,24 +1857,52 @@ dialog.dlg::backdrop {
   height: auto;
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
-/* ในแผงขวา: พรีวิวไม่จำกัดความสูง (แผงเลื่อนเอง) */
-.drawer .slip-preview {
-  max-height: none;
-  overflow: visible;
-}
-.slip-code {
-  margin-top: var(--space-3);
-  text-align: center;
-}
-.slip-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-  width: 100%;
-}
-.slip-actions .btn {
+/* lightbox ของสลิป — ม่านมืดทับทุกอย่าง (รวมแผงขวา) ภาพเต็มความสูงที่เหลือ เลื่อนได้ถ้ายาว */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
   justify-content: center;
-  min-width: 0;
+  overflow: auto;
+  padding: var(--space-6) var(--space-4) calc(var(--space-6) + env(safe-area-inset-bottom));
+}
+.lightbox-scrim {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: var(--color-lightbox);
+  cursor: default;
+}
+.lightbox-close {
+  position: fixed;
+  top: var(--space-4);
+  right: var(--space-4);
+  z-index: 1;
+  background: var(--color-bg);
+}
+.lightbox-body {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  margin: auto 0;
+}
+.lightbox-img {
+  width: 360px;
+  max-width: 100%;
+  height: auto;
+  filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.4));
+}
+.lightbox-bar {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-bg);
 }
 .slip-print {
   display: none;

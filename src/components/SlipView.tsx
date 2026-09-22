@@ -1,4 +1,4 @@
-/** สลิปธุรกรรม — พรีวิวในแผงขวาเดิม (ไม่มีไดอะล็อก) แล้วดาวน์โหลด PNG / คัดลอกเป็นภาพ / พิมพ์ (PDF จากหน้าพิมพ์) / คัดลอกลิงก์ตรวจสอบ */
+/** สลิปธุรกรรม — เปิดภาพแบบ lightbox (ม่านมืด + ภาพกลาง + ปิดมุมขวาบน) ไม่ใช่ไดอะล็อก; แถบไอคอนใต้ภาพ: คัดลอกลิงก์ / พิมพ์ / คัดลอกเป็นภาพ / ดาวน์โหลด PNG */
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from '../i18n';
@@ -51,14 +51,13 @@ export function useSlipImage(rec: SlipRecord | null, action: SlipAction | null =
   return img;
 }
 
-/** เนื้อหาแผงขวาโหมดสลิป: พรีวิวภาพ + รหัส (body) และปุ่มส่งออก 4 ปุ่ม (foot) — ผู้เรียกวางสองส่วนนี้ในโครง drawer เดิม */
-export function useSlipView(data: SlipData | null) {
+/** lightbox: portal ไป body, z สูงกว่าแผงขวา — Esc / คลิกม่าน ปิด; ล็อกโฟกัสไว้ที่ปุ่มปิด */
+export function SlipLightbox({ data, onClose }: { data: SlipData; onClose: () => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
   const [rec, setRec] = useState<SlipRecord | null>(null);
   const [printUrl, setPrintUrl] = useState<string | null>(null);
   useEffect(() => {
-    if (!data) return setRec(null);
     let alive = true;
     void slipCode(data).then((code) => {
       if (!alive) return;
@@ -70,6 +69,16 @@ export function useSlipView(data: SlipData | null) {
       alive = false;
     };
   }, [data]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', onKey, true);
+    return () => document.removeEventListener('keydown', onKey, true);
+  }, [onClose]);
   const img = useSlipImage(rec);
   const labels = useSlipLabels();
   /* ภาพที่ส่งออกถูกวาดใหม่พร้อมตราท้ายสลิปของฟังก์ชันนั้น (Downloaded / Copied / Printed / Shared) */
@@ -112,39 +121,32 @@ export function useSlipView(data: SlipData | null) {
     }, 50);
   }
 
-  const body = (
-    <>
-      <div className="slip-preview" aria-busy={!img}>
-        {img ? <img src={img.url} alt={t('slip.title')} width={320} height={img.canvas.height / 2} /> : <span className="spinner" aria-hidden="true" />}
+  return createPortal(
+    <div className="lightbox" role="dialog" aria-modal="true" aria-label={t('slip.title')}>
+      <button type="button" className="lightbox-scrim" aria-label={t('dialog.close')} onClick={onClose} />
+      <button type="button" className="btn btn-icon lightbox-close" onClick={onClose} aria-label={t('dialog.close')} autoFocus>
+        <Icon name="x" />
+      </button>
+      <div className="lightbox-body">
+        {img ? <img className="lightbox-img" src={img.url} alt={t('slip.title')} width={320} height={img.canvas.height / 2} /> : <span className="spinner" aria-hidden="true" />}
+        <div className="lightbox-bar" role="toolbar" aria-label={t('slip.title')}>
+          <button type="button" className="btn btn-icon" disabled={!img} onClick={() => void copyLink()} aria-label={t('slip.copyLink')} title={t('slip.copyLink')}>
+            <Icon name="link" />
+          </button>
+          <button type="button" className="btn btn-icon" disabled={!img} onClick={() => void print()} aria-label={t('slip.print')} title={t('slip.print')}>
+            <Icon name="printer" />
+          </button>
+          <button type="button" className="btn btn-icon" disabled={!img} onClick={() => void copyImage()} aria-label={t('slip.copyImage')} title={t('slip.copyImage')}>
+            <Icon name="image" />
+          </button>
+          <button type="button" className="btn btn-icon" disabled={!img} onClick={() => void download()} aria-label={t('slip.download')} title={t('slip.download')}>
+            <Icon name="download" />
+          </button>
+        </div>
       </div>
-      {rec && (
-        <p className="hint slip-code">
-          {t('slip.code')} · <span className="mono">{rec.code}</span>
-        </p>
-      )}
       {/* พิมพ์: ภาพเดียวบนหน้ากระดาษ ส่วนอื่นของหน้าซ่อนด้วย @media print */}
-      {printUrl && createPortal(<img className="slip-print" src={printUrl} alt={t('slip.title')} />, document.body)}
-    </>
+      {printUrl && <img className="slip-print" src={printUrl} alt={t('slip.title')} />}
+    </div>,
+    document.body
   );
-  const foot = (
-    <div className="slip-actions">
-      <button type="button" className="btn" disabled={!img} onClick={() => void copyLink()}>
-        <Icon name="link" />
-        {t('slip.copyLink')}
-      </button>
-      <button type="button" className="btn" disabled={!img} onClick={() => void print()}>
-        <Icon name="printer" />
-        {t('slip.print')}
-      </button>
-      <button type="button" className="btn" disabled={!img} onClick={() => void copyImage()}>
-        <Icon name="image" />
-        {t('slip.copyImage')}
-      </button>
-      <button type="button" className="btn btn-primary" disabled={!img} onClick={() => void download()}>
-        <Icon name="download" />
-        {t('slip.download')}
-      </button>
-    </div>
-  );
-  return { body, foot };
 }

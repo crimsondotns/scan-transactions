@@ -12,15 +12,14 @@ import { Logo } from './Logo';
 import { Identicon } from './Identicon';
 import { useToast } from './Toast';
 import { slipData, type SlipData } from '../slip';
-import { useSlipView } from './SlipView';
+import { SlipLightbox } from './SlipView';
 import { protocolKind } from '../kind';
 import { chainStyle } from '../chainStyle';
 
 export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void }) {
-  /* โหมดสลิป: แผงเดิมสลับเนื้อหาเป็นพรีวิวสลิป (ไม่มีไดอะล็อก) — ปุ่มย้อนกลับที่หัวพากลับมารายละเอียด; เปลี่ยนแถวแล้วรีเซ็ต */
+  /* สลิป: กดปุ่ม Slip → เปิดภาพสลิปแบบ lightbox ทับทุกอย่าง (ไม่ใช่ไดอะล็อก) — เปลี่ยนแถว/ปิดแผงแล้วรีเซ็ต */
   const [slip, setSlip] = useState<SlipData | null>(null);
   useEffect(() => setSlip(null), [row]);
-  const slipView = useSlipView(slip);
   const { t } = useI18n();
   const { toast } = useToast();
   /* คลิกตัวเลข → คัดลอกค่าเต็มความละเอียด (ไม่ใช่ที่แสดง) */
@@ -160,14 +159,9 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
   return (
     <aside className="drawer" role="dialog" aria-modal="false" aria-labelledby="dt-h">
       <div className="drawer-head">
-        {slip && (
-          <button type="button" className="btn btn-icon" onClick={() => setSlip(null)} aria-label={t('nav.back')} title={t('nav.back')}>
-            <Icon name="chevronLeft" />
-          </button>
-        )}
         <div className="ev-head">
           <h2 id="dt-h" className="ev-title">
-            {slip ? t('slip.title') : t(`tx.type.${row.type}`)}
+            {t(`tx.type.${row.type}`)}
             <ChainGlyph />
             {row.flagged && (
               <span className="flag" title={t('tx.scam')}>
@@ -189,8 +183,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
       </div>
 
       <div className="drawer-body">
-        {slip ? slipView.body : null}
-        {!slip && isSwap ? (
+        {isSwap ? (
           <div className="ev-pair">
             <Asset m={outs[0]!} />
             <div className="ev-divider">
@@ -200,122 +193,124 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
             </div>
             <Asset m={ins[0]!} />
           </div>
-        ) : !slip && single ? (
+        ) : single ? (
           <Asset m={single} />
         ) : null}
 
-        {!slip && (
-          <>
-            <div className="ev-rows">
-              {wallet && (
-                <AddrRow
-                  label={t('tx.col.wallet')}
-                  addr={wallet.address}
-                  short={
-                    <span className="with-logo">
-                      <Identicon value={wallet.address} size={20} />
-                      {wallet.label}
-                    </span>
-                  }
-                />
-              )}
-              {rateRows.map((x) => (
-                <Row key={x.symbol} label={t('detail.rate', { symbol: x.symbol })}>
-                  <button
-                    type="button"
-                    className="copyable-number copyable-price"
-                    data-value={String(x.price)}
-                    title={String(x.price)}
-                    aria-label={t('tx.copy', { what: String(x.price) })}
-                    onClick={(e) => void copyValue(e.currentTarget.dataset.value ?? '')}
-                  >
-                    {formatPrice(x.price)}
-                  </button>
-                </Row>
-              ))}
-              {!isSwap && row.from && <AddrRow label={t('detail.from')} addr={row.from} />}
-              {!isSwap && row.to && <AddrRow label={t('detail.to')} addr={row.to} />}
-              {/* ป้ายเป็นชนิดที่เดาได้ (Bridge / Aggregator / DEX …) ไม่งั้นค่อยเป็น Protocol */}
-          {row.counterpartyName && <Row label={kind ? t(`kind.${kind}`) : t('detail.protocol')}>{row.counterpartyName}</Row>}
-              {row.contract && <AddrRow label={t('detail.contract')} addr={row.contract} />}
-              {row.name && row.type !== 'swap' && row.name !== row.counterpartyName && (
-                <Row label={t('detail.method')}>
-                  <span className="mono">{row.name}</span>
-                </Row>
-              )}
-              <Row label={t('tx.col.hash')}>
-                <span className="ev-addr">
-                  <span className="mono" title={row.hash}>
-                    {shortHash(row.hash)}
-                  </span>
-                  <CopyButton text={row.hash} label={t('tx.copy', { what: t('tx.col.hash') })} onCopied={() => toast(t('tx.copied'))} />
+        <div className="ev-rows">
+          {wallet && (
+            <AddrRow
+              label={t('tx.col.wallet')}
+              addr={wallet.address}
+              short={
+                <span className="with-logo">
+                  <Identicon value={wallet.address} size={20} />
+                  {wallet.label}
                 </span>
-              </Row>
-              {row.nonce !== null && <Row label={t('detail.nonce')}>{row.nonce}</Row>}
-            </div>
+              }
+            />
+          )}
+          {rateRows.map((x) => (
+            <Row key={x.symbol} label={t('detail.rate', { symbol: x.symbol })}>
+              <button
+                type="button"
+                className="copyable-number copyable-price"
+                data-value={String(x.price)}
+                title={String(x.price)}
+                aria-label={t('tx.copy', { what: String(x.price) })}
+                onClick={(e) => void copyValue(e.currentTarget.dataset.value ?? '')}
+              >
+                {formatPrice(x.price)}
+              </button>
+            </Row>
+          ))}
+          {!isSwap && row.from && <AddrRow label={t('detail.from')} addr={row.from} />}
+          {!isSwap && row.to && <AddrRow label={t('detail.to')} addr={row.to} />}
+          {/* ป้ายเป็นชนิดที่เดาได้ (Bridge / Aggregator / DEX …) ไม่งั้นค่อยเป็น Protocol */}
+          {row.counterpartyName && <Row label={kind ? t(`kind.${kind}`) : t('detail.protocol')}>{row.counterpartyName}</Row>}
+          {row.contract && <AddrRow label={t('detail.contract')} addr={row.contract} />}
+          {row.name && row.type !== 'swap' && row.name !== row.counterpartyName && (
+            <Row label={t('detail.method')}>
+              <span className="mono">{row.name}</span>
+            </Row>
+          )}
+          <Row label={t('tx.col.hash')}>
+            <span className="ev-addr">
+              <span className="mono" title={row.hash}>
+                {shortHash(row.hash)}
+              </span>
+              <CopyButton text={row.hash} label={t('tx.copy', { what: t('tx.col.hash') })} onCopied={() => toast(t('tx.copied'))} />
+            </span>
+          </Row>
+          {row.nonce !== null && <Row label={t('detail.nonce')}>{row.nonce}</Row>}
+        </div>
 
-            <div className="ev-rows ev-group" aria-labelledby="ev-fees">
-              <div id="ev-fees" className="ev-group-title">
-                {t('detail.fees')}
-              </div>
-              {isSwap && sentUsd !== null && <Row label={t('detail.sentValue')}>{formatUsd(sentUsd)}</Row>}
-              {isSwap && recvUsd !== null && <Row label={t('detail.receivedValue')}>{formatUsd(recvUsd)}</Row>}
-              {swapCost !== null && (
-                <Row label={t('detail.swapCost')}>
-                  <span>
-                    {formatUsdExact(swapCost)}
-                    {swapPct !== null && ` (${swapPct.toFixed(2)}%)`}
-                    <span className="ev-sub">{t('detail.swapCostHint')}</span>
-                  </span>
-                </Row>
-              )}
-              <Row label={t('detail.networkFee')}>
-                {row.gasNative !== null ? (
-                  <span>
-                    {formatFeeNative(row.gasNative, native)}
-                    {gasUsd !== null && ` (${formatFeeUsd(gasUsd)})`}
-                  </span>
-                ) : gasUsd !== null ? (
-                  <span>{formatFeeUsd(gasUsd)}</span>
-                ) : (
-                  <span className="ev-sub">{t('detail.feePaidBySender')}</span>
-                )}
-              </Row>
-              {totalCost !== null && (
-                <Row label={t('detail.totalCost')}>
-                  <span className="ev-total">{formatUsdExact(totalCost)}</span>
-                </Row>
-              )}
-            </div>
-          </>
-        )}
+        <div className="ev-rows ev-group" aria-labelledby="ev-fees">
+          <div id="ev-fees" className="ev-group-title">
+            {t('detail.fees')}
+          </div>
+          {isSwap && sentUsd !== null && <Row label={t('detail.sentValue')}>{formatUsd(sentUsd)}</Row>}
+          {isSwap && recvUsd !== null && <Row label={t('detail.receivedValue')}>{formatUsd(recvUsd)}</Row>}
+          {swapCost !== null && (
+            <Row label={t('detail.swapCost')}>
+              <span>
+                {formatUsdExact(swapCost)}
+                {swapPct !== null && ` (${swapPct.toFixed(2)}%)`}
+                <span className="ev-sub">{t('detail.swapCostHint')}</span>
+              </span>
+            </Row>
+          )}
+          <Row label={t('detail.networkFee')}>
+            {row.gasNative !== null ? (
+              <span>
+                {formatFeeNative(row.gasNative, native)}
+                {gasUsd !== null && ` (${formatFeeUsd(gasUsd)})`}
+              </span>
+            ) : gasUsd !== null ? (
+              <span>{formatFeeUsd(gasUsd)}</span>
+            ) : (
+              <span className="ev-sub">{t('detail.feePaidBySender')}</span>
+            )}
+          </Row>
+          {totalCost !== null && (
+            <Row label={t('detail.totalCost')}>
+              <span className="ev-total">{formatUsdExact(totalCost)}</span>
+            </Row>
+          )}
+        </div>
       </div>
 
       <div className="drawer-foot">
-        {slip ? (
-          slipView.foot
+        <button
+          type="button"
+          className="btn"
+          onClick={() =>
+            setSlip(
+              slipData(row, wallet, chainName, native, txUrl, {
+                chainLogo,
+                usdOfMove: moveUsd,
+                swapCost,
+                feeUsd: gasUsd,
+                protocol: row.counterpartyName,
+                protocolKind: kind ? t(`kind.${kind}`) : null,
+              }),
+            )
+          }
+        >
+          <Icon name="receipt" />
+          {t('slip.open')}
+        </button>
+        {txUrl ? (
+          <a className="btn btn-primary" href={txUrl} target="_blank" rel="noopener noreferrer">
+            {t('detail.viewOn', { name: explorerName })}
+          </a>
         ) : (
-          <>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => setSlip(slipData(row, wallet, chainName, native, txUrl, { chainLogo, usdOfMove: moveUsd, swapCost, feeUsd: gasUsd, protocol: row.counterpartyName, protocolKind: kind ? t(`kind.${kind}`) : null }))}
-            >
-              <Icon name="receipt" />
-              {t('slip.open')}
-            </button>
-            {txUrl ? (
-              <a className="btn btn-primary" href={txUrl} target="_blank" rel="noopener noreferrer">
-                {t('detail.viewOn', { name: explorerName })}
-              </a>
-            ) : (
-              <button type="button" className="btn btn-primary" disabled title={t('detail.noExplorer')}>
-                {t('detail.noExplorer')}
-              </button>
-            )}
-          </>
+          <button type="button" className="btn btn-primary" disabled title={t('detail.noExplorer')}>
+            {t('detail.noExplorer')}
+          </button>
         )}
       </div>
+      {slip && <SlipLightbox data={slip} onClose={() => setSlip(null)} />}
     </aside>
   );
 }

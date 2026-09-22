@@ -105,6 +105,8 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, hasEndpoint, epKey, active.length]);
 
+  /* chain id ที่พบในข้อมูลจริง — โชว์ใน Settings ให้ผู้ใช้ตั้ง Custom chains ด้วย id ที่ตรง */
+  const seenChains = useMemo(() => [...new Set(rows.map((r) => r.chain))].sort(), [rows]);
   const walletRows = useMemo(() => (pageWallet ? rows.filter((r) => r.walletId === pageWallet) : rows), [rows, pageWallet]);
   const anyLoading = active.some((w) => feeds[w.id]?.loading);
   const activeWalletObj = wallets.find((w) => w.id === pageWallet) ?? null;
@@ -198,7 +200,7 @@ export function App() {
         </main>
       </div>
 
-      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} seenChains={seenChains} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} />
       <VerifyDialog
         open={verifyOpen}

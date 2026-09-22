@@ -10,7 +10,7 @@ import { Icon } from './Icon';
 import { protocolKind } from '../kind';
 import { Dropdown } from './Dropdown';
 import { Logo } from './Logo';
-import type { ChainMap } from '../chains';
+import { chainOf, type ChainMap } from '../chains';
 
 const TYPES: TxType[] = ['swap', 'send', 'receive', 'approve', 'contract'];
 type SortKey = 'type' | 'date' | 'amount' | 'fee';
@@ -136,7 +136,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
         </label>
         <input id="tx-q" name="q" type="search" className="input search mono" placeholder={t('tx.search')} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" spellCheck={false} />
         <Dropdown value={wallet} onChange={onWallet} label={t('tx.col.wallet')} options={[{ value: '', label: t('tx.allWallets') }, ...wallets.map((w) => ({ value: w.id, label: w.label }))]} />
-        <Dropdown value={chain} onChange={setChain} label={t('tx.col.chain')} options={[{ value: '', label: t('tx.allChains') }, ...chains.map((c) => ({ value: c, label: chainInfo.get(c)?.name ?? c }))]} />
+        <Dropdown value={chain} onChange={setChain} label={t('tx.col.chain')} options={[{ value: '', label: t('tx.allChains') }, ...chains.map((c) => ({ value: c, label: chainOf(chainInfo, c)?.name ?? c }))]} />
         <Dropdown value={type} onChange={setType} label={t('tx.col.type')} options={[{ value: '', label: t('tx.allTypes') }, ...TYPES.map((k) => ({ value: k, label: t(`tx.type.${k}`) }))]} />
         <button type="button" className="btn toggle" aria-pressed={hideScam} onClick={() => setHideScam(!hideScam)}>
           <Icon name="eyeOff" />
@@ -170,14 +170,14 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
                 const outs = real.filter((m) => m.dir === 'out');
                 const isSwap = ins.length > 0 && outs.length > 0;
                 const primary = mainMove(r);
-                const chainLogo = chainInfo.get(r.chain)?.logo ?? r.chainLogo ?? null;
+                const chainLogo = chainOf(chainInfo, r.chain)?.logo ?? r.chainLogo ?? null;
                 const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
                 const base = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || (r.counterpartyName ?? '');
                 // ชื่อโปรโตคอล/คู่สัญญาต่อท้าย (USDC · Lifiprotocol) — ถ้ามี
                 const kind = protocolKind(r);
                 const proto = r.counterpartyName ? (kind ? `${t(`kind.${kind}`)} · ${r.counterpartyName}` : r.counterpartyName) : '';
                 const subtitle = proto && base !== r.counterpartyName ? (base ? `${base} · ${proto}` : proto) : base;
-                const native = r.nativeSymbol ?? chainInfo.get(r.chain)?.symbol ?? r.chain.toUpperCase();
+                const native = r.nativeSymbol ?? chainOf(chainInfo, r.chain)?.symbol ?? r.chain.toUpperCase();
                 const isSel = r.key === selected;
                 return (
                   <tr

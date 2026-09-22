@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useI18n } from '../i18n';
 import type { Move, TxRow } from '../feed';
 import type { Settings, Wallet } from '../store';
-import type { ChainMap } from '../chains';
+import { chainOf, type ChainMap } from '../chains';
 import { REFRESH_MS, priceOf, refreshPrice, usdOf } from '../prices';
 import { formatPrice, formatAmount, formatAmountFull, formatAmountShort, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
@@ -59,7 +59,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
 
   if (!row) return null;
   const wallet = wallets.find((w) => w.id === row.walletId);
-  const chain = chains.get(row.chain);
+  const chain = chainOf(chains, row.chain);
   const chainLogo = chain?.logo ?? row.chainLogo ?? null;
   const chainName = chain?.name ?? row.chain;
   const native = row.nativeSymbol ?? chain?.symbol ?? row.chain.toUpperCase();

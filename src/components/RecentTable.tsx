@@ -1,7 +1,7 @@
 import { useI18n } from '../i18n';
 import type { TxRow } from '../feed';
 import type { Wallet } from '../store';
-import type { ChainMap } from '../chains';
+import { chainOf, type ChainMap } from '../chains';
 import type { Progress } from '../useFeed';
 import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative, shortAddr } from '../format';
 import { Icon } from './Icon';
@@ -98,8 +98,8 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
                 const outs = real.filter((m) => m.dir === 'out');
                 const isSwap = ins.length > 0 && outs.length > 0;
                 const primary = real[0] ?? r.moves[0] ?? null;
-                const chainLogo = chains.get(r.chain)?.logo ?? r.chainLogo ?? null;
-                const native = r.nativeSymbol ?? chains.get(r.chain)?.symbol ?? r.chain.toUpperCase();
+                const chainLogo = chainOf(chains, r.chain)?.logo ?? r.chainLogo ?? null;
+                const native = r.nativeSymbol ?? chainOf(chains, r.chain)?.symbol ?? r.chain.toUpperCase();
                 const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
                 const base = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || '';
                 // ชื่อโปรโตคอล/คู่สัญญาต่อท้าย (USDC · Lifiprotocol) — ถ้ามี

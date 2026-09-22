@@ -59,7 +59,7 @@ function MetaField({ id, value, onSave }: { id: string; value: string; onSave: (
   );
 }
 
-export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boolean; onClose: () => void; seenChains?: string[] }) {
   const { t } = useI18n();
   const { settings, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setSlipShow, setProxyUrl, setChain, removeChain } = useStore();
   const [dragFrom, setDragFrom] = useState<number | null>(null);
@@ -480,6 +480,11 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           <h3 id="chains-h" className="panel-title">
             {t('settings.chains')}
           </h3>
+          {seenChains.length > 0 && (
+            <p className="hint">
+              {t('settings.chainSeen')} <span className="mono">{seenChains.join(' · ')}</span>
+            </p>
+          )}
           {settings.chains.length > 0 && (
             <ul className="sources slip-fields" aria-label={t('settings.chains')}>
               {settings.chains.map((c) => (

@@ -8,6 +8,11 @@ import { proxied } from './proxy';
 import { limitedFetch } from './limiter';
 import type { Settings } from './store';
 
+/** หา chain โดยไม่สนตัวพิมพ์ (แหล่งบางแห่งส่ง 'Sol'/'SOL') */
+export function chainOf(map: ChainMap, id: string): ChainInfo | undefined {
+  return map.get(id) ?? map.get(id.toLowerCase());
+}
+
 export interface ChainInfo {
   id: string;
   name: string;
@@ -119,7 +124,7 @@ export function useChains(settings: Settings): ChainMap {
     void Promise.all(urls.split('|').map((u) => fetchList(u).catch(() => [] as ChainInfo[]))).then((lists) => {
       if (!alive) return;
       const m: ChainMap = new Map();
-      for (const list of lists) for (const c of list) if (!m.has(c.id)) m.set(c.id, c);
+      for (const list of lists) for (const c of list) if (!m.has(c.id.toLowerCase())) m.set(c.id.toLowerCase(), { ...c, id: c.id.toLowerCase() });
       setMap(m);
     });
     return () => {

@@ -8,6 +8,7 @@
 import QRCode from 'qrcode';
 import type { TxRow } from './feed';
 import { formatAmountFull, formatFeeNative, formatStamp, shortAddr } from './format';
+import { chainStyle, tokenColor } from './chainStyle';
 
 export interface SlipMove {
   dir: 'in' | 'out';
@@ -170,8 +171,14 @@ const INK = '#000000';
 const MUTED = 'rgba(0,0,0,0.6)';
 const LINE = 'rgba(0,0,0,0.12)';
 
+export type SlipAction = 'download' | 'copy' | 'print' | 'share' | 'verify';
+/* สีประจำฟังก์ชัน/เชน — ค่าจริงอ่านจาก tokens.css ตอนวาด ตรงนี้แค่ค่าสำรอง */
+const FN_FALLBACK: Record<SlipAction, string> = { download: '#0066ff', copy: '#059669', print: '#9333ea', share: '#f59e0b', verify: '#10b981' };
+const FN_GLYPH: Record<SlipAction, string> = { download: '⤓', copy: '❐', print: '⎙', share: '⤴', verify: '✓' };
+
 interface Labels {
   title: string;
+  action: Record<SlipAction, string>;
   wallet: string;
   from: string;
   to: string;
@@ -187,13 +194,14 @@ interface Labels {
 }
 
 /** วาดสลิปลง canvas ใหม่ (ความละเอียด 2 เท่า) — สีขาว/ดำเสมอ ไม่ตามธีมหน้าจอ เพราะเป็นเอกสาร */
-export async function renderSlip(rec: SlipRecord, L: Labels): Promise<HTMLCanvasElement> {
+export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction | null = null): Promise<HTMLCanvasElement> {
   try {
     await Promise.all([document.fonts.load(`400 16px ${FONT}`), document.fonts.load(`600 16px ${FONT}`)]);
   } catch {
     /* ฟอนต์ไม่มา → ใช้สำรอง */
   }
   const d = rec.data;
+  const cs = chainStyle(d.chain, d.chainName);
   const qr = document.createElement('canvas');
   await QRCode.toCanvas(qr, d.url ?? d.hash, { margin: 0, width: 104, color: { dark: INK, light: '#ffffff' } });
 
@@ -258,6 +266,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels): Promise<HTMLCanvas
       ctx.stroke();
     }
     text(L.status, W - PAD - stW / 2, y + 20, 13, 500, INK, 'center');
+    if (cs) text(cs.glyph, W - PAD - stW - 12, y + 21, 20, 700, tokenColor(cs.token, '#000000'), 'right');
     y += 56;
     text(L.title, PAD, y + 22, 28, 600);
     text(formatStamp(d.time), W - PAD, y + 22, 14, 400, MUTED, 'right');
@@ -286,7 +295,15 @@ export async function renderSlip(rec: SlipRecord, L: Labels): Promise<HTMLCanvas
         y += 30;
       }
     };
-    row(L.chain, d.chainName);
+    // เชน: สัญลักษณ์สีประจำเชนหน้าชื่อ (สีเดียวกับในแผงรายละเอียด)
+    text(L.chain, PAD, y + 13, 13, 500, MUTED);
+    text(d.chainName, W - PAD, y + 13, 14, 400, INK, 'right');
+    if (cs) {
+      ctx.font = `400 14px ${FONT}`;
+      const nameW = ctx.measureText(d.chainName).width;
+      text(cs.glyph, W - PAD - nameW - 8, y + 13, 16, 700, tokenColor(cs.token, '#000000'), 'right');
+    }
+    y += 30;
     row(L.wallet, d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
     row(L.from, d.from ? shortAddr(d.from) : null);
     row(L.to, d.to ? shortAddr(d.to) : null);
@@ -304,7 +321,24 @@ export async function renderSlip(rec: SlipRecord, L: Labels): Promise<HTMLCanvas
     text(rec.code, fx, y + 40, 18, 600);
     text(`${L.issued} ${formatStamp(Math.floor(d.issued / 1000))}`, fx, y + 66, 12, 400, MUTED);
     y += 78 + wrap(L.verifyHint, fx, y + 88, 12, W - fx - PAD, 400, MUTED);
-    y += 40;
+    y += 24;
+    // ตราฟังก์ชันที่ทำกับสลิปนี้ (Downloaded ⤓ / Verified ✓ …) — สีประจำฟังก์ชัน
+    if (action) {
+      const color = tokenColor(`fn-${action}`, FN_FALLBACK[action]);
+      ctx.font = `600 13px ${FONT}`;
+      const label = `${L.action[action]} ${FN_GLYPH[action]}`;
+      const lw = ctx.measureText(label).width + 28;
+      if (!dry) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(W - PAD - lw, y, lw, 28, 14);
+        ctx.stroke();
+      }
+      text(label, W - PAD - lw / 2, y + 19, 13, 600, color, 'center');
+      y += 40;
+    }
+    y += 16;
     return y;
   };
 

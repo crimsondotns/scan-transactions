@@ -17,6 +17,20 @@
   --color-danger: #dc2626;
   /* ยอดรับ (+) — สีความหมายเดียวที่ใช้กับทิศทางเงิน */
   --color-positive: #16a34a;
+  /* เส้นคั่นแนวตั้งในแถวสินทรัพย์ (สเปกผู้ใช้ 2026-09-22: #d9d9d9) */
+  --color-divider: #d9d9d9;
+  /* สีประจำฟังก์ชันสลิป (สเปกผู้ใช้ 2026-09-22) — ใช้กับไอคอนของปุ่ม/สลิปเท่านั้น */
+  --color-fn-download: #0066ff;
+  --color-fn-copy: #059669;
+  --color-fn-print: #9333ea;
+  --color-fn-share: #f59e0b;
+  --color-fn-verify: #10b981;
+  /* สีประจำเชน (สเปกผู้ใช้ 2026-09-22) — ใช้กับสัญลักษณ์เชนข้างชื่อโทเคน */
+  --color-chain-eth: #f59e0b;
+  --color-chain-sol: #9333ea;
+  --color-chain-hyper: #0066ff;
+  --color-chain-polygon: #7c3aed;
+  --color-chain-bnb: #eab308;
   /* hover ของปุ่มหลัก (ink เจือจางเล็กน้อย) และของปุ่มรอง/ไอคอน/แถว */
   --color-ink-hover: #262626;
   --color-hover: var(--color-soft);
@@ -120,6 +134,7 @@
     --color-disabled: rgba(255, 255, 255, 0.4);
     --color-danger: #f87171;
     --color-positive: #4ade80;
+    --color-divider: #3d3d3d;
     --color-ink-hover: #d4d4d4;
     --color-hover: #303030;
     --color-line-hover: rgba(255, 255, 255, 0.4);
@@ -140,6 +155,7 @@
   --color-disabled: rgba(255, 255, 255, 0.4);
   --color-danger: #f87171;
   --color-positive: #4ade80;
+  --color-divider: #3d3d3d;
   --color-ink-hover: #d4d4d4;
   --color-hover: #303030;
   --color-line-hover: rgba(255, 255, 255, 0.4);

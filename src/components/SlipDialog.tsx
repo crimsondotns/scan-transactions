@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from '../i18n';
-import { canvasBlob, renderSlip, saveSlip, shareLink, slipCode, type SlipData, type SlipRecord } from '../slip';
+import { canvasBlob, renderSlip, saveSlip, shareLink, slipCode, type SlipAction, type SlipData, type SlipRecord } from '../slip';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
@@ -11,6 +11,7 @@ export function useSlipLabels() {
   const { t } = useI18n();
   return (d: SlipData) => ({
     title: t('slip.title'),
+    action: { download: t('slip.did.download'), copy: t('slip.did.copy'), print: t('slip.did.print'), share: t('slip.did.share'), verify: t('slip.did.verify') },
     wallet: t('tx.col.wallet'),
     from: t('detail.from'),
     to: t('detail.to'),
@@ -27,18 +28,18 @@ export function useSlipLabels() {
 }
 
 /** วาดสลิปเป็นภาพ (data URL) — ใช้ทั้งไดอะล็อกสลิปและหน้าตรวจสอบ */
-export function useSlipImage(rec: SlipRecord | null) {
+export function useSlipImage(rec: SlipRecord | null, action: SlipAction | null = null) {
   const labels = useSlipLabels();
   const [img, setImg] = useState<{ canvas: HTMLCanvasElement; url: string } | null>(null);
   useEffect(() => {
     if (!rec) return setImg(null);
     let alive = true;
-    void renderSlip(rec, labels(rec.data)).then((canvas) => alive && setImg({ canvas, url: canvas.toDataURL('image/png') }));
+    void renderSlip(rec, labels(rec.data), action).then((canvas) => alive && setImg({ canvas, url: canvas.toDataURL('image/png') }));
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rec]);
+  }, [rec, action]);
   return img;
 }
 
@@ -61,11 +62,14 @@ export function SlipDialog({ data, onClose }: { data: SlipData | null; onClose: 
     };
   }, [data]);
   const img = useSlipImage(rec);
+  const labels = useSlipLabels();
+  /* ภาพที่ส่งออกถูกวาดใหม่พร้อมตราท้ายสลิปของฟังก์ชันนั้น (Downloaded / Copied / Printed / Shared) */
+  const stamped = (action: SlipAction) => renderSlip(rec!, labels(rec!.data), action);
 
   async function download() {
     if (!img || !rec) return;
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(await canvasBlob(img.canvas));
+    a.href = URL.createObjectURL(await canvasBlob(await stamped('download')));
     a.download = `xcap-slip-${rec.code}.png`;
     a.click();
     setTimeout(() => URL.revokeObjectURL(a.href), 10_000);
@@ -74,7 +78,7 @@ export function SlipDialog({ data, onClose }: { data: SlipData | null; onClose: 
   async function copyImage() {
     if (!img) return;
     try {
-      const item = new ClipboardItem({ 'image/png': canvasBlob(img.canvas) });
+      const item = new ClipboardItem({ 'image/png': stamped('copy').then(canvasBlob) });
       await navigator.clipboard.write([item]);
       toast(t('slip.imageCopied'));
     } catch {
@@ -90,8 +94,10 @@ export function SlipDialog({ data, onClose }: { data: SlipData | null; onClose: 
       /* clipboard ถูกบล็อก */
     }
   }
-  function print() {
+  const [printUrl, setPrintUrl] = useState<string | null>(null);
+  async function print() {
     if (!img) return;
+    setPrintUrl((await stamped('print')).toDataURL('image/png'));
     setPrinting(true);
     setTimeout(() => {
       window.print();
@@ -111,26 +117,26 @@ export function SlipDialog({ data, onClose }: { data: SlipData | null; onClose: 
           </p>
         )}
         <div className="dlg-actions slip-actions">
-          <button type="button" className="btn" disabled={!img} onClick={() => void copyLink()}>
+          <button type="button" className="btn" data-fn="share" disabled={!img} onClick={() => void copyLink()}>
             <Icon name="link" />
             {t('slip.copyLink')}
           </button>
-          <button type="button" className="btn" disabled={!img} onClick={print}>
+          <button type="button" className="btn" data-fn="print" disabled={!img} onClick={() => void print()}>
             <Icon name="printer" />
             {t('slip.print')}
           </button>
-          <button type="button" className="btn" disabled={!img} onClick={() => void copyImage()}>
+          <button type="button" className="btn" data-fn="copy" disabled={!img} onClick={() => void copyImage()}>
             <Icon name="image" />
             {t('slip.copyImage')}
           </button>
-          <button type="button" className="btn btn-primary" disabled={!img} onClick={() => void download()}>
+          <button type="button" className="btn" data-fn="download" disabled={!img} onClick={() => void download()}>
             <Icon name="download" />
             {t('slip.download')}
           </button>
         </div>
       </Dialog>
       {/* พิมพ์: ภาพเดียวบนหน้ากระดาษ ส่วนอื่นของหน้าซ่อนด้วย @media print */}
-      {printing && img && createPortal(<img className="slip-print" src={img.url} alt={t('slip.title')} />, document.body)}
+      {printing && printUrl && createPortal(<img className="slip-print" src={printUrl} alt={t('slip.title')} />, document.body)}
     </>
   );
 }

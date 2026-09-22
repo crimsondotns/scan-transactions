@@ -139,7 +139,7 @@ export function App() {
         <span className="top-status" data-ok={hasEndpoint}>
           {hasEndpoint ? t('status.endpointSet', { n: enabledEps.length }) : t('status.noEndpoint')}
         </span>
-        <button type="button" className="btn btn-icon" onClick={() => setVerifyOpen(true)} aria-label={t('slip.verify')} title={t('slip.verify')}>
+        <button type="button" className="btn btn-icon" data-fn="verify" onClick={() => setVerifyOpen(true)} aria-label={t('slip.verify')} title={t('slip.verify')}>
           <Icon name="shield" />
         </button>
         <button type="button" className="btn btn-icon" onClick={() => setSettingsOpen(true)} aria-label={t('nav.settings')} title={t('nav.settings')}>

@@ -11,7 +11,7 @@ export function VerifyDialog({ open, initial, onClose, seen }: { open: boolean; 
   const [code, setCode] = useState('');
   const [err, setErr] = useState<string | null>(null);
   const [result, setResult] = useState<{ verdict: Verdict; rec: SlipRecord | null; stored: boolean } | null>(null);
-  const img = useSlipImage(result?.rec ?? null);
+  const img = useSlipImage(result?.rec ?? null, result?.verdict === 'valid' ? 'verify' : null);
 
   async function run(c: string, data: SlipData | null) {
     const r = await verifySlip(c, data);

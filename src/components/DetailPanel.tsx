@@ -12,6 +12,7 @@ import { Logo } from './Logo';
 import { Identicon } from './Identicon';
 import { useToast } from './Toast';
 import { slipData, type SlipData } from '../slip';
+import { chainStyle } from '../chainStyle';
 
 export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void; onSlip: (d: SlipData) => void }) {
   const { t } = useI18n();
@@ -58,6 +59,8 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
   const chainLogo = chain?.logo ?? row.chainLogo ?? null;
   const chainName = chain?.name ?? row.chain;
   const native = row.nativeSymbol ?? chain?.symbol ?? row.chain.toUpperCase();
+  const cs = chainStyle(row.chain, chainName);
+  const ChainGlyph = () => (cs ? <span className="chain-glyph" data-chain={cs.token} aria-hidden="true">{cs.glyph}</span> : null);
   /* ลิงก์ explorer: จาก chain list ก่อน ไม่มีค่อยดูว่าแหล่งข้อมูลแนบ URL มากับแถวไหม; ไม่มีทั้งคู่ → ปุ่มปิด (ไม่ซ่อน) */
   const rawUrl = ['tx_url', 'explorer_url', 'url', 'link'].map((k) => row.raw[k]).find((v): v is string => typeof v === 'string' && /^https:\/\//i.test(v)) ?? null;
   const host = chain?.explorer?.replace(/\/$/, '') ?? (rawUrl ? new URL(rawUrl).origin : null);
@@ -86,6 +89,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
   const gasUsd = row.gasNative !== null ? usdOf(row.gasNative, row.gasUsd, row.chain, null, native) : row.gasUsd;
   const totalCost = swapCost !== null ? swapCost + (gasUsd ?? 0) : gasUsd;
 
+  /* แถวสินทรัพย์บรรทัดเดียว: [โลโก้] NEST | ◈ on HyperEVM | −18,441.2753 — เส้นคั่นเต็มความสูง */
   const Asset = ({ m }: { m: Move }) => (
     <div className="ev-asset">
       <span className="ev-asset-icon">
@@ -94,10 +98,13 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
           <Logo src={chainLogo} name={row.chain} size={16} />
         </span>
       </span>
-      <span className="ev-asset-info">
-        <span className="ev-symbol">{m.symbol}</span>
-        <span className="ev-net">{t('detail.on', { chain: chainName })}</span>
+      <span className="ev-symbol">{m.symbol}</span>
+      <span className="ev-sep" aria-hidden="true" />
+      <span className="ev-net">
+        <ChainGlyph />
+        {t('detail.on', { chain: chainName })}
       </span>
+      <span className="ev-sep" aria-hidden="true" />
       <span className="ev-amount-wrap">
         <button
           type="button"
@@ -144,6 +151,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
         <div className="ev-head">
           <h2 id="dt-h" className="ev-title">
             {t(`tx.type.${row.type}`)}
+            <ChainGlyph />
             {row.flagged && (
               <span className="flag" title={t('tx.scam')}>
                 <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} />

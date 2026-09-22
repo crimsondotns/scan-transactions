@@ -171,6 +171,8 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
                 const isSwap = ins.length > 0 && outs.length > 0;
                 const primary = mainMove(r);
                 const chainLogo = chainOf(chainInfo, r.chain)?.logo ?? r.chainLogo ?? null;
+                // เหรียญพื้นเมือง (ไม่มี tokenId) → ใช้โลโก้เชนแทน
+                const logoOf = (m: { logo: string | null; tokenId: string | null }) => m.logo ?? (m.tokenId === null ? chainLogo : null);
                 const title = r.failed ? t('tx.failed') : t(`tx.type.${r.type}`);
                 const base = isSwap ? `${outs[0]!.symbol} → ${ins[0]!.symbol}` : primary ? (primary.name ?? primary.symbol) : r.name || (r.counterpartyName ?? '');
                 // ชื่อโปรโตคอล/คู่สัญญาต่อท้าย (USDC · Lifiprotocol) — ถ้ามี
@@ -198,11 +200,11 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
                         <span className="act-icon">
                           {isSwap ? (
                             <span className="pair">
-                              <Logo src={outs[0]!.logo} name={outs[0]!.symbol} size={28} />
-                              <Logo src={ins[0]!.logo} name={ins[0]!.symbol} size={28} />
+                              <Logo src={logoOf(outs[0]!)} name={outs[0]!.symbol} size={28} />
+                              <Logo src={logoOf(ins[0]!)} name={ins[0]!.symbol} size={28} />
                             </span>
                           ) : (
-                            <Logo src={primary?.logo ?? null} name={primary?.symbol ?? r.chain} size={40} />
+                            <Logo src={primary ? logoOf(primary) : null} name={primary?.symbol ?? r.chain} size={40} />
                           )}
                           <span className="logo-badge">
                             <Logo src={chainLogo} name={r.chain} size={16} />

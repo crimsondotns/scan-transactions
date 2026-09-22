@@ -19,6 +19,8 @@ export interface SlipMove {
   symbol: string;
   /** อนุมัติวงเงิน — ไม่ใช่การส่ง */
   approve?: true;
+  /** เหรียญพื้นเมืองของเชน (ไม่มี tokenId) */
+  native?: true;
   /** แสดงผลอย่างเดียว ไม่อยู่ในแฮช */
   usd?: number | null;
   logo?: string | null;
@@ -97,7 +99,7 @@ export function slipData(row: TxRow, wallet: { address: string; label: string } 
     to: row.to,
     fromLabel: row.from ? (extra.labelOf?.(row.from) ?? null) : null,
     toLabel: row.to ? (extra.labelOf?.(row.to) ?? null) : null,
-    moves: row.moves.filter((m) => m.amount !== 0).map((m) => ({ dir: m.dir, amount: m.amount, symbol: m.symbol, usd: m.approve ? null : usdOfMove(m), logo: m.logo, ...(m.approve ? { approve: true as const } : {}) })),
+    moves: row.moves.filter((m) => m.amount !== 0).map((m) => ({ dir: m.dir, amount: m.amount, symbol: m.symbol, usd: m.approve ? null : usdOfMove(m), logo: m.logo, ...(m.approve ? { approve: true as const } : {}), ...(m.tokenId === null ? { native: true as const } : {}) })),
     fee: row.gasNative,
     feeSymbol: native,
     time: row.time,
@@ -520,7 +522,8 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     // บล็อกสินทรัพย์: โลโก้โทเคน 36 + ตราเชน 14 / สัญลักษณ์ + on เชน / จำนวน (สีหมึก) + USD
     (show.assets ? ordered : []).forEach((m) => {
       if (!dry) {
-        circleImage(ctx, moveImgs[d.moves.indexOf(m)] ?? null, PAD, y, 36, m.symbol, `hsl(${identiconHue(m.symbol)} 60% 52%)`);
+        // เหรียญพื้นเมือง (ไม่มีโลโก้ของตัวเอง) → ใช้โลโก้เชน
+        circleImage(ctx, moveImgs[d.moves.indexOf(m)] ?? (m.native ? chainImg : null), PAD, y, 36, m.symbol, `hsl(${identiconHue(m.symbol)} 60% 52%)`);
         ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(PAD + 29, y + 29, 9, 0, Math.PI * 2);

@@ -97,7 +97,8 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
   const Asset = ({ m }: { m: Move }) => (
     <div className="ev-asset">
       <span className="ev-asset-icon">
-        <Logo src={m.logo} name={m.symbol} size={40} />
+        {/* เหรียญพื้นเมือง (ไม่มี tokenId) ไม่มีโลโก้ของตัวเอง → ใช้โลโก้เชน */}
+        <Logo src={m.logo ?? (m.tokenId === null ? chainLogo : null)} name={m.symbol} size={40} />
         <span className="logo-badge">
           <Logo src={chainLogo} name={row.chain} size={16} />
         </span>

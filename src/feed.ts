@@ -1,4 +1,5 @@
 import { rememberPrice } from './prices';
+import { proxied } from './proxy';
 /**
  * ดึงประวัติจาก URL แม่แบบที่ผู้ใช้ใส่เอง แล้วแปลงเป็นแถวกลางของแอป
  *
@@ -150,7 +151,7 @@ export async function fetchPage(tpl: string, walletId: string, address: string, 
   const headers: Record<string, string> = { accept: 'application/json' };
   if (opts.authHeader && opts.apiKey) headers[opts.authHeader] = opts.apiKey;
   try {
-    res = await fetch(buildUrl(tpl, address, cur, count, opts.family), { headers });
+    res = await fetch(proxied(buildUrl(tpl, address, cur, count, opts.family)), { headers });
   } catch {
     throw new FeedError('net');
   }

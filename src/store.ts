@@ -45,6 +45,8 @@ export interface Settings {
   hideScam: boolean;
   /** ป้ายบนสลิปที่แสดง (ค่าเริ่มต้นแสดงทั้งหมด) */
   slipShow: SlipShow;
+  /** ทางผ่านคำขอของผู้ใช้เอง (CORS) — ว่าง = ยิงตรง (dev ใช้ /__proxy ของ vite) */
+  proxyUrl: string;
 }
 
 interface State {
@@ -54,7 +56,7 @@ interface State {
 }
 
 const KEY = 'xcap.scan.v1';
-const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', hideScam: false, slipShow: SLIP_SHOW_DEFAULT } };
+const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', hideScam: false, slipShow: SLIP_SHOW_DEFAULT, proxyUrl: '' } };
 
 export const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
 export const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -82,7 +84,7 @@ function load(): State {
         const p = w && typeof w.address === 'string' ? parseAddress(w.address) : null;
         return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false }] : [];
       }),
-      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '', priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) } },
+      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '', priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '' },
     };
   } catch {
     return DEFAULT;
@@ -178,8 +180,9 @@ export function useStore() {
   const setChainListUrl = useCallback((chainListUrl: string) => commit({ ...state, settings: { ...state.settings, chainListUrl: chainListUrl.trim() } }), []);
   const setPriceUrl = useCallback((priceUrl: string) => commit({ ...state, settings: { ...state.settings, priceUrl: priceUrl.trim() } }), []);
   const setHideScam = useCallback((hideScam: boolean) => commit({ ...state, settings: { ...state.settings, hideScam } }), []);
+  const setProxyUrl = useCallback((proxyUrl: string) => commit({ ...state, settings: { ...state.settings, proxyUrl: proxyUrl.trim() } }), []);
   const setSlipShow = useCallback((field: SlipField, on: boolean) => commit({ ...state, settings: { ...state.settings, slipShow: { ...state.settings.slipShow, [field]: on } } }), []);
   const setPageSize = useCallback((pageSize: number) => commit({ ...state, settings: { ...state.settings, pageSize } }), []);
 
-  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow };
+  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl };
 }

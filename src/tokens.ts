@@ -3,6 +3,7 @@
  * จำลง localStorage 7 วัน; ที่อยู่ที่แหล่งไม่รู้จักก็จำไว้ (ว่าง) จะได้ไม่ขอซ้ำทุกครั้ง
  */
 import { parseTokenMeta, type TokenMeta } from './feed';
+import { proxied } from './proxy';
 import type { Endpoint } from './store';
 
 const KEY = 'xcap.scan.tokens';
@@ -75,7 +76,7 @@ export async function ensureTokenMeta(ep: Endpoint, addresses: string[]): Promis
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i]!;
       try {
-        const res = await fetch(metaUrl(ep.metaUrl!, batch), { headers });
+        const res = await fetch(proxied(metaUrl(ep.metaUrl!, batch)), { headers });
         if (res.status === 429) return;
         if (!res.ok) continue;
         const meta = parseTokenMeta(await res.json());

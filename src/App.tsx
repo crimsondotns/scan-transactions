@@ -20,6 +20,7 @@ import { parseShare } from './slip';
 import { LangMenu } from './components/LangMenu';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useModalLayer } from './modal';
+import { setProxy } from './proxy';
 
 export function App() {
   const { t } = useI18n();
@@ -47,6 +48,8 @@ export function App() {
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const closeDetail = useCallback(() => setSelected(null), []);
 
+  /* ทางผ่านคำขอ (CORS) — ตั้งครั้งเดียวต่อค่าใน settings ให้ทุกตัวดึงข้อมูลใช้ */
+  setProxy(settings.proxyUrl);
   const enabledEps = settings.endpoints.filter((e) => e.enabled);
   const chains = useChains(settings);
   const hasEndpoint = enabledEps.length > 0;

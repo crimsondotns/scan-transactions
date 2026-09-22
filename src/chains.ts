@@ -4,6 +4,7 @@
  * cache ใน localStorage 24 ชม. ต่อ origin
  */
 import { useEffect, useState } from 'react';
+import { proxied } from './proxy';
 import type { Settings } from './store';
 
 export interface ChainInfo {
@@ -63,7 +64,7 @@ async function fetchList(url: string): Promise<ChainInfo[]> {
   if (!hit?.chains.length && fails[url] && Date.now() - fails[url] < FAIL_TTL) return [];
   let chains: ChainInfo[] = [];
   try {
-    const res = await fetch(url, { headers: { accept: 'application/json' } });
+    const res = await fetch(proxied(url), { headers: { accept: 'application/json' } });
     if (!res.ok) throw new Error(String(res.status));
     chains = normalize(await res.json());
   } catch (e) {

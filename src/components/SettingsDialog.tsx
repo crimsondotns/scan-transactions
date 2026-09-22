@@ -10,7 +10,7 @@ const FAMILIES: Family[] = ['evm', 'sol'];
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
-  const { settings, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setSlipShow } = useStore();
+  const { settings, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setSlipShow, setProxyUrl } = useStore();
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
   const { toast } = useToast();
@@ -25,6 +25,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const [chainErr, setChainErr] = useState<string | null>(null);
   const [priceUrl, setPriceUrlText] = useState(settings.priceUrl);
   const [priceErr, setPriceErr] = useState<string | null>(null);
+  const [proxyUrl, setProxyUrlText] = useState(settings.proxyUrl);
+  const [proxyErr, setProxyErr] = useState<string | null>(null);
 
   /* ปุ่มเพิ่มติดทันทีที่มีข้อความ — ตรวจความถูกต้องตอนกดส่ง ไม่ใช่ตอนพิมพ์ */
   function submit(e: FormEvent) {
@@ -287,6 +289,64 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                   title={t('settings.remove', { name: t('settings.priceUrl') })}
                 >
                   <Icon name="trash" />
+                </button>
+              </span>
+            )}
+          </div>
+        </form>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!/^https:\/\//i.test(proxyUrl.trim())) return setProxyErr(t('settings.badUrl'));
+            setProxyUrl(proxyUrl);
+            setProxyErr(null);
+            toast(t('settings.proxySaved'));
+          }}
+          noValidate
+        >
+          <div className="field">
+            <label className="label" htmlFor="set-proxy">
+              {t('settings.proxy')}
+            </label>
+            <div className="inline">
+              <input
+                id="set-proxy"
+                name="proxy"
+                type="url"
+                inputMode="url"
+                className="input mono"
+                value={proxyUrl}
+                onChange={(e) => {
+                  setProxyUrlText(e.target.value);
+                  setProxyErr(null);
+                }}
+                autoComplete="off"
+                spellCheck={false}
+                aria-invalid={proxyErr ? 'true' : undefined}
+              />
+              <button type="submit" className="btn btn-primary" disabled={proxyUrl.trim() === '' || proxyUrl.trim() === settings.proxyUrl}>
+                {t('settings.addBtn')}
+              </button>
+            </div>
+            {proxyErr && (
+              <span className="error" aria-live="polite">
+                {proxyErr}
+              </span>
+            )}
+            {settings.proxyUrl && (
+              <span className="hint with-logo">
+                <span className="mono">{settings.proxyUrl}</span>
+                <button
+                  type="button"
+                  className="btn btn-icon"
+                  onClick={() => {
+                    setProxyUrl('');
+                    setProxyUrlText('');
+                  }}
+                  aria-label={t('settings.remove', { name: t('settings.proxy') })}
+                  title={t('settings.remove', { name: t('settings.proxy') })}
+                >
+                  <Icon name="x" />
                 </button>
               </span>
             )}

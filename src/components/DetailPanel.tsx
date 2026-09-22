@@ -5,7 +5,7 @@ import type { Move, TxRow } from '../feed';
 import type { Settings, Wallet } from '../store';
 import type { ChainMap } from '../chains';
 import { REFRESH_MS, priceOf, refreshPrice, usdOf } from '../prices';
-import { formatPrice, formatAmount, formatAmountFull, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
+import { formatPrice, formatAmount, formatAmountFull, formatAmountShort, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
 import { CopyButton } from './CopyButton';
 import { Logo } from './Logo';
@@ -15,6 +15,15 @@ import { useToast } from './Toast';
 export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
+  /* คลิกตัวเลข → คัดลอกค่าเต็มความละเอียด (ไม่ใช่ที่แสดง) */
+  async function copyValue(v: string) {
+    try {
+      await navigator.clipboard.writeText(v);
+      toast(t('tx.copied'));
+    } catch {
+      /* clipboard ถูกบล็อก */
+    }
+  }
   const closeBtn = useRef<HTMLButtonElement>(null);
   const [, setTick] = useState(0);
   /* ราคาเป็น USD ของโทเคนในธุรกรรมนี้ — ใช้แคชก่อน แล้วดึงใหม่จาก URL ราคา (ถ้าตั้ง) ทุก 5 นาทีระหว่างเปิดแผง */
@@ -88,10 +97,18 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
         <span className="ev-net">{t('detail.on', { chain: chainName })}</span>
       </span>
       <span className="ev-amount-wrap">
-        <span className="ev-amount" data-dir={m.dir} title={`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`}>
+        <button
+          type="button"
+          className="ev-amount copyable-number"
+          data-dir={m.dir}
+          data-value={`${m.dir === 'in' ? '' : '-'}${m.amount}`}
+          title={`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`}
+          aria-label={t('tx.copy', { what: `${formatAmountFull(m.amount)} ${m.symbol}` })}
+          onClick={(e) => void copyValue(e.currentTarget.dataset.value ?? '')}
+        >
           {m.dir === 'in' ? '+' : '−'}
-          {formatAmountFull(m.amount)}
-        </span>
+          {formatAmountShort(m.amount)}
+        </button>
         {moveUsd(m) !== null && <span className="ev-amount-usd">{formatUsdExact(moveUsd(m) as number)}</span>}
       </span>
     </div>

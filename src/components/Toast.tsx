@@ -11,7 +11,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const toast = useCallback((msg: string) => {
     const id = Date.now() + Math.random();
     setItems((s) => [...s, { id, msg }]);
-    setTimeout(() => setItems((s) => s.filter((i) => i.id !== id)), 2500);
+    setTimeout(() => setItems((s) => s.filter((i) => i.id !== id)), 2000);
   }, []);
   const api = useMemo(() => ({ toast }), [toast]);
   return (

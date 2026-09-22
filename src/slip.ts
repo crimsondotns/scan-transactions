@@ -238,7 +238,6 @@ interface Labels {
   status: string;
   statusOk: string;
   statusFailed: string;
-  verifyHint: string;
 }
 
 /** โหลดรูปแบบ CORS-safe (ไม่งั้น canvas จะ taint แล้ว export ไม่ได้) — โหลดไม่ได้/ช้าเกิน 4 วิ → null แล้วใช้ตัวอักษรแทน */
@@ -462,7 +461,6 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     y += 22;
     text(`${L.issued} ${formatStamp(Math.floor(d.issued / 1000))}`, W / 2, y + 4, 10, 400, MUTED, 'center');
     y += 16;
-    y += wrap(L.verifyHint, W / 2, y + 8, 10, W - PAD * 2, 400, MUTED, 'center') + 6;
 
     // ตราฟังก์ชันที่ทำกับสลิปนี้ (Downloaded ⤓ / Verified ✓ …) — สีประจำฟังก์ชัน
     if (action) {

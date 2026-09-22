@@ -30,7 +30,6 @@ export function useSlipLabels() {
     sent: t('slip.sent'),
     swapCost: t('detail.swapCost'),
     protocol: t('detail.protocol'),
-    verifyHint: t('slip.verifyHint'),
   });
 }
 

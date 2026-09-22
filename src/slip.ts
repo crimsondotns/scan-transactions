@@ -446,7 +446,8 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
 
     // Wallet / From / To / Status
     const y0 = y;
-    if (show.wallet) kv(L.wallet, d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
+    // ชื่อกระเป๋า (Main / BETA 24) ซ่อนแยกได้ — เหลือแค่ที่อยู่ย่อ
+    if (show.wallet) kv(L.wallet, show.walletLabel && d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
     if (show.wallet && d.from && d.from.toLowerCase() !== d.wallet.toLowerCase()) kv(L.from, shortAddr(d.from));
     if (show.protocol && d.protocol) kv(d.protocolKind ?? L.protocol, d.protocol);
     if (show.to && d.to && d.to.toLowerCase() !== d.wallet.toLowerCase()) kv(L.to, shortAddr(d.to));

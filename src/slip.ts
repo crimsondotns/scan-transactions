@@ -7,7 +7,7 @@
  */
 import QRCode from 'qrcode';
 import type { TxRow } from './feed';
-import { formatAmountFull, formatFeeNative, formatFeeUsd, formatStamp, formatUsdExact, shortAddr } from './format';
+import { formatAmountFull, formatAmountShort, formatFeeNative, formatFeeUsd, formatStamp, formatUsdExact, shortAddr } from './format';
 import { tokenColor } from './chainStyle';
 import { identiconHue } from './components/Identicon';
 
@@ -426,7 +426,8 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       }
       text(m.symbol, PAD + 46, y + 16, 14, 600);
       text(`${L.on} ${d.chainName}`, PAD + 46, y + 31, 11, 400, MUTED);
-      text(`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)}`, W - PAD, y + 16, 15, 600, INK, 'right');
+      // แถวสินทรัพย์: 4 ทศนิยม (เหมือนแผงขวา) — ทศนิยมเต็มอยู่ที่ตัวเลขใหญ่ Received/Sent ด้านบนเท่านั้น
+      text(`${m.dir === 'in' ? '+' : '−'}${formatAmountShort(m.amount)}`, W - PAD, y + 16, 15, 600, INK, 'right');
       if (m.usd !== null && m.usd !== undefined) text(formatUsdExact(m.usd), W - PAD, y + 31, 11, 400, MUTED, 'right');
       y += 46;
     });

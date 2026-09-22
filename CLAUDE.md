@@ -55,11 +55,8 @@ Do not declare work done while any of these is red.
 - `useFeed.feeds[walletId]` คือแคชในหน่วยความจำ: `ensure(w)` โหลดเฉพาะเมื่อยัง `loaded`/`loading` ไม่เป็นจริง; แหล่งข้อมูลเปลี่ยน → `reset()` ล้างแคช ไม่โหลดใหม่เอง
 - สถานะโหลดต่อกระเป๋า: วงหมุน `.spinner` ในแถวกระเป๋า ตารางขึ้น "Loading…" ระหว่างรอ
 
-## Wallet panel variants (2026-09-22)
+## Wallet panel = sidebar (2026-09-22, แทน 5 variants)
 
-- `settings.walletView`: `auto | compact | list | card | grid | accordion` (Dropdown ในแถบ Select all/Deselect all)
-- auto ตามจอ: มือถือ <640 = compact · แท็บเล็ต 640–1024 = card · เดสก์ท็อป >1024 = list (`src/useBreakpoint.ts`)
-- ทุกแบบใช้ `<li class="wallet" data-variant data-open data-selected data-hidden>` เดียวกัน: ช่องเลือก, ที่จับลาก (reorder), ขยาย/ย่อ
-- compact/list/accordion ขยายในที่ (`.wallet-expand` grid-template-rows 0fr→1fr); accordion เปิดได้ทีละอัน
-- card/grid กด = เปิด `Dialog` (มือถือเป็น bottom sheet เอง) — grid เป็น 2 คอลัมน์
-- ขยาย = `onExpand(w)` → `ensure(w)` (lazy) แล้วแสดง `Detail`: ที่อยู่ + คัดลอก, สถานะ, 5 ธุรกรรมล่าสุด, ปุ่ม "Show in table" (สลับ active), ตา/ถังขยะ
+- ไม่มี checkbox / select-all / ขยายในแถว / accordion — คลิกแถว = เลือกกระเป๋า (`selectWallet` → lazy load) แล้วตารางขวาแสดง; ตา = ซ่อน/แสดง (ไม่แตะ selection); ถังขยะ = ConfirmDialog
+- ย่อ/ขยาย: `sideOpen` ใน App (จำใน localStorage `xcap.scan.side`), ปุ่ม chevron ที่หัวแผง (`.side-chevron`) และหัวเว็บ (`.side-toggle`) — ขยาย `--side-w: 240px`, ย่อ `--side-c: 60px` (ไอคอน + badge จำนวนแถว), transition บน grid-template-columns; มือถือ ย่อ = เหลือแถวหัว
+- คลิกแถวตาราง → DetailPanel เดิม (drawer ขวา + scrim + ล็อกสกรอล) ไม่เปลี่ยน

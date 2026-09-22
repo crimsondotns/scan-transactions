@@ -19,7 +19,24 @@ export function App() {
   const { feeds, loadMany, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selected, setSelected] = useState<TxRow | null>(null);
-  const [sideOpen, setSideOpen] = useState(true);
+  /* แผงกระเป๋าย่อเป็นไอคอน (60px) — จำไว้ในเครื่อง */
+  const [sideOpen, setSideOpen] = useState(() => {
+    try {
+      return localStorage.getItem('xcap.scan.side') !== 'collapsed';
+    } catch {
+      return true;
+    }
+  });
+  const toggleSide = useCallback(() => {
+    setSideOpen((o) => {
+      try {
+        localStorage.setItem('xcap.scan.side', o ? 'collapsed' : 'open');
+      } catch {
+        /* ไม่มี storage */
+      }
+      return !o;
+    });
+  }, []);
   /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const closeDetail = useCallback(() => setSelected(null), []);
@@ -79,7 +96,7 @@ export function App() {
           {t('app.name')} <span className="brand-sub">{t('app.sub')}</span>
         </span>
         <span className="top-spacer" />
-        <button type="button" className="btn btn-icon side-toggle" onClick={() => setSideOpen((o) => !o)} aria-pressed={sideOpen} aria-label={t('nav.toggleSide')} title={t('nav.toggleSide')}>
+        <button type="button" className="btn btn-icon side-toggle" onClick={toggleSide} aria-expanded={sideOpen} aria-label={t('nav.toggleSide')} title={t('nav.toggleSide')}>
           <Icon name="panelLeft" />
         </button>
         <span className="top-status" data-ok={hasEndpoint}>
@@ -94,7 +111,7 @@ export function App() {
 
       <div className="layout" data-drawer={selected !== null} data-side={sideOpen}>
         <aside className="side">
-          <WalletPanel feeds={feeds} activeId={activeWallet} onSwitch={selectWallet} onRemove={forget} onExpand={(w) => endpointsFor(w, settings).length && void ensure(w)} hasSource={(w) => endpointsFor(w, settings).length > 0} />
+          <WalletPanel feeds={feeds} activeId={activeWallet} collapsed={!sideOpen} onSwitch={selectWallet} onRemove={forget} onToggle={toggleSide} hasSource={(w) => endpointsFor(w, settings).length > 0} />
           <p className="hint">{t('foot.local')}</p>
         </aside>
 

@@ -152,6 +152,14 @@ select {
   width: min(100% - 2 * var(--layout-gutter), var(--layout-max));
   margin-inline: auto;
   padding: var(--section-pad) 0 var(--space-16);
+  transition: grid-template-columns var(--motion-slow) var(--easing-standard);
+}
+/* แผงกระเป๋าย่อ = คอลัมน์ 60px ไอคอนอย่างเดียว ตารางขยายเต็ม */
+.layout[data-side='false'] {
+  grid-template-columns: var(--side-c) minmax(0, 1fr);
+}
+.layout[data-side='false'] .side > .hint {
+  display: none;
 }
 .side {
   display: flex;
@@ -165,19 +173,9 @@ select {
   min-width: 0;
 }
 .top .side-toggle {
-  display: none;
+  display: inline-flex;
 }
-/* แท็บเล็ต: แผงกระเป๋าพับได้จากปุ่มในหัวเว็บ */
 @media (min-width: 640px) and (max-width: 1024px) {
-  .top .side-toggle {
-    display: inline-flex;
-  }
-  .layout[data-side='false'] {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .layout[data-side='false'] .side {
-    display: none;
-  }
   .side {
     position: static;
   }
@@ -192,10 +190,26 @@ select {
   }
 }
 
-/* มือถือ: คอลัมน์เดียว */
+/* มือถือ: คอลัมน์เดียว; ย่อ = เหลือแถวหัว */
 @media (max-width: 639px) {
-  .layout {
+  .layout,
+  .layout[data-side='false'] {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .side .wallets-panel[data-collapsed='true'] {
+    padding-inline: var(--space-4);
+  }
+  .side .wallets-panel[data-collapsed='true'] .panel-title,
+  .side .wallets-panel[data-collapsed='true'] .panel-head .hint {
+    display: block;
+  }
+  .side .wallets-panel[data-collapsed='true'] .panel-head {
+    justify-content: flex-start;
+    margin: 0;
+  }
+  .side .wallets-panel[data-collapsed='true'] .wallets,
+  .side .wallets-panel[data-collapsed='true'] > .hint {
+    display: none;
   }
   .side {
     position: static;
@@ -405,109 +419,206 @@ input[type='file'].input::file-selector-button {
   flex-wrap: wrap;
 }
 
-/* ---------- รายการกระเป๋า / แหล่งข้อมูล ---------- */
+/* ---------- แผงกระเป๋า (sidebar) ---------- */
 
+.wallets-panel {
+  overflow: hidden;
+  padding: var(--space-3);
+}
+.wallets-panel .row-actions {
+  flex-wrap: nowrap;
+}
+.wallets-panel .panel-head {
+  gap: var(--space-2);
+}
+.side-chevron .chev {
+  transition: transform var(--motion-slow) var(--easing-standard);
+}
+.wallets-panel[data-collapsed='true'] .side-chevron .chev {
+  transform: rotate(180deg);
+}
 .wallets {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 .wallet {
   position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
   border-radius: var(--radius-md);
   transition: background-color var(--motion-fast) var(--easing-standard);
 }
-/* แถวหลักของกระเป๋า (compact/list/accordion) */
-.wallet-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  min-height: 44px;
-  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-.wallet-row:hover {
+.wallet:hover {
   background: var(--color-hover);
 }
-.wallet[data-selected='true'] .wallet-row {
+.wallet[data-active='true'] {
   background: var(--color-soft);
 }
-.wallet-chevron .chev {
-  transition: transform var(--motion-fast) var(--easing-standard);
+.wallet[data-active='true']::before {
+  content: '';
+  position: absolute;
+  left: calc(-1 * var(--space-3));
+  top: var(--space-2);
+  bottom: var(--space-2);
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
 }
-.wallet[data-open='true'] .wallet-chevron .chev {
-  transform: rotate(180deg);
-}
-/* ส่วนขยาย — เลื่อนเปิดนุ่มด้วย grid-template-rows */
-.wallet-expand {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows var(--motion-slow) var(--easing-standard);
-}
-.wallet[data-open='true'] .wallet-expand {
-  grid-template-rows: 1fr;
-}
-.wallet-expand-inner {
-  min-height: 0;
-  overflow: hidden;
-}
-.wallet-detail {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-2) var(--space-3) var(--space-3);
-}
-.wallet-detail-addr {
+.wallet-switch {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  color: var(--color-muted);
-  font-size: var(--size-caption);
+  min-width: 0;
+  min-height: 56px;
+  padding: var(--space-1);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
 }
-.wallet-detail-addr .wallet-state {
-  margin-left: auto;
+.wallet-switch:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: -2px;
 }
-.wallet-tx {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.wallet-avatar {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+}
+.wallet-badge {
+  display: none;
+  position: absolute;
+  right: -6px;
+  top: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-pill);
+  background: var(--color-ink);
+  color: var(--color-bg);
+  font-size: var(--size-tiny, 0.6875rem);
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+.wallet[data-hidden='true'] .wallet-meta,
+.wallet[data-hidden='true'] .identicon {
+  opacity: 0.45;
+}
+.wallet-meta {
+  min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
+  gap: 1px;
 }
-.wallet-tx-row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: var(--space-2);
-  align-items: baseline;
-  padding: var(--space-1) 0;
-  font-size: var(--size-caption);
-  border-top: 1px solid var(--color-line-subtle);
-}
-.wallet-tx-type {
+.wallet-label {
+  font-size: var(--size-body);
   font-weight: var(--weight-medium);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.wallet-tx-time {
-  color: var(--color-tertiary);
-}
-.wallet-tx-amt {
+.wallet-addr {
+  color: var(--color-muted);
+  font-size: var(--size-caption);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
-  color: var(--color-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
-.wallet-tx-amt[data-dir='in'] {
-  color: var(--color-positive);
-}
-.wallet-detail-foot {
-  display: flex;
+.wallet-state {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  gap: 5px;
+  font-size: var(--size-caption);
+  color: var(--color-tertiary);
+  white-space: nowrap;
 }
-
+.wallet-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-tertiary);
+}
+.wallet-state[data-state='ok'] .wallet-dot {
+  background: var(--color-ink);
+}
+.wallet-state[data-state='error'],
+.wallet-state[data-state='nosource'] {
+  color: var(--color-danger);
+}
+.wallet-state[data-state='error'] .wallet-dot,
+.wallet-state[data-state='nosource'] .wallet-dot {
+  background: var(--color-danger);
+}
+/* วงหมุนต่อกระเป๋า — เส้นเดียวสีหมึกจาง */
+.spinner {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-line);
+  border-top-color: var(--color-ink);
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation-duration: 2s;
+  }
+}
+.wallet-actions {
+  display: inline-flex;
+  gap: 0;
+  padding-right: var(--space-1);
+}
+.wallet-actions .btn-icon {
+  width: 28px;
+  min-height: 28px;
+}
+/* ย่อ: ไอคอน + badge จำนวนแถว อย่างเดียว */
+.wallets-panel[data-collapsed='true'] {
+  padding-inline: var(--space-2);
+}
+.wallets-panel[data-collapsed='true'] .panel-title,
+.wallets-panel[data-collapsed='true'] .panel-head .hint,
+.wallets-panel[data-collapsed='true'] .row-actions,
+.wallets-panel[data-collapsed='true'] .wallet-meta,
+.wallets-panel[data-collapsed='true'] .wallet-actions,
+.wallets-panel[data-collapsed='true'] > .hint {
+  display: none;
+}
+.wallets-panel[data-collapsed='true'] .panel-head {
+  justify-content: center;
+}
+.wallets-panel[data-collapsed='true'] .wallets {
+  margin: 0;
+}
+.wallets-panel[data-collapsed='true'] .wallet {
+  grid-template-columns: 1fr;
+  justify-items: center;
+}
+.wallets-panel[data-collapsed='true'] .wallet-switch {
+  padding: var(--space-2) 0;
+  min-height: 48px;
+}
+.wallets-panel[data-collapsed='true'] .wallet-badge {
+  display: block;
+}
+.wallets-panel[data-collapsed='true'] .wallet[data-active='true']::before {
+  left: calc(-1 * var(--space-2));
+}
 /* รายการแหล่งข้อมูลใน Settings: ช่องเปิด · ชื่อ+URL · รูปแบบที่อยู่ · ลบ */
 .sources {
   list-style: none;
@@ -531,151 +642,19 @@ input[type='file'].input::file-selector-button {
 .source .wallet-meta {
   flex: 1;
 }
-
-/* compact: หัว + ไอคอน + ชื่อสั้นๆ */
-.wallets[data-variant='compact'] .wallet-row {
-  min-height: 40px;
-}
-.wallets[data-variant='compact'] .wallet-label {
-  flex: 1;
-  min-width: 0;
-}
-/* list: แถวเต็ม ปุ่มสลับกลางแถว (สถานะอยู่ในส่วนขยาย) ปุ่มไอคอนชิดกัน */
-.wallets[data-variant='list'] .wallet-switch {
-  flex: 1;
-  padding-inline: 0;
-}
-.wallets[data-variant='list'] .wallet-row {
-  gap: var(--space-1);
-}
-.wallets[data-variant='list'] .wallet-switch {
-  gap: var(--space-2);
-  margin-right: var(--space-1);
-}
-/* accordion: แผงเต็มแต่ละกระเป๋า เปิดได้ทีละอัน */
-.wallets[data-variant='accordion'] {
-  gap: var(--space-2);
-}
-.wallets[data-variant='accordion'] .wallet {
-  border: 1px solid var(--color-line-subtle);
-  border-radius: var(--radius-lg);
-}
-.wallets[data-variant='accordion'] .wallet-row {
-  min-height: 52px;
-  border-radius: var(--radius-lg);
-}
-.wallets[data-variant='accordion'] .wallet[data-open='true'] .wallet-row {
-  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
-}
-.wallets[data-variant='accordion'] .wallet-meta {
-  flex: 1;
-}
-/* card: กล่องต่อกระเป๋า ไอคอนบน */
-.wallets[data-variant='card'],
-.wallets[data-variant='grid'] {
-  display: grid;
-  gap: var(--space-3);
-}
-.wallets[data-variant='card'] {
-  grid-template-columns: 1fr;
-}
-.wallets[data-variant='grid'] {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.wallet-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  width: 100%;
-  padding: var(--space-4);
-  border: 1px solid var(--color-line-subtle);
-  border-radius: var(--radius-lg);
-  background: var(--color-bg);
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-  transition: background-color var(--motion-fast) var(--easing-standard);
-}
-.wallet-card:hover {
-  background: var(--color-hover);
-}
-.wallet-card:focus-visible {
-  outline: 2px solid var(--color-ink);
-  outline-offset: 2px;
-}
-.wallet[data-selected='true'] .wallet-card {
-  background: var(--color-soft);
-}
-.wallet-card .wallet-meta {
-  width: 100%;
-}
-.wallet-card-top {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
+.wallet-check {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-1);
-}
-.wallet-card .wallet-grip {
-  position: static;
-  width: auto;
-}
-.wallets[data-variant='grid'] .wallet-card {
-  padding: var(--space-3);
-  align-items: center;
-  text-align: center;
-}
-.wallets[data-variant='grid'] .wallet-card .wallet-meta {
-  align-items: center;
-}
-.wallets[data-variant='grid'] .wallet-addr {
-  display: none;
-}
-
-.wallet-grip {
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: var(--space-3);
-  display: inline-flex;
-  align-items: center;
+  min-height: 36px;
+  min-width: 36px;
   justify-content: center;
-  color: var(--color-tertiary);
-  cursor: grab;
-  opacity: 0;
-  transition: opacity var(--motion-fast) var(--easing-standard);
-}
-.wallet-grip svg {
-  width: 14px;
-  height: 14px;
-}
-.wallet:hover .wallet-grip,
-.wallet-card:hover .wallet-grip,
-.wallet[data-selected='true'] .wallet-grip {
-  opacity: 1;
-}
-.wallet[data-dragover='true'] {
-  box-shadow: inset 0 2px 0 var(--color-ink);
-}
-.wallet-select {
-  accent-color: var(--color-ink);
-  width: 16px;
-  height: 16px;
-  margin: 0;
   cursor: pointer;
 }
-.wallet[data-selected='true'] {
-  background: var(--color-soft);
-}
-/* ปุ่มข้อความ (เลือกทั้งหมด / ยกเลิกเลือก / ลบที่เลือก) */
-.wallets-tools {
-  display: flex;
-  gap: var(--space-3);
-  margin-top: var(--space-2);
+.wallet-check input {
+  accent-color: var(--color-ink);
+  margin: 0;
+  width: 18px;
+  height: 18px;
 }
 .btn-text {
   display: inline-flex;
@@ -691,170 +670,18 @@ input[type='file'].input::file-selector-button {
 }
 .btn-text:hover {
   color: var(--color-ink);
-  text-decoration: none;
 }
 .btn-text:disabled {
   color: var(--color-disabled);
   cursor: default;
-  text-decoration: none;
 }
 .btn-text svg {
   width: 14px;
   height: 14px;
 }
-.btn-text-danger {
-  color: var(--color-danger);
-}
+.btn-text-danger,
 .btn-text-danger:hover {
   color: var(--color-danger);
-}
-.select-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--space-3);
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  background: var(--color-soft);
-  font-size: var(--size-caption);
-  color: var(--color-muted);
-}
-/* ไฮไลต์ hover/เลือก ครอบทั้งแถวรวมปุ่มตา/ถังขยะ */
-
-.wallet[data-active='true'] {
-  background: var(--color-soft);
-}
-/* ย่อ/ขยายเนื้อแผง */
-.panel-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-.panel-body[hidden] {
-  display: none;
-}
-.panel-chevron {
-  margin-left: var(--space-1);
-}
-.panel-chevron .chev {
-  transition: transform var(--motion-base) var(--easing-standard);
-}
-.panel-chevron[aria-expanded='true'] .chev {
-  transform: rotate(180deg);
-}
-.panel-head {
-  align-items: center;
-}
-.panel-head .hint {
-  margin-left: auto;
-}
-
-/* identicon: กล่องมุม 8px ไม่ใช่วงกลม */
-.identicon {
-  border-radius: var(--radius-md);
-  flex: none;
-  display: inline-block;
-}
-.wallet[data-active='true'] .identicon {
-  box-shadow: 0 0 0 2px var(--color-ink);
-}
-/* แถวกระเป๋า = ปุ่มสลับกระเป๋าที่ดู */
-.wallet-switch {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  min-width: 0;
-  padding: var(--space-2) var(--space-2);
-  border: 0;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.wallet-switch:focus-visible {
-  outline: 2px solid var(--color-ink);
-  outline-offset: -2px;
-}
-.wallet[data-hidden='true'] .wallet-meta,
-.wallet[data-hidden='true'] .identicon {
-  opacity: 0.45;
-}
-.wallet-actions {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.wallet-check {
-  display: inline-flex;
-  align-items: center;
-  min-height: 36px;
-  min-width: 36px;
-  justify-content: center;
-  cursor: pointer;
-}
-.wallet-check input {
-  accent-color: var(--color-ink);
-  margin: 0;
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-sm);
-}
-.wallet-meta {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.wallet-label {
-  font-size: var(--size-body);
-  font-weight: var(--weight-medium);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.wallet-addr {
-  color: var(--color-muted);
-  font-size: var(--size-caption);
-  font-family: var(--font-mono);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.wallet-state {
-  font-size: var(--size-tiny, 0.75rem);
-  color: var(--color-tertiary);
-  white-space: nowrap;
-}
-.wallet-state[data-state='error'],
-.wallet-state[data-state='nosource'] {
-  color: var(--color-danger);
-}
-.wallet-state[data-state='loading'] {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-1);
-}
-/* วงหมุนต่อกระเป๋า — เส้นเดียวสีหมึกจาง */
-.spinner {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  border: 1.5px solid var(--color-line);
-  border-top-color: var(--color-ink);
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .spinner {
-    animation-duration: 2s;
-  }
 }
 
 /* ---------- ตารางธุรกรรม ---------- */

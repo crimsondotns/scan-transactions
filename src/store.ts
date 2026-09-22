@@ -23,9 +23,6 @@ export interface Endpoint {
   enabled: boolean;
 }
 
-export type WalletView = 'auto' | 'compact' | 'list' | 'card' | 'grid' | 'accordion';
-export const WALLET_VIEWS: WalletView[] = ['auto', 'compact', 'list', 'card', 'grid', 'accordion'];
-
 export interface Settings {
   endpoints: Endpoint[];
   pageSize: number;
@@ -33,8 +30,6 @@ export interface Settings {
   chainListUrl: string;
   /** URL ราคาโทเคนที่ผู้ใช้วางเอง — ว่าง = ใช้แค่ราคาที่มากับธุรกรรม */
   priceUrl: string;
-  /** รูปแบบแผงกระเป๋า — auto = เลือกตามขนาดจอ */
-  walletView: WalletView;
   /** ซ่อนแถวที่ติดธงน่าสงสัย/หลอกลวง */
   hideScam: boolean;
 }
@@ -46,7 +41,7 @@ interface State {
 }
 
 const KEY = 'xcap.scan.v1';
-const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', walletView: 'auto', hideScam: false } };
+const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', hideScam: false } };
 
 export const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
 export const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -74,7 +69,7 @@ function load(): State {
         const p = w && typeof w.address === 'string' ? parseAddress(w.address) : null;
         return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false }] : [];
       }),
-      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '', priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', walletView: WALLET_VIEWS.includes(s.walletView as WalletView) ? (s.walletView as WalletView) : 'auto', hideScam: s.hideScam === true },
+      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '', priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true },
     };
   } catch {
     return DEFAULT;
@@ -161,9 +156,8 @@ export function useStore() {
   }, []);
   const setChainListUrl = useCallback((chainListUrl: string) => commit({ ...state, settings: { ...state.settings, chainListUrl: chainListUrl.trim() } }), []);
   const setPriceUrl = useCallback((priceUrl: string) => commit({ ...state, settings: { ...state.settings, priceUrl: priceUrl.trim() } }), []);
-  const setWalletView = useCallback((walletView: WalletView) => commit({ ...state, settings: { ...state.settings, walletView } }), []);
   const setHideScam = useCallback((hideScam: boolean) => commit({ ...state, settings: { ...state.settings, hideScam } }), []);
   const setPageSize = useCallback((pageSize: number) => commit({ ...state, settings: { ...state.settings, pageSize } }), []);
 
-  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setWalletView, setHideScam };
+  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam };
 }

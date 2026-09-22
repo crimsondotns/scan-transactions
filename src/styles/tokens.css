@@ -75,7 +75,8 @@
   --section-pad: 24px;
   --control-h: 40px;
   --input-h: 40px;
-  --side-w: 340px;
+  --side-w: 240px;
+  --side-c: 60px;
 }
 
 /* แท็บเล็ต 640–1024 */
@@ -89,7 +90,7 @@
     --section-pad: 16px;
     --control-h: 40px;
     --input-h: 40px;
-    --side-w: 300px;
+    --side-w: 240px;
     --layout-gutter: 16px;
   }
 }

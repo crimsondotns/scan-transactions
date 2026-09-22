@@ -21,6 +21,7 @@ import { LangMenu } from './components/LangMenu';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useModalLayer } from './modal';
 import { setProxy } from './proxy';
+import { navigate, useRoute } from './router';
 
 export function App() {
   const { t } = useI18n();
@@ -28,16 +29,11 @@ export function App() {
   const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importing, setImporting] = useState(false);
-  /* หน้า: #/ = แดชบอร์ด, #/w/<id> = ธุรกรรมของกระเป๋า — เก็บใน hash ให้ปุ่มย้อนกลับของเบราว์เซอร์ทำงาน */
-  const [hash, setHash] = useState(() => window.location.hash);
-  useEffect(() => {
-    const on = () => setHash(window.location.hash);
-    window.addEventListener('hashchange', on);
-    return () => window.removeEventListener('hashchange', on);
-  }, []);
-  const pageWallet = hash.startsWith('#/w/') ? decodeURIComponent(hash.slice(4)) : null;
-  /* #/v/<code>[.<data>] = ลิงก์ตรวจสลิป → เปิดไดอะล็อกตรวจทับแดชบอร์ด */
-  const share = useMemo(() => (hash.startsWith('#/v/') ? parseShare(decodeURIComponent(hash.slice(4))) : null), [hash]);
+  /* หน้า: / = แดชบอร์ด, /w/<id> = ธุรกรรมของกระเป๋า — path จริง (History API) ปุ่มย้อนกลับใช้ได้ */
+  const route = useRoute();
+  const pageWallet = route.startsWith('w/') ? decodeURIComponent(route.slice(2)) : null;
+  /* /v/<code>[.<data>] = ลิงก์ตรวจสลิป → เปิดไดอะล็อกตรวจทับแดชบอร์ด */
+  const share = useMemo(() => (route.startsWith('v/') ? parseShare(decodeURIComponent(route.slice(2))) : null), [route]);
   const [verifyOpen, setVerifyOpen] = useState(false);
   useEffect(() => {
     if (share) setVerifyOpen(true);
@@ -77,12 +73,12 @@ export function App() {
   const openWallet = useCallback(
     (id: string | null) => {
       selectWallet(id);
-      window.location.hash = id ? `#/w/${encodeURIComponent(id)}` : '#/';
+      navigate(id ? `w/${encodeURIComponent(id)}` : '');
     },
     [selectWallet]
   );
   const goDashboard = useCallback(() => {
-    window.location.hash = '#/';
+    navigate('');
   }, []);
   /* เปิดด้วย URL ที่มี #/w/<id> → เลือกกระเป๋านั้นให้ (ถ้ายังมีอยู่) */
   useEffect(() => {
@@ -209,7 +205,7 @@ export function App() {
         initial={share}
         onClose={() => {
           setVerifyOpen(false);
-          if (share) window.location.hash = '#/';
+          if (share) navigate('', true);
         }}
         seen={(h) => rows.some((r) => r.hash === h)}
       />

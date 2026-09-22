@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>XCap Scan</title>
+    <!-- static host ไม่รู้จัก path ของแอป (เช่น /w/<id>) → เด้งกลับหน้าแรกพร้อม ?p=<path> แล้วแอปคืนเส้นทางให้ -->
+    <script>
+      (function () {
+        var base = '/scan-transactions/';
+        var p = location.pathname.indexOf(base) === 0 ? location.pathname.slice(base.length) : '';
+        location.replace(base + '?p=' + encodeURIComponent(p) + location.hash);
+      })();
+    </script>
+  </head>
+  <body></body>
+</html>

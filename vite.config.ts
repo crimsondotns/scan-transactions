@@ -18,6 +18,12 @@ function devProxy(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const u = new URL(req.url ?? '/', 'http://localhost');
+        // /scan-transactions (ไม่มี / ท้าย) → /scan-transactions/ — เหมือนที่ static host ทำ
+        if (u.pathname === '/scan-transactions') {
+          res.statusCode = 302;
+          res.setHeader('location', `/scan-transactions/${u.search}`);
+          return res.end();
+        }
         if (!u.pathname.endsWith('/__proxy')) return next();
         const target = u.searchParams.get('url') ?? '';
         if (!/^https:\/\//i.test(target)) {

@@ -10,7 +10,9 @@ const FAMILIES: Family[] = ['evm', 'sol'];
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
-  const { settings, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl } = useStore();
+  const { settings, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl } = useStore();
+  const [dragFrom, setDragFrom] = useState<number | null>(null);
+  const [dragOver, setDragOver] = useState<number | null>(null);
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [err, setErr] = useState<string | null>(null);
@@ -38,27 +40,49 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           <p className="hint">{t('settings.none')}</p>
         ) : (
           <ul className="sources" aria-label={t('settings.list')}>
-            {settings.endpoints.map((ep) => (
-              <li key={ep.id} className="source">
-                <label className="wallet-check">
-                  <input type="checkbox" checked={ep.enabled} onChange={(e) => updateEndpoint(ep.id, { enabled: e.target.checked })} aria-label={t('settings.enable', { name: ep.name })} />
-                </label>
+            {settings.endpoints.map((ep, i) => (
+              <li
+                key={ep.id}
+                className="source"
+                data-off={!ep.enabled}
+                data-dragover={dragOver === i && dragFrom !== i}
+                draggable
+                onDragStart={(e) => {
+                  setDragFrom(i);
+                  e.dataTransfer.effectAllowed = 'move';
+                }}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  if (dragOver !== i) setDragOver(i);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (dragFrom !== null) reorderEndpoints(dragFrom, i);
+                  setDragFrom(null);
+                  setDragOver(null);
+                }}
+                onDragEnd={() => {
+                  setDragFrom(null);
+                  setDragOver(null);
+                }}
+              >
+                <span className="source-grip" title={t('settings.dragHint')} aria-hidden="true">
+                  <Icon name="grip" />
+                </span>
+                <span className="source-icon" data-on={ep.enabled}>
+                  <Icon name={ep.family === 'sol' ? 'layers' : 'hexagon'} />
+                </span>
                 <div className="wallet-meta">
-                  <span className="wallet-label">
+                  <span className="wallet-label with-logo">
                     {ep.name}
+                    <Dropdown size="sm" value={ep.family} onChange={(f) => updateEndpoint(ep.id, { family: f })} label={t('settings.family')} options={FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))} />
                   </span>
                   <span className="wallet-addr" title={ep.url}>
-                    {ep.url}
+                    {ep.enabled ? t('settings.priority', { n: settings.endpoints.filter((x) => x.enabled).indexOf(ep) + 1 }) : t('settings.disabled')} · {ep.url}
                   </span>
                 </div>
-                <Dropdown size="sm" align="right" value={ep.family} onChange={(f) => updateEndpoint(ep.id, { family: f })} label={t('settings.family')} options={FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))} />
-                <button
-                  type="button"
-                  className="btn btn-icon"
-                  onClick={() => removeEndpoint(ep.id)}
-                  aria-label={t('settings.remove', { name: ep.name })}
-                  title={t('settings.remove', { name: ep.name })}
-                >
+                <button type="button" className="switch" role="switch" aria-checked={ep.enabled} onClick={() => updateEndpoint(ep.id, { enabled: !ep.enabled })} aria-label={t('settings.enable', { name: ep.name })} title={t('settings.enable', { name: ep.name })} />
+                <button type="button" className="btn btn-icon" onClick={() => removeEndpoint(ep.id)} aria-label={t('settings.remove', { name: ep.name })} title={t('settings.remove', { name: ep.name })}>
                   <Icon name="trash" />
                 </button>
               </li>

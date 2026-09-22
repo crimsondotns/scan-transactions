@@ -151,6 +151,14 @@ export function useStore() {
   const updateEndpoint = useCallback((id: string, patch: Partial<Endpoint>) => {
     commit({ ...state, settings: { ...state.settings, endpoints: state.settings.endpoints.map((e) => (e.id === id ? { ...e, ...patch } : e)) } });
   }, []);
+  const reorderEndpoints = useCallback((from: number, to: number) => {
+    if (from === to) return;
+    const next = [...state.settings.endpoints];
+    const [item] = next.splice(from, 1);
+    if (!item) return;
+    next.splice(to, 0, item);
+    commit({ ...state, settings: { ...state.settings, endpoints: next } });
+  }, []);
   const removeEndpoint = useCallback((id: string) => {
     commit({ ...state, settings: { ...state.settings, endpoints: state.settings.endpoints.filter((e) => e.id !== id) } });
   }, []);
@@ -159,5 +167,5 @@ export function useStore() {
   const setHideScam = useCallback((hideScam: boolean) => commit({ ...state, settings: { ...state.settings, hideScam } }), []);
   const setPageSize = useCallback((pageSize: number) => commit({ ...state, settings: { ...state.settings, pageSize } }), []);
 
-  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam };
+  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam };
 }

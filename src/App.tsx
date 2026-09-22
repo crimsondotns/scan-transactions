@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useI18n } from './i18n';
 import { useStore } from './store';
 import { endpointsFor, hasOlder, useFeed } from './useFeed';
@@ -135,7 +136,7 @@ export function App() {
         <LangMenu />
       </header>
 
-      <div className="layout" data-drawer={selected !== null}>
+      <div className="layout">
         <main id="main" className="main">
           {!hasEndpoint ? (
             <div className="empty">
@@ -192,8 +193,14 @@ export function App() {
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} />
-      {selected !== null && <button type="button" className="drawer-scrim" aria-label={t('dialog.close')} onClick={closeDetail} />}
-      <DetailPanel row={selected} wallets={wallets} chains={chains} settings={settings} onClose={closeDetail} />
+      {/* แผงขวา + ม่าน: portal ไป body — เป็น sibling ของทั้งหน้า ไม่อยู่ในกล่องตาราง จึงไม่ดันตาราง */}
+      {createPortal(
+        <>
+          {selected !== null && <button type="button" className="drawer-scrim" aria-label={t('dialog.close')} onClick={closeDetail} />}
+          <DetailPanel row={selected} wallets={wallets} chains={chains} settings={settings} onClose={closeDetail} />
+        </>,
+        document.body
+      )}
     </>
   );
 }

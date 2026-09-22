@@ -74,3 +74,8 @@ Do not declare work done while any of these is red.
 - `components/Skeleton.tsx`: `SkeletonRows` (แถว shimmer สูง 64px เท่าแถวจริง) ใช้ในตารางธุรกรรมทั้งสองตอนโหลดครั้งแรก, `SkeletonBar` ในช่อง Transactions ของตารางกระเป๋าตอนกระเป๋านั้นโหลด; shimmer ทำด้วย pseudo-element เลื่อน + pulse 1.5s (ห้าม gradient ตาม check)
 - ปุ่ม Import file อยู่ที่หัวเว็บ (XCap · Import · Settings); ตารางกระเป๋ามี Add/Clear
 - หัวคอลัมน์ตาราง padding 16px แนวตั้ง, เซลล์ 12px
+
+## แผงขวา + Settings (2026-09-22)
+
+- `DetailPanel` และ `.drawer-scrim` render ผ่าน `createPortal(…, document.body)` — เป็น sibling ของ `#root` ไม่อยู่ในกล่องตาราง; `.drawer` fixed `top/right/bottom: 0; width: min(440px,100vw)` z-index 1000, scrim 999; **ห้ามมีกติกาดัน layout** (เอา `.layout[data-drawer]` margin ออกแล้ว) — ตารางต้องนิ่งเมื่อเปิดแผง
+- Settings = "settings panel": แถวแหล่งข้อมูลไม่มีกรอบรอบการ์ด คั่นด้วย hairline: grip ลากจัดลำดับ (`reorderEndpoints`) · ไอคอนชนิด · ชื่อ + dropdown รูปแบบที่อยู่ · "Priority N · URL" · สวิตช์ `.switch` (role=switch) · ลบ

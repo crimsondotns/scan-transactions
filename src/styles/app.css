@@ -1015,6 +1015,29 @@ th[aria-sort='descending'] .th-btn {
   min-width: 0;
 }
 
+/* ไอคอน "คัดลอกแล้ว" เด้งเข้า: ย่อ 0.8 → 1 พร้อมจางเข้า */
+@keyframes pop {
+  from {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+.pop {
+  animation: pop 0.3s var(--easing-standard, ease-out);
+}
+.btn-icon[data-copied='true'] {
+  color: var(--color-positive);
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop {
+    animation: none;
+  }
+}
+
 /* ---------- แผงขวา (รายละเอียด) ---------- */
 
 /* ม่านทึบหลังแผงขวา — คลิกเพื่อปิด */

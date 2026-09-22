@@ -7,6 +7,7 @@ import type { ChainMap } from '../chains';
 import { REFRESH_MS, priceOf, refreshPrice, usdOf } from '../prices';
 import { formatPrice, formatAmount, formatAmountFull, formatFeeNative, formatFeeUsd, formatStamp, formatUsd, formatUsdExact, shortAddr, shortHash } from '../format';
 import { Icon } from './Icon';
+import { CopyButton } from './CopyButton';
 import { Logo } from './Logo';
 import { Identicon } from './Identicon';
 import { useToast } from './Toast';
@@ -72,15 +73,6 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
   const gasUsd = row.gasNative !== null ? usdOf(row.gasNative, row.gasUsd, row.chain, null, native) : row.gasUsd;
   const totalCost = swapCost !== null ? swapCost + (gasUsd ?? 0) : gasUsd;
 
-  async function copy(text: string) {
-    try {
-      await navigator.clipboard.writeText(text);
-      toast(t('tx.copied'));
-    } catch {
-      /* clipboard ถูกบล็อก */
-    }
-  }
-
   const Asset = ({ m }: { m: Move }) => (
     <div className="ev-asset">
       <span className="ev-asset-icon">
@@ -119,9 +111,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
           <span className="mono" title={addr}>
             {short ?? shortAddr(addr)}
           </span>
-          <button type="button" className="btn btn-icon" onClick={() => void copy(addr)} aria-label={t('tx.copy', { what: String(label) })} title={t('tx.copy', { what: String(label) })}>
-            <Icon name="copy" />
-          </button>
+          <CopyButton text={addr} label={t('tx.copy', { what: String(label) })} onCopied={() => toast(t('tx.copied'))} />
         </span>
       </Row>
     );
@@ -193,9 +183,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
               <span className="mono" title={row.hash}>
                 {shortHash(row.hash)}
               </span>
-              <button type="button" className="btn btn-icon" onClick={() => void copy(row.hash)} aria-label={t('tx.copy', { what: t('tx.col.hash') })} title={t('tx.copy', { what: t('tx.col.hash') })}>
-                <Icon name="copy" />
-              </button>
+              <CopyButton text={row.hash} label={t('tx.copy', { what: t('tx.col.hash') })} onCopied={() => toast(t('tx.copied'))} />
             </span>
           </Row>
           {row.nonce !== null && <Row label={t('detail.nonce')}>{row.nonce}</Row>}

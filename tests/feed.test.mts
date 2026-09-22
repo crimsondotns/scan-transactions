@@ -152,7 +152,7 @@ test('sol family composes owner query; placeholders still drop empty cursor para
 });
 
 test('token metadata: batch URL, tolerant parser, merge into rows', async () => {
-  assert.equal(metaUrl('https://example.invalid/meta', ['A', 'B']), 'https://example.invalid/meta?tokenAddresses=A,B');
+  assert.equal(metaUrl('https://example.invalid/meta', ['A', 'B']), 'https://example.invalid/meta?tokenAddresses=A%2CB');
   assert.equal(metaUrl('https://example.invalid/meta?ids={addresses}', ['A']), 'https://example.invalid/meta?ids=A');
   const meta = parseTokenMeta({ data: [{ address: 'MintAAAAAAAA', name: 'USD Coin', symbol: 'USDC', decimals: 6, logoURI: 'https://img.invalid/usdc.png' }] });
   assert.equal(meta.get('MintAAAAAAAA')?.name, 'USD Coin');
@@ -211,5 +211,24 @@ test('empty params in the pasted URL are filled, not duplicated; extra params ke
   assert.equal(buildUrl('https://example.invalid/acts?ownerAddress=&limit=&isRouter=true', 'So1', null, 100, 'sol'), 'https://example.invalid/acts?ownerAddress=So1&limit=100&isRouter=true');
   assert.equal(buildUrl('https://example.invalid/acts?isRouter=true', 'So1', null, 100, 'sol'), 'https://example.invalid/acts?isRouter=true&ownerAddress=So1&limit=100');
   assert.equal(buildUrl('https://example.invalid/h?id=', '0xAB', null, 20), 'https://example.invalid/h?id=0xAB&start_time=0&page_count=20');
-  assert.equal(metaUrl('https://example.invalid/meta?tokenAddresses=', ['A', 'B']), 'https://example.invalid/meta?tokenAddresses=A,B');
+  assert.equal(metaUrl('https://example.invalid/meta?tokenAddresses=', ['A', 'B']), 'https://example.invalid/meta?tokenAddresses=A%2CB');
+});
+
+test('trade-list shape (Solana): buy/sell legs, raw token units converted once decimals arrive', async () => {
+  mock([{ tokenAddress: '463SK47VkB7uE7XenTHKiVcMtxRsfNE2X4Q9wByaURVA', signature: '2AWQ', time: '2026-09-21T03:18:13.000Z', tokenAmount: '25946399405173', solAmount: '1265039288', solPrice: 0.000048755870448359, usdPrice: 0.005438323252110719, isBuy: false }]);
+  const page = await fetchPage('https://x.invalid/{address}', 'w', SOL, null, 20);
+  const r = page.rows[0]!;
+  assert.equal(r.type, 'swap');
+  assert.equal(r.time, Math.floor(Date.parse('2026-09-21T03:18:13.000Z') / 1000));
+  assert.deepEqual(r.moves.map((m) => [m.dir, m.symbol]), [['out', '463SK4…'], ['in', 'SOL']]);
+  assert.equal(r.moves[0]!.rawUnits, true);
+  assert.equal(r.moves[1]!.amount, 1.265039288);
+  assert.ok(Math.abs((r.moves[1]!.usd ?? 0) - 1.265039288 * (0.005438323252110719 / 0.000048755870448359)) < 1e-6);
+  assert.deepEqual(unknownTokens(page.rows), ['463SK47VkB7uE7XenTHKiVcMtxRsfNE2X4Q9wByaURVA']);
+  const rows = applyTokenMeta(page.rows, parseTokenMeta([{ address: '463SK47VkB7uE7XenTHKiVcMtxRsfNE2X4Q9wByaURVA', symbol: 'ABC', name: 'Abc Coin', decimals: 6 }]));
+  const m = rows[0]!.moves[0]!;
+  assert.equal(m.symbol, 'ABC');
+  assert.equal(m.amount, 25946399.405173);
+  assert.equal(m.rawUnits, undefined);
+  assert.ok(Math.abs((m.usd ?? 0) - 25946399.405173 * 0.005438323252110719) < 1e-6);
 });

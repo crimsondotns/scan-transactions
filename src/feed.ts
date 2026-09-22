@@ -25,6 +25,8 @@ export interface Move {
   logo: string | null;
   /** อนุมัติวงเงิน (approve) — ไม่มีเหรียญเคลื่อนจริง จำนวนคือ allowance ห้ามนับเป็นส่ง/รับ */
   approve?: true;
+  /** จำนวนยังเป็นหน่วยดิบ (ยังไม่หาร 10^decimals) — รอ metadata ของโทเคนมาแปลง */
+  rawUnits?: true;
 }
 
 export interface TxRow {
@@ -180,6 +182,7 @@ function normalize(body: unknown, walletId: string, address: string): Page {
   if (isObj(body) && Array.isArray(body.history_list)) return fromHistoryList(body, walletId, address);
   const list = Array.isArray(body) ? body : isObj(body) ? (['result', 'data', 'activities', 'items', 'transactions', 'txs'].map((k) => body[k]).find(Array.isArray) ?? (isObj(body.data) ? ['activities', 'items', 'list'].map((k) => (body.data as Dict)[k]).find(Array.isArray) : null) ?? null) : null;
   if (!list) throw new FeedError('shape');
+  if (list.some((x) => isObj(x) && typeof x.tokenAddress === 'string' && (typeof x.isBuy === 'boolean' || x.solAmount !== undefined))) return fromTradeList(list, walletId);
   if (list.some((x) => isObj(x) && (typeof x.signature === 'string' || Array.isArray(x.tokenTransfers) || Array.isArray(x.nativeTransfers)))) return fromSignatureList(list, walletId, address);
   return fromFlatList(list, walletId, address);
 }
@@ -390,6 +393,56 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
   return { rows, next: cursorOf(rows) };
 }
 
+/**
+ * รูปแบบ D: รายการเทรดโทเคน (Solana) — { tokenAddress, signature, time (ISO), tokenAmount (หน่วยดิบ), solAmount (lamports), solPrice, usdPrice, isBuy }
+ * ซื้อ = จ่าย SOL รับโทเคน / ขาย = ส่งโทเคน รับ SOL; จำนวนโทเคนเป็นหน่วยดิบ รอ decimals จาก metadata (applyTokenMeta) — ไม่มีค่าธรรมเนียม/คู่สัญญาในข้อมูล
+ */
+function fromTradeList(list: unknown[], walletId: string): Page {
+  const rows: TxRow[] = [];
+  for (const item of list) {
+    if (!isObj(item)) continue;
+    const hash = str(item.signature) ?? '';
+    const mint = str(item.tokenAddress) ?? '';
+    const t = item.time;
+    const time = typeof t === 'string' ? Math.floor(Date.parse(t) / 1000) || 0 : (num(t) ?? 0) > 1e12 ? Math.floor((num(t) ?? 0) / 1000) : (num(t) ?? 0);
+    const chain = str(item.chain) ?? 'sol';
+    const buy = item.isBuy === true;
+    const rawTok = num(item.tokenAmount) ?? 0;
+    const sol = (num(item.solAmount) ?? 0) / 1e9;
+    const usdPrice = num(item.usdPrice);
+    const solPrice = num(item.solPrice);
+    const solUsd = usdPrice !== null && solPrice ? usdPrice / solPrice : null;
+    rememberPrice(chain, mint, shortId(mint), usdPrice, time);
+    rememberPrice(chain, null, 'SOL', solUsd, time);
+    const token: Move = { dir: buy ? 'in' : 'out', amount: rawTok, symbol: shortId(mint), name: null, usd: null, price: usdPrice, tokenId: mint, flagged: false, logo: null, rawUnits: true };
+    const native: Move = { dir: buy ? 'out' : 'in', amount: sol, symbol: 'SOL', name: null, usd: solUsd !== null ? sol * solUsd : null, price: solUsd, tokenId: null, flagged: false, logo: null };
+    rows.push({
+      key: `${walletId}:sol:${hash}:${mint}`,
+      hash,
+      walletId,
+      chain,
+      chainLogo: null,
+      nativeSymbol: 'SOL',
+      time,
+      type: 'swap',
+      name: buy ? 'buy' : 'sell',
+      failed: false,
+      flagged: false,
+      moves: buy ? [native, token] : [token, native],
+      counterparty: null,
+      counterpartyName: null,
+      from: null,
+      to: null,
+      contract: null,
+      nonce: null,
+      gasUsd: null,
+      gasNative: null,
+      raw: item,
+    });
+  }
+  return { rows, next: cursorOf(rows) };
+}
+
 function cursorOf(rows: TxRow[]): Cursor | null {
   if (!rows.length) return null;
   const oldest = rows.reduce((m, r) => (r.time > 0 && r.time < m.time ? r : m), rows[0]!);
@@ -422,7 +475,7 @@ export interface TokenMeta {
 /** โทเคนในหน้าที่ยังไม่รู้ชื่อ/สัญลักษณ์/โลโก้ — ไปขอ metadata เพิ่มจาก URL ที่ผู้ใช้ตั้ง */
 export function unknownTokens(rows: TxRow[]): string[] {
   const ids = new Set<string>();
-  for (const r of rows) for (const m of r.moves) if (m.tokenId && (m.name === null || m.logo === null || m.symbol.endsWith('…'))) ids.add(m.tokenId);
+  for (const r of rows) for (const m of r.moves) if (m.tokenId && (m.rawUnits || m.name === null || m.logo === null || m.symbol.endsWith('…'))) ids.add(m.tokenId);
   return [...ids];
 }
 
@@ -436,7 +489,12 @@ export function applyTokenMeta(rows: TxRow[], meta: Map<string, TokenMeta>): TxR
       if (!t) return m;
       touched = true;
       const symbol = m.symbol.endsWith('…') || !m.symbol ? (t.symbol ?? m.symbol) : m.symbol;
-      return { ...m, symbol, name: m.name ?? t.name, logo: m.logo ?? t.logo, flagged: m.flagged || lookalike(symbol) };
+      // หน่วยดิบ + รู้ decimals แล้ว → แปลงเป็นจำนวนจริง และคิด USD จากราคาต่อหน่วย
+      const { rawUnits, ...rest } = m;
+      const amount = rawUnits && t.decimals !== null ? m.amount / 10 ** t.decimals : m.amount;
+      const usd = rawUnits && t.decimals !== null && m.price !== null ? amount * m.price : m.usd;
+      const keepRaw = rawUnits && t.decimals === null ? { rawUnits: true as const } : {};
+      return { ...rest, ...keepRaw, amount, usd, symbol, name: m.name ?? t.name, logo: m.logo ?? t.logo, flagged: m.flagged || lookalike(symbol) };
     });
     return touched ? { ...r, moves, flagged: r.flagged || moves.some((m) => m.flagged) } : r;
   });

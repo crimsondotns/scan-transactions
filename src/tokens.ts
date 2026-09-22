@@ -41,7 +41,8 @@ function save(): void {
 /** URL ชุด: มี {addresses} → แทนที่; ไม่มี → ต่อ tokenAddresses=… ให้ */
 export function metaUrl(tpl: string, addresses: string[]): string {
   const u = tpl.trim();
-  const joined = addresses.map(encodeURIComponent).join(',');
+  // คั่นด้วย %2C (คอมมาเข้ารหัส) ตามที่แหล่งส่วนใหญ่รับ
+  const joined = addresses.map(encodeURIComponent).join('%2C');
   if (u.includes('{addresses}')) return u.replaceAll('{addresses}', joined);
   // วางมาเป็น ?tokenAddresses= (ว่าง) → เติมตรงนั้น ไม่ต่อซ้ำ
   const empty = /([?&]tokenAddresses)(=?)(?=&|$)/;
@@ -64,7 +65,7 @@ export async function ensureTokenMeta(ep: Endpoint, addresses: string[]): Promis
   for (const a of new Set(addresses)) {
     const e = c[a];
     if (e) {
-      if (e.name || e.symbol || e.logo) out.set(a, e);
+      if (e.name || e.symbol || e.logo || e.decimals !== null) out.set(a, e);
     } else missing.push(a);
   }
   if (!missing.length) return out;
@@ -84,7 +85,7 @@ export async function ensureTokenMeta(ep: Endpoint, addresses: string[]): Promis
         for (const a of batch) {
           const m = meta.get(a) ?? { name: null, symbol: null, decimals: null, logo: null };
           c[a] = { ...m, t: now };
-          if (m.name || m.symbol || m.logo) out.set(a, m);
+          if (m.name || m.symbol || m.logo || m.decimals !== null) out.set(a, m);
         }
         save();
       } catch {

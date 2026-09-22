@@ -7,7 +7,7 @@
  */
 import QRCode from 'qrcode';
 import type { TxRow } from './feed';
-import { formatAmountFull, formatFeeNative, formatStamp, shortAddr } from './format';
+import { formatAmountFull, formatFeeNative, formatStamp, formatUsdExact, shortAddr } from './format';
 import { chainStyle, tokenColor } from './chainStyle';
 import { identiconHue } from './components/Identicon';
 
@@ -15,6 +15,9 @@ export interface SlipMove {
   dir: 'in' | 'out';
   amount: number;
   symbol: string;
+  /** แสดงผลอย่างเดียว ไม่อยู่ในแฮช */
+  usd?: number | null;
+  logo?: string | null;
 }
 
 /** เนื้อหาสลิป — ค่าที่ถูกแฮชเป็นรหัสยืนยัน (ลำดับ key คงที่) */
@@ -50,7 +53,7 @@ export interface SlipRecord {
 const KEY = 'xcap.scan.slips';
 const MAX_BYTES = 4 * 1024 * 1024;
 
-export function slipData(row: TxRow, wallet: { address: string; label: string } | undefined, chainName: string, native: string, url: string | null, chainLogo: string | null = null): SlipData {
+export function slipData(row: TxRow, wallet: { address: string; label: string } | undefined, chainName: string, native: string, url: string | null, chainLogo: string | null = null, usdOfMove: (m: TxRow['moves'][number]) => number | null = () => null): SlipData {
   return {
     v: 1,
     hash: row.hash,
@@ -62,7 +65,7 @@ export function slipData(row: TxRow, wallet: { address: string; label: string } 
     walletLabel: wallet?.label ?? '',
     from: row.from,
     to: row.to,
-    moves: row.moves.filter((m) => m.amount !== 0).map((m) => ({ dir: m.dir, amount: m.amount, symbol: m.symbol })),
+    moves: row.moves.filter((m) => m.amount !== 0).map((m) => ({ dir: m.dir, amount: m.amount, symbol: m.symbol, usd: usdOfMove(m), logo: m.logo })),
     fee: row.gasNative,
     feeSymbol: native,
     time: row.time,
@@ -253,7 +256,8 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
   }
   const d = rec.data;
   const cs = chainStyle(d.chain, d.chainName);
-  const [tokenImg, chainImg] = await Promise.all([loadImage(d.tokenLogo), loadImage(d.chainLogo)]);
+  const [tokenImg, chainImg, ...moveImgs] = await Promise.all([loadImage(d.tokenLogo), loadImage(d.chainLogo), ...d.moves.map((m) => loadImage(m.logo))]);
+  const POSITIVE = tokenColor('positive', '#16a34a');
   const primary = d.moves.find((m) => m.dir === 'out') ?? d.moves[0] ?? null;
   const swapIn = d.moves.find((m) => m.dir === 'in');
   const isSwap = !!primary && !!swapIn && primary.dir === 'out';
@@ -338,14 +342,37 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     headerBottom = y;
     y += 24;
 
-    // จำนวน
-    text(L.type, PAD, y + 12, 13, 500, MUTED);
-    for (const m of d.moves) {
-      text(`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`, W - PAD, y + 12, 22, 600, INK, 'right');
-      y += 32;
-    }
-    if (!d.moves.length) y += 32;
-    y += 8;
+    // สินทรัพย์ — โครงเดียวกับแผงรายละเอียด (โลโก้+ตราเชน / สัญลักษณ์ / on เชน / จำนวนเต็มทศนิยม + USD) แต่ไม่มีพื้นเทา
+    // สวอป: ขาออกก่อน แล้วเส้นเชื่อม + ⇄ แล้วขาเข้า
+    const ordered = [...d.moves.filter((m) => m.dir === 'out'), ...d.moves.filter((m) => m.dir === 'in')];
+    ordered.forEach((m, i) => {
+      if (i > 0 && !dry) {
+        // เส้นเชื่อมจากโลโก้บนถึงโลโก้ล่าง + ไอคอน ⇄ ตรงกลาง
+        ctx.fillStyle = tokenColor('divider', '#d9d9d9');
+        ctx.fillRect(PAD + 20, y - 4, 1, 44);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(PAD + 9, y + 9, 22, 18);
+        text('⇄', PAD + 20, y + 24, 16, 400, MUTED, 'center');
+      }
+      if (i > 0) y += 40;
+      const img = moveImgs[d.moves.indexOf(m)] ?? null;
+      circleImage(ctx, img, PAD, y, 40, m.symbol, tokenAccent, dry);
+      if (!dry) {
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(PAD + 32, y + 32, 10, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      circleImage(ctx, chainImg, PAD + 24, y + 24, 16, d.chainName, chainColor, dry);
+      text(m.symbol, PAD + 52, y + 18, 20, 600);
+      text(`${L.on} ${d.chainName}`, PAD + 52, y + 36, 13, 400, MUTED);
+      const sign = m.dir === 'in' ? '+' : '−';
+      text(`${sign}${formatAmountFull(m.amount)}`, W - PAD, y + 20, 22, 600, m.dir === 'in' ? POSITIVE : INK, 'right');
+      if (m.usd !== null && m.usd !== undefined) text(formatUsdExact(m.usd), W - PAD, y + 38, 12, 400, MUTED, 'right');
+      y += 44;
+    });
+    if (!ordered.length) y += 8;
+    y += 16;
     rule(y);
     y += 24;
 

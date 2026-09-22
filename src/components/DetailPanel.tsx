@@ -257,7 +257,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
       </div>
 
       <div className="drawer-foot">
-        <button type="button" className="btn" onClick={() => onSlip(slipData(row, wallet, chainName, native, txUrl, chainLogo))}>
+        <button type="button" className="btn" onClick={() => onSlip(slipData(row, wallet, chainName, native, txUrl, chainLogo, moveUsd))}>
           <Icon name="receipt" />
           {t('slip.open')}
         </button>

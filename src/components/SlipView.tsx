@@ -4,7 +4,7 @@ import { useModalLayer } from '../modal';
 import { createPortal } from 'react-dom';
 import { useI18n } from '../i18n';
 import { useStore } from '../store';
-import { renderSlip, saveSlip, slipCode, type SlipAction, type SlipData, type SlipRecord } from '../slip';
+import { renderSlip, saveSlip, slipCode, type SlipAction, type SlipData, type SlipImage, type SlipRecord } from '../slip';
 import { Icon } from './Icon';
 
 export function useSlipLabels() {
@@ -43,17 +43,44 @@ export function useSlipLabels() {
 export function useSlipImage(rec: SlipRecord | null, action: SlipAction | null = null) {
   const labels = useSlipLabels();
   const { settings } = useStore();
-  const [img, setImg] = useState<{ canvas: HTMLCanvasElement; url: string } | null>(null);
+  const [img, setImg] = useState<(SlipImage & { url: string }) | null>(null);
   useEffect(() => {
     if (!rec) return setImg(null);
     let alive = true;
-    void renderSlip(rec, labels(rec.data), action, settings.slipShow).then((canvas) => alive && setImg({ canvas, url: canvas.toDataURL('image/png') }));
+    void renderSlip(rec, labels(rec.data), action, settings.slipShow).then((r) => alive && setImg({ ...r, url: r.canvas.toDataURL('image/png') }));
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rec, action, settings.slipShow]);
   return img;
+}
+
+/** ภาพสลิป + ชั้นข้อความโปร่งใสทับตำแหน่งเดิม (สเกลตามความกว้างที่แสดงจริง) — ลากเลือก/ไฮไลต์/คัดลอกตัวเลขได้ */
+export function SlipPicture({ img, alt, className }: { img: SlipImage & { url: string }; alt: string; className?: string }) {
+  const box = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const upd = () => setScale(el.clientWidth / img.width);
+    upd();
+    const ro = new ResizeObserver(upd);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [img.width]);
+  return (
+    <div ref={box} className={`slip-pic ${className ?? ''}`} style={{ aspectRatio: `${img.width} / ${img.height}` }}>
+      <img src={img.url} alt={alt} width={img.width} height={img.height} draggable={false} />
+      <div className="slip-text" style={{ width: img.width, height: img.height, transform: `scale(${scale})` }} aria-hidden="true">
+        {img.texts.map((tx, i) => (
+          <span key={i} style={{ left: tx.align === 'right' ? tx.x - tx.w : tx.align === 'center' ? tx.x - tx.w / 2 : tx.x, top: tx.y - tx.size * 0.92, fontSize: tx.size, fontWeight: tx.weight, width: tx.w, lineHeight: `${tx.size * 1.2}px` }}>
+            {tx.s}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** lightbox: portal ไป body, z สูงกว่าแผงขวา — Esc / คลิกม่าน ปิด; ล็อกโฟกัสไว้ที่ปุ่มปิด */
@@ -92,7 +119,7 @@ export function SlipLightbox({ data, onClose }: { data: SlipData; onClose: () =>
         <Icon name="x" />
       </button>
       <div className="lightbox-body">
-        {img ? <img className="lightbox-img" src={img.url} alt={t('slip.title')} width={320} height={img.canvas.height / 2} /> : <span className="spinner" aria-hidden="true" />}
+        {img ? <SlipPicture img={img} alt={t('slip.title')} className="lightbox-img" /> : <span className="spinner" aria-hidden="true" />}
       </div>
     </div>,
     document.body

@@ -4,7 +4,7 @@ import { useI18n } from '../i18n';
 import { normalizeCode, verifySlip, type SlipData, type SlipRecord, type Verdict } from '../slip';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
-import { useSlipImage } from './SlipView';
+import { SlipPicture, useSlipImage } from './SlipView';
 
 export function VerifyDialog({ open, initial, onClose, seen }: { open: boolean; initial: { code: string; data: SlipData | null } | null; onClose: () => void; seen: (hash: string) => boolean }) {
   const { t } = useI18n();
@@ -83,7 +83,7 @@ export function VerifyDialog({ open, initial, onClose, seen }: { open: boolean; 
           </p>
           {result.rec && (
             <div className="slip-preview" aria-busy={!img}>
-              {img ? <img src={img.url} alt={t('slip.title')} width={640} height={img.canvas.height / 2} /> : <span className="spinner" aria-hidden="true" />}
+              {img ? <SlipPicture img={img} alt={t('slip.title')} /> : <span className="spinner" aria-hidden="true" />}
             </div>
           )}
         </div>

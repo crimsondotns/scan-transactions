@@ -1842,12 +1842,6 @@ dialog.dlg::backdrop {
   border-radius: var(--radius-lg);
   padding: var(--space-4);
 }
-.slip-preview img {
-  width: 320px;
-  max-width: 100%;
-  height: auto;
-  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
-}
 /* lightbox ของสลิป — ม่านมืดทับทุกอย่าง (รวมแผงขวา) ภาพเต็มความสูงที่เหลือ เลื่อนได้ถ้ายาว */
 .lightbox {
   position: fixed;
@@ -1885,8 +1879,43 @@ dialog.dlg::backdrop {
 .lightbox-img {
   width: 360px;
   max-width: 100%;
-  height: auto;
   filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.4));
+}
+/* ภาพสลิป + ชั้นข้อความโปร่งใส: span วางตามพิกัดตรรกะ (320 กว้าง) แล้ว scale ให้เท่าภาพที่แสดง */
+.slip-pic {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+}
+.slip-pic > img {
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.slip-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
+  cursor: text;
+}
+.slip-text span {
+  position: absolute;
+  display: block;
+  white-space: nowrap;
+  color: transparent;
+  user-select: text;
+}
+.slip-text span::selection {
+  background: var(--color-selection);
+  color: transparent;
+}
+.slip-preview .slip-pic {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.12));
 }
 /* ไอคอนของปุ่มสลิป/ตรวจ — ขาวดำตามระบบ (สีอยู่ในภาพสลิปเท่านั้น) */
 .btn[data-fn] svg {

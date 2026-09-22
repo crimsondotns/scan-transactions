@@ -76,6 +76,8 @@
   /* เงาหัวเว็บตอนติดขอบบนหลังเลื่อน — เบา ไม่ฟุ้ง */
   --shadow-sticky: 0 2px 8px rgba(0, 0, 0, 0.08);
   --color-scrim: rgba(0, 0, 0, 0.4);
+  /* ไฮไลต์ตอนลากเลือกข้อความบนภาพสลิป */
+  --color-selection: rgba(0, 102, 255, 0.35);
   /* ม่านของ lightbox สลิป — มืดกว่าม่านแผง ให้ภาพเด่น */
   --color-lightbox: rgba(0, 0, 0, 0.72);
 
@@ -142,6 +144,7 @@
     --shadow-sticky: 0 2px 8px rgba(0, 0, 0, 0.45);
     --color-scrim: rgba(0, 0, 0, 0.4);
     --color-lightbox: rgba(0, 0, 0, 0.8);
+    --color-selection: rgba(0, 102, 255, 0.35);
   }
 }
 :root[data-theme='dark'] {
@@ -164,4 +167,5 @@
   --shadow-sticky: 0 2px 8px rgba(0, 0, 0, 0.45);
   --color-scrim: rgba(0, 0, 0, 0.4);
   --color-lightbox: rgba(0, 0, 0, 0.8);
+  --color-selection: rgba(0, 102, 255, 0.35);
 }

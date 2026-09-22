@@ -293,8 +293,28 @@ function circleImage(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null
   ctx.restore();
 }
 
+/** ข้อความหนึ่งชิ้นบนสลิป (พิกัดตรรกะ กว้าง W) — ใช้วางชั้นข้อความที่เลือกได้ทับภาพ */
+export interface SlipText {
+  s: string;
+  x: number;
+  /** baseline */
+  y: number;
+  size: number;
+  weight: number;
+  align: CanvasTextAlign;
+  w: number;
+}
+export interface SlipImage {
+  canvas: HTMLCanvasElement;
+  texts: SlipText[];
+  /** ขนาดตรรกะ (ก่อนคูณ 2) */
+  width: number;
+  height: number;
+}
+
 /** วาดสลิปลง canvas ใหม่ (ความละเอียด 2 เท่า) — พื้นขาวเสมอ ไม่ตามธีมหน้าจอ เพราะเป็นเอกสาร; นอกขอบหยักโปร่งใส */
-export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction | null = null, show: SlipShow = SLIP_SHOW_DEFAULT): Promise<HTMLCanvasElement> {
+export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction | null = null, show: SlipShow = SLIP_SHOW_DEFAULT): Promise<SlipImage> {
+  const texts: SlipText[] = [];
   try {
     await Promise.all([document.fonts.load(`400 16px ${FONT}`), document.fonts.load(`600 16px ${FONT}`)]);
   } catch {
@@ -323,7 +343,10 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       ctx.fillStyle = color;
       ctx.textAlign = align;
       ctx.textBaseline = 'alphabetic';
-      if (!dry) ctx.fillText(s, x, yy);
+      if (dry) return;
+      ctx.fillText(s, x, yy);
+      // จดตำแหน่งไว้ให้ชั้นข้อความโปร่งใสทับภาพ → เลือก/ไฮไลต์/คัดลอกได้เหมือนข้อความจริง
+      texts.push({ s, x, y: yy, size, weight, align, w: ctx.measureText(s).width });
     };
     const wrap = (s: string, x: number, yy: number, size: number, maxW: number, weight = 400, color = INK, align: CanvasTextAlign = 'left'): number => {
       ctx.font = `${weight} ${size}px ${FONT}`;
@@ -639,7 +662,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
   }
   draw(ctx, false);
   ctx.restore();
-  return canvas;
+  return { canvas, texts, width: W, height: H };
 }
 
 export function canvasBlob(c: HTMLCanvasElement): Promise<Blob> {

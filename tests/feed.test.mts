@@ -42,7 +42,7 @@ test('history_list shape → rows, types, flags, cursor', async () => {
   assert.equal(page.rows[1]!.flagged, true);
   assert.equal(page.rows[3]!.failed, true);
   assert.equal(page.rows[3]!.counterparty, '0xfriend');
-  assert.deepEqual(page.next, { start: 1700000000, cursor: '0x04' });
+  assert.deepEqual(page.next, { start: 1700000000, cursor: '0x04', offset: 4 });
 });
 
 test('flat list shape (result[]) with wei values', async () => {
@@ -68,7 +68,7 @@ test('csv: quotes, embedded commas, CRLF, multi-line cell', () => {
 });
 
 test('buildUrl fills every placeholder', () => {
-  assert.equal(buildUrl('https://a.invalid/?id={address}&s={start}&c={count}&b={cursor}', '0xAB', { start: 5, cursor: 'sig' }, 9), 'https://a.invalid/?id=0xAB&s=5&c=9&b=sig');
+  assert.equal(buildUrl('https://a.invalid/?id={address}&s={start}&c={count}&b={cursor}', '0xAB', { start: 5, cursor: 'sig', offset: 0 }, 9), 'https://a.invalid/?id=0xAB&s=5&c=9&b=sig');
   assert.equal(buildUrl('https://a.invalid/{address}?s={start}&b={cursor}', 'x', null, 9), 'https://a.invalid/x?s=0');
 });
 
@@ -83,7 +83,7 @@ test('signature-list shape (Solana family)', async () => {
   assert.equal(page.rows[0]!.moves[0]!.amount, 2);
   assert.equal(page.rows[1]!.moves[0]!.amount, 0.5);
   assert.equal(page.rows[1]!.counterparty, 'someone');
-  assert.deepEqual(page.next, { start: 1700000400, cursor: 'sigB' });
+  assert.deepEqual(page.next, { start: 1700000400, cursor: 'sigB', offset: 2 });
 });
 
 test('parseAddress: EVM lowercased, Solana kept as-is, junk rejected', () => {
@@ -148,7 +148,7 @@ test('price cache: remembers newest price per token, fills USD, builds price req
 test('sol family composes owner query; placeholders still drop empty cursor params', () => {
   assert.equal(buildUrl('https://example.invalid/tx', 'So1ana', null, 30, 'sol'), 'https://example.invalid/tx?ownerAddress=So1ana&limit=30');
   assert.equal(buildUrl('https://example.invalid/tx?x=1', 'So1ana', null, 5, 'sol'), 'https://example.invalid/tx?x=1&ownerAddress=So1ana&limit=5');
-  assert.equal(buildUrl('https://example.invalid/tx/{address}?limit={count}&before={cursor}', 'So1ana', { start: 1, cursor: 'sig1' }, 30, 'sol'), 'https://example.invalid/tx/So1ana?limit=30&before=sig1');
+  assert.equal(buildUrl('https://example.invalid/tx/{address}?limit={count}&before={cursor}', 'So1ana', { start: 1, cursor: 'sig1', offset: 0 }, 30, 'sol'), 'https://example.invalid/tx/So1ana?limit=30&before=sig1');
 });
 
 test('token metadata: batch URL, tolerant parser, merge into rows', async () => {
@@ -208,7 +208,9 @@ test('approve: allowance move flagged (not a send), To is the spender, contract 
 
 test('empty params in the pasted URL are filled, not duplicated; extra params kept', () => {
   assert.equal(buildUrl('https://example.invalid/acts?ownerAddress', 'So1', null, 100, 'sol'), 'https://example.invalid/acts?ownerAddress=So1&limit=100');
+  assert.equal(buildUrl('https://example.invalid/acts?ownerAddress', 'So1', { start: 1, cursor: 'x', offset: 200 }, 100, 'sol'), 'https://example.invalid/acts?ownerAddress=So1&limit=100&offset=200');
   assert.equal(buildUrl('https://example.invalid/acts?ownerAddress=&limit=&isRouter=true', 'So1', null, 100, 'sol'), 'https://example.invalid/acts?ownerAddress=So1&limit=100&isRouter=true');
+  assert.equal(buildUrl('https://example.invalid/acts?ownerAddress=&limit=&isRouter=true', 'So1', { start: 1, cursor: 'x', offset: 100 }, 100, 'sol'), 'https://example.invalid/acts?ownerAddress=So1&limit=100&isRouter=true&offset=100');
   assert.equal(buildUrl('https://example.invalid/acts?isRouter=true', 'So1', null, 100, 'sol'), 'https://example.invalid/acts?isRouter=true&ownerAddress=So1&limit=100');
   assert.equal(buildUrl('https://example.invalid/h?id=', '0xAB', null, 20), 'https://example.invalid/h?id=0xAB&start_time=0&page_count=20');
   assert.equal(metaUrl('https://example.invalid/meta?tokenAddresses=', ['A', 'B']), 'https://example.invalid/meta?tokenAddresses=A%2CB');

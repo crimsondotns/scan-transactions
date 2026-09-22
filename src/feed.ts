@@ -63,6 +63,8 @@ export interface Cursor {
   start: number;
   /** hash/signature ของแถวสุดท้าย → {cursor} (แหล่งข้อมูลบางแบบเลื่อนหน้าด้วยอันนี้) */
   cursor: string;
+  /** จำนวนแถวที่ดึงจากแหล่งนี้มาแล้ว (สะสม) → {offset} (เลื่อนหน้าแบบ offset=100, 200, …) */
+  offset: number;
 }
 
 export interface Page {
@@ -91,8 +93,8 @@ export function hasPlaceholder(tpl: string): boolean {
 /**
  * URL ที่ไม่มี placeholder → ประกอบให้ตามตระกูล:
  *  evm: ?id={address}&start_time={start}&page_count={count}
- *  sol: ?ownerAddress={address}&limit={count}
- * แหล่งที่ใช้ชื่อพารามิเตอร์/รูปแบบอื่น → วาง URL ที่มี {address} {count} {cursor} {start} เองได้
+ *  sol: ?ownerAddress={address}&limit={count}&offset={offset}  (หน้าแรกไม่ส่ง offset)
+ * แหล่งที่ใช้ชื่อพารามิเตอร์/รูปแบบอื่น → วาง URL ที่มี {address} {count} {cursor} {start} {offset} เองได้
  */
 /** พารามิเตอร์ที่ผู้ใช้วางมาแบบว่าง (?ownerAddress หรือ &limit=) → เติม placeholder ลงไปแทนที่จะต่อซ้ำ */
 function fillEmptyParam(url: string, name: string, value: string): string | null {
@@ -109,6 +111,7 @@ const PARAMS: Record<'evm' | 'sol', Array<[string, string]>> = {
   sol: [
     ['ownerAddress', '{address}'],
     ['limit', '{count}'],
+    ['offset', '{offset}'],
   ],
 };
 
@@ -132,12 +135,13 @@ export function toTemplate(url: string, family: 'evm' | 'sol' = 'evm'): string {
 
 export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number, family: 'evm' | 'sol' = 'evm'): string {
   let t = toTemplate(tpl, family);
-  // ไม่มี cursor → ตัดพารามิเตอร์ที่ถือ {cursor} ทิ้งทั้งคู่ (ไม่ส่ง before= ว่างๆ)
-  if (!cur) t = t.replace(/[?&][^&=]+=\{cursor\}/g, (m) => (m.startsWith('?') ? '?' : '')).replace(/\?&/, '?').replace(/[?&]$/, '');
+  // หน้าแรก (ไม่มี cursor) → ตัดพารามิเตอร์ที่ถือ {cursor}/{offset} ทิ้งทั้งคู่ (ไม่ส่ง before= ว่าง / offset=0)
+  if (!cur) t = t.replace(/[?&][^&=]+=\{(cursor|offset)\}/g, (m) => (m.startsWith('?') ? '?' : '')).replace(/\?&/, '?').replace(/[?&]$/, '');
   return t
     .replaceAll('{address}', encodeURIComponent(address))
     .replaceAll('{start}', String(cur?.start ?? 0))
     .replaceAll('{cursor}', cur ? encodeURIComponent(cur.cursor) : '')
+    .replaceAll('{offset}', String(cur?.offset ?? 0))
     .replaceAll('{count}', String(count));
 }
 
@@ -446,7 +450,7 @@ function fromTradeList(list: unknown[], walletId: string): Page {
 function cursorOf(rows: TxRow[]): Cursor | null {
   if (!rows.length) return null;
   const oldest = rows.reduce((m, r) => (r.time > 0 && r.time < m.time ? r : m), rows[0]!);
-  return { start: oldest.time, cursor: oldest.hash };
+  return { start: oldest.time, cursor: oldest.hash, offset: rows.length };
 }
 
 /** arb_lifiprotocol → "Lifiprotocol", eth_uniswap3 → "Uniswap3" — ใช้เมื่อแหล่งข้อมูลไม่ส่ง project_dict มาให้ */

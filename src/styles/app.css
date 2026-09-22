@@ -1897,27 +1897,6 @@ dialog.dlg::backdrop {
   height: auto;
   filter: drop-shadow(0 12px 32px rgba(0, 0, 0, 0.4));
 }
-.lightbox-bar {
-  display: flex;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--color-bg);
-}
-.slip-print {
-  display: none;
-}
-@media print {
-  body:has(.slip-print) > :not(.slip-print) {
-    display: none !important;
-  }
-  .slip-print {
-    display: block;
-    width: 100%;
-    max-width: 160mm;
-    margin: 0 auto;
-  }
-}
 /* ไอคอนของปุ่มสลิป/ตรวจ — ขาวดำตามระบบ (สีอยู่ในภาพสลิปเท่านั้น) */
 .btn[data-fn] svg {
   width: 18px;

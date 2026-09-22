@@ -615,7 +615,7 @@ export function parseTokenMeta(body: unknown): Map<string, TokenMeta> {
   if (isObj(list)) list = ['data', 'result', 'tokens', 'items'].map((k) => (list as Dict)[k]).find((v) => v !== undefined) ?? list;
   const add = (addr: string | null, v: unknown) => {
     if (!addr || !isObj(v)) return;
-    out.set(addr, { name: str(v.name), symbol: str(v.symbol), decimals: num(v.decimals), logo: httpUrl(v.logoURI) ?? httpUrl(v.logo_uri) ?? httpUrl(v.logo) ?? httpUrl(v.image) ?? httpUrl(v.icon) ?? httpUrl(v.logo_url) });
+    out.set(addr, { name: str(v.name), symbol: str(v.symbol), decimals: num(v.decimals), logo: httpUrl(v.logoURI) ?? httpUrl(v.logo_uri) ?? httpUrl(v.logo) ?? httpUrl(v.image) ?? httpUrl(v.icon) ?? httpUrl(v.logo_url) ?? httpUrl(v.imageUrl) });
   };
   if (Array.isArray(list)) for (const v of list) add(isObj(v) ? (str(v.address) ?? str(v.mint) ?? str(v.tokenAddress) ?? str(v.id)) : null, v);
   else if (isObj(list)) for (const [k, v] of Object.entries(list)) add(k, v);

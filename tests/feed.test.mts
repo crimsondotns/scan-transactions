@@ -156,6 +156,11 @@ test('token metadata: batch URL, tolerant parser, merge into rows', async () => 
   assert.equal(metaUrl('https://example.invalid/meta?ids={addresses}', ['A']), 'https://example.invalid/meta?ids=A');
   const meta = parseTokenMeta({ data: [{ address: 'MintAAAAAAAA', name: 'USD Coin', symbol: 'USDC', decimals: 6, logoURI: 'https://img.invalid/usdc.png' }] });
   assert.equal(meta.get('MintAAAAAAAA')?.name, 'USD Coin');
+  assert.equal(metaUrl('https://example.invalid/assets/search?query=', ['A', 'B']), 'https://example.invalid/assets/search?query=A%2CB');
+  const jup = parseTokenMeta([{ id: 'MintJ', name: 'Unicorn Fart Dust', symbol: 'UFD', decimals: 6, icon: 'https://img.invalid/ufd.png' }]);
+  assert.equal(jup.get('MintJ')?.symbol, 'UFD');
+  assert.equal(jup.get('MintJ')?.decimals, 6);
+  assert.equal(jup.get('MintJ')?.logo, 'https://img.invalid/ufd.png');
   const meta2 = parseTokenMeta({ MintB: { symbol: 'B', name: 'Bee' } });
   assert.equal(meta2.get('MintB')?.symbol, 'B');
   mock([{ signature: 'sigA', timestamp: 1700000500, type: 'TRANSFER', fee: 5000, feePayer: SOL, nativeTransfers: [], tokenTransfers: [{ fromUserAccount: 'pool', toUserAccount: SOL, tokenAmount: 100, mint: 'MintAAAAAAAA' }] }]);

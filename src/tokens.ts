@@ -39,14 +39,14 @@ function save(): void {
   }
 }
 
-/** URL ชุด: มี {addresses} → แทนที่; ไม่มี → ต่อ tokenAddresses=… ให้ */
+/** URL ชุด: มี {addresses} → แทนที่; พารามิเตอร์ว่างที่วางมา (?query= / ?tokenAddresses=) → เติมตรงนั้น; ไม่มีเลย → ต่อ tokenAddresses=… ให้ */
 export function metaUrl(tpl: string, addresses: string[]): string {
   const u = tpl.trim();
   // คั่นด้วย %2C (คอมมาเข้ารหัส) ตามที่แหล่งส่วนใหญ่รับ
   const joined = addresses.map(encodeURIComponent).join('%2C');
   if (u.includes('{addresses}')) return u.replaceAll('{addresses}', joined);
   // วางมาเป็น ?tokenAddresses= (ว่าง) → เติมตรงนั้น ไม่ต่อซ้ำ
-  const empty = /([?&]tokenAddresses)(=?)(?=&|$)/;
+  const empty = /([?&](?:tokenAddresses|query|ids|addresses|mints))(=?)(?=&|$)/;
   if (empty.test(u)) return u.replace(empty, `$1=${joined}`);
   const sep = u.endsWith('?') || u.endsWith('&') ? '' : u.includes('?') ? '&' : '?';
   return `${u}${sep}tokenAddresses=${joined}`;

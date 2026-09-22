@@ -1,11 +1,12 @@
+import { fallbackProxy } from './proxy';
 /**
- * คิวคำขอกันโดน rate limit (429): ทั้งแอปยิงพร้อมกันไม่เกิน 2 คำขอ เว้นอย่างน้อย 300ms ระหว่างคำขอ
+ * คิวคำขอกันโดน rate limit (429): ทั้งแอปยิงพร้อมกันไม่เกิน 2 คำขอ เว้นอย่างน้อย 500ms ระหว่างคำขอ
  * โดน 429 → หยุดทั้งคิว (ตาม Retry-After ถ้ามี ไม่มีก็ 5s แล้วเพิ่มเป็น 2 เท่า สูงสุด 60s) แล้วลองคำขอนั้นใหม่ให้เอง สูงสุด 4 ครั้ง
  * จึงไม่ต้องให้ผู้ใช้เห็น "HTTP 429" ยกเว้นแหล่งบล็อกยาวจริงๆ
  */
 const CONCURRENCY = 2;
 const MAX_RETRY = 4;
-let GAP_MS = 300;
+let GAP_MS = 500;
 let BASE_PAUSE_MS = 5000;
 const MAX_PAUSE_MS = 60000;
 
@@ -55,7 +56,15 @@ export async function limitedFetch(url: string, init?: RequestInit): Promise<Res
     await acquire();
     let res: Response;
     try {
-      res = await fetch(url, init);
+      try {
+        res = await fetch(url, init);
+      } catch (e) {
+        // ยิงตรงโดน CORS/เครือข่ายบล็อก → ลองผ่าน proxy ของ dev (ถ้ามี) ก่อนยอมแพ้
+        const alt = fallbackProxy(url);
+        if (!alt) throw e;
+        url = alt;
+        res = await fetch(url, init);
+      }
     } finally {
       release();
     }

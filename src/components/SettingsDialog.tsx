@@ -4,6 +4,7 @@ import { SLIP_FIELDS, detectEndpoint, useStore, type Family } from '../store';
 import { Dropdown } from './Dropdown';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
+import { Logo } from './Logo';
 import { useToast } from './Toast';
 
 const FAMILIES: Family[] = ['evm', 'sol'];
@@ -484,7 +485,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               {settings.chains.map((c) => (
                 <li key={c.id} className="source">
                   <span className="source-icon" data-on="true">
-                    {c.logo ? <img src={c.logo} alt="" width={20} height={20} style={{ borderRadius: '50%' }} /> : <Icon name="hexagon" />}
+                    {c.logo ? <Logo src={c.logo} name={c.name ?? c.id} size={20} /> : <Icon name="hexagon" />}
                   </span>
                   <div className="wallet-meta">
                     <span className="wallet-label">

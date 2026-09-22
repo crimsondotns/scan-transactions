@@ -60,7 +60,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
   const chainName = chain?.name ?? row.chain;
   const native = row.nativeSymbol ?? chain?.symbol ?? row.chain.toUpperCase();
   const cs = chainStyle(row.chain, chainName);
-  const ChainGlyph = () => (cs ? <span className="chain-glyph" data-chain={cs.token} aria-hidden="true">{cs.glyph}</span> : null);
+  const ChainGlyph = () => (cs ? <span className="chain-glyph" aria-hidden="true">{cs.glyph}</span> : null);
   /* ลิงก์ explorer: จาก chain list ก่อน ไม่มีค่อยดูว่าแหล่งข้อมูลแนบ URL มากับแถวไหม; ไม่มีทั้งคู่ → ปุ่มปิด (ไม่ซ่อน) */
   const rawUrl = ['tx_url', 'explorer_url', 'url', 'link'].map((k) => row.raw[k]).find((v): v is string => typeof v === 'string' && /^https:\/\//i.test(v)) ?? null;
   const host = chain?.explorer?.replace(/\/$/, '') ?? (rawUrl ? new URL(rawUrl).origin : null);
@@ -257,7 +257,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
       </div>
 
       <div className="drawer-foot">
-        <button type="button" className="btn" onClick={() => onSlip(slipData(row, wallet, chainName, native, txUrl))}>
+        <button type="button" className="btn" onClick={() => onSlip(slipData(row, wallet, chainName, native, txUrl, chainLogo))}>
           <Icon name="receipt" />
           {t('slip.open')}
         </button>

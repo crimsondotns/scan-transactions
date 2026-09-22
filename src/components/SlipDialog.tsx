@@ -11,6 +11,7 @@ export function useSlipLabels() {
   const { t } = useI18n();
   return (d: SlipData) => ({
     title: t('slip.title'),
+    on: t('slip.on'),
     action: { download: t('slip.did.download'), copy: t('slip.did.copy'), print: t('slip.did.print'), share: t('slip.did.share'), verify: t('slip.did.verify') },
     wallet: t('tx.col.wallet'),
     from: t('detail.from'),

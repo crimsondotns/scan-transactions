@@ -1256,21 +1256,6 @@ th[aria-sort='descending'] .th-btn {
   line-height: 1;
   font-weight: var(--weight-bold);
 }
-.chain-glyph[data-chain='chain-eth'] {
-  color: var(--color-chain-eth);
-}
-.chain-glyph[data-chain='chain-sol'] {
-  color: var(--color-chain-sol);
-}
-.chain-glyph[data-chain='chain-hyper'] {
-  color: var(--color-chain-hyper);
-}
-.chain-glyph[data-chain='chain-polygon'] {
-  color: var(--color-chain-polygon);
-}
-.chain-glyph[data-chain='chain-bnb'] {
-  color: var(--color-chain-bnb);
-}
 .ev-title .chain-glyph {
   margin-left: var(--space-2);
   font-size: 0.75em;
@@ -1880,23 +1865,7 @@ dialog.dlg::backdrop {
 .slip-actions .btn {
   justify-content: center;
 }
-/* ไอคอนของปุ่มสลิป/ตรวจ — สีประจำฟังก์ชัน (ตัวปุ่มยังเป็น pill ขาวดำตามระบบ) */
-.btn[data-fn='download'] svg {
-  color: var(--color-fn-download);
-}
-.btn[data-fn='copy'] svg {
-  color: var(--color-fn-copy);
-}
-.btn[data-fn='print'] svg {
-  color: var(--color-fn-print);
-}
-.btn[data-fn='share'] svg {
-  color: var(--color-fn-share);
-}
-.btn[data-fn='verify'] svg,
-.verdict[data-verdict='valid'] > svg {
-  color: var(--color-fn-verify);
-}
+/* ไอคอนของปุ่มสลิป/ตรวจ — ขาวดำตามระบบ (สีอยู่ในภาพสลิปเท่านั้น) */
 .btn[data-fn] svg {
   width: 18px;
   height: 18px;

@@ -1934,3 +1934,12 @@ dialog.dlg::backdrop {
 .drawer-foot .btn:first-child:not(:last-child) {
   min-width: 0;
 }
+
+/* ตั้งค่าป้ายบนสลิป — แถวเตี้ยกว่าแถวแหล่งข้อมูล */
+.slip-fields .source {
+  min-height: 44px;
+  padding-left: var(--space-2);
+}
+.slip-fields .source[data-off='true'] .wallet-meta {
+  opacity: 0.5;
+}

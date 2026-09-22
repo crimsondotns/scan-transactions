@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useI18n } from '../i18n';
-import { detectEndpoint, useStore, type Family } from '../store';
+import { SLIP_FIELDS, detectEndpoint, useStore, type Family } from '../store';
 import { Dropdown } from './Dropdown';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
@@ -10,7 +10,7 @@ const FAMILIES: Family[] = ['evm', 'sol'];
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
-  const { settings, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl } = useStore();
+  const { settings, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setSlipShow } = useStore();
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
   const { toast } = useToast();
@@ -309,6 +309,22 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
             spellCheck={false}
           />
         </div>
+        {/* ป้ายบนสลิป: สวิตช์ต่อรายการ (ไม่มี checkbox) — มีผลกับสลิปที่เปิดครั้งถัดไป */}
+        <section aria-labelledby="slip-h">
+          <h3 id="slip-h" className="panel-title">
+            {t('settings.slip')}
+          </h3>
+          <ul className="sources slip-fields" aria-label={t('settings.slip')}>
+            {SLIP_FIELDS.map((f) => (
+              <li key={f} className="source" data-off={!settings.slipShow[f]}>
+                <div className="wallet-meta">
+                  <span className="wallet-label">{t(`slipField.${f}`)}</span>
+                </div>
+                <button type="button" className="switch" role="switch" aria-checked={settings.slipShow[f]} onClick={() => setSlipShow(f, !settings.slipShow[f])} aria-label={t(`slipField.${f}`)} title={t(`slipField.${f}`)} />
+              </li>
+            ))}
+          </ul>
+        </section>
         <div className="dlg-actions">
           <button type="button" className="btn" onClick={onClose}>
             {t('dialog.close')}

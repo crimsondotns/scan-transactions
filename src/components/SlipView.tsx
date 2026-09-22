@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from '../i18n';
+import { useStore } from '../store';
 import { renderSlip, saveSlip, slipCode, type SlipAction, type SlipData, type SlipRecord } from '../slip';
 import { Icon } from './Icon';
 
@@ -36,16 +37,17 @@ export function useSlipLabels() {
 /** วาดสลิปเป็นภาพ (data URL) — ใช้ทั้งไดอะล็อกสลิปและหน้าตรวจสอบ */
 export function useSlipImage(rec: SlipRecord | null, action: SlipAction | null = null) {
   const labels = useSlipLabels();
+  const { settings } = useStore();
   const [img, setImg] = useState<{ canvas: HTMLCanvasElement; url: string } | null>(null);
   useEffect(() => {
     if (!rec) return setImg(null);
     let alive = true;
-    void renderSlip(rec, labels(rec.data), action).then((canvas) => alive && setImg({ canvas, url: canvas.toDataURL('image/png') }));
+    void renderSlip(rec, labels(rec.data), action, settings.slipShow).then((canvas) => alive && setImg({ canvas, url: canvas.toDataURL('image/png') }));
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rec, action]);
+  }, [rec, action, settings.slipShow]);
   return img;
 }
 

@@ -9,6 +9,7 @@ import QRCode from 'qrcode';
 import type { TxRow } from './feed';
 import { formatAmountFull, formatAmountShort, formatFeeNative, formatFeeUsd, formatStamp, formatUsdExact, shortAddr } from './format';
 import { tokenColor } from './chainStyle';
+import { SLIP_SHOW_DEFAULT, type SlipShow } from './store';
 import { identiconHue } from './components/Identicon';
 
 export interface SlipMove {
@@ -281,7 +282,7 @@ function circleImage(ctx: CanvasRenderingContext2D, img: HTMLImageElement | null
 }
 
 /** วาดสลิปลง canvas ใหม่ (ความละเอียด 2 เท่า) — พื้นขาวเสมอ ไม่ตามธีมหน้าจอ เพราะเป็นเอกสาร; นอกขอบหยักโปร่งใส */
-export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction | null = null): Promise<HTMLCanvasElement> {
+export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction | null = null, show: SlipShow = SLIP_SHOW_DEFAULT): Promise<HTMLCanvasElement> {
   try {
     await Promise.all([document.fonts.load(`400 16px ${FONT}`), document.fonts.load(`600 16px ${FONT}`)]);
   } catch {
@@ -398,7 +399,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     y += 20;
 
     // ตัวเลขใหญ่
-    if (lead) {
+    if (lead && show.headline) {
       const isIn = lead.dir === 'in';
       text(isIn ? L.received : L.sent, W / 2, y + 4, 12, 400, MUTED, 'center');
       y += 14;
@@ -407,7 +408,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       const size = ctx.measureText(big).width > W - PAD * 2 ? 20 : 26;
       text(big, W / 2, y + 26, size, 700, isIn ? POSITIVE : INK, 'center');
       y += 36;
-      if (lead.usd !== null && lead.usd !== undefined) {
+      if (show.usd && lead.usd !== null && lead.usd !== undefined) {
         text(`≈ ${formatUsdExact(lead.usd)}`, W / 2, y + 4, 12, 400, MUTED, 'center');
         y += 16;
       }
@@ -417,7 +418,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     }
 
     // บล็อกสินทรัพย์: โลโก้โทเคน 36 + ตราเชน 14 / สัญลักษณ์ + on เชน / จำนวน (สีหมึก) + USD
-    ordered.forEach((m) => {
+    (show.assets ? ordered : []).forEach((m) => {
       if (!dry) {
         circleImage(ctx, moveImgs[d.moves.indexOf(m)] ?? null, PAD, y, 36, m.symbol, `hsl(${identiconHue(m.symbol)} 60% 52%)`);
         ctx.fillStyle = '#ffffff';
@@ -430,37 +431,49 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       text(`${L.on} ${d.chainName}`, PAD + 46, y + 31, 11, 400, MUTED);
       // แถวสินทรัพย์: 4 ทศนิยม (เหมือนแผงขวา) — ทศนิยมเต็มอยู่ที่ตัวเลขใหญ่ Received/Sent ด้านบนเท่านั้น
       text(`${m.dir === 'in' ? '+' : '−'}${formatAmountShort(m.amount)}`, W - PAD, y + 16, 15, 600, INK, 'right');
-      if (m.usd !== null && m.usd !== undefined) text(formatUsdExact(m.usd), W - PAD, y + 31, 11, 400, MUTED, 'right');
+      if (show.usd && m.usd !== null && m.usd !== undefined) text(formatUsdExact(m.usd), W - PAD, y + 31, 11, 400, MUTED, 'right');
       y += 46;
     });
-    if (ordered.length) y += 4;
-    if (d.fee !== null) kv(L.fee, `${formatFeeNative(d.fee, d.feeSymbol)}${d.feeUsd !== null && d.feeUsd !== undefined ? ` (${formatFeeUsd(d.feeUsd)})` : ''}`);
-    if (d.swapCost !== null && d.swapCost !== undefined) kv(L.swapCost, formatUsdExact(d.swapCost));
-    y += 2;
-    dash(y);
-    y += 16;
+    if (show.assets && ordered.length) y += 4;
+    if (show.fee && d.fee !== null) kv(L.fee, `${formatFeeNative(d.fee, d.feeSymbol)}${d.feeUsd !== null && d.feeUsd !== undefined ? ` (${formatFeeUsd(d.feeUsd)})` : ''}`);
+    if (show.swapCost && d.swapCost !== null && d.swapCost !== undefined) kv(L.swapCost, formatUsdExact(d.swapCost));
+    const midBlock = (show.assets && ordered.length > 0) || (show.fee && d.fee !== null) || (show.swapCost && d.swapCost !== null && d.swapCost !== undefined);
+    if (midBlock) {
+      y += 2;
+      dash(y);
+      y += 16;
+    }
 
     // Wallet / From / To / Status
-    kv(L.wallet, d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
-    if (d.from && d.from.toLowerCase() !== d.wallet.toLowerCase()) kv(L.from, shortAddr(d.from));
-    if (d.protocol) kv(d.protocolKind ?? L.protocol, d.protocol);
-    if (d.to && d.to.toLowerCase() !== d.wallet.toLowerCase()) kv(L.to, shortAddr(d.to));
-    kv(L.status, ok ? `${L.statusOk} ✓` : `${L.statusFailed} ✗`);
-    y += 2;
-    dash(y);
-    y += 18;
+    const y0 = y;
+    if (show.wallet) kv(L.wallet, d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
+    if (show.wallet && d.from && d.from.toLowerCase() !== d.wallet.toLowerCase()) kv(L.from, shortAddr(d.from));
+    if (show.protocol && d.protocol) kv(d.protocolKind ?? L.protocol, d.protocol);
+    if (show.to && d.to && d.to.toLowerCase() !== d.wallet.toLowerCase()) kv(L.to, shortAddr(d.to));
+    if (show.status) kv(L.status, ok ? `${L.statusOk} ✓` : `${L.statusFailed} ✗`);
+    if (y > y0) {
+      y += 2;
+      dash(y);
+      y += 18;
+    }
 
     // hash เต็ม (ตัดบรรทัด) กลาง
-    y += wrap(d.hash, W / 2, y + 8, 10, W - PAD * 2, 400, MUTED, 'center') + 8;
+    if (show.hash) y += wrap(d.hash, W / 2, y + 8, 10, W - PAD * 2, 400, MUTED, 'center') + 8;
     // QR กลาง
-    if (!dry) ctx.drawImage(qr, W / 2 - 48, y, 96, 96);
-    y += 116;
-    text(L.code, W / 2, y + 4, 11, 400, MUTED, 'center');
-    y += 20;
-    text(rec.code, W / 2, y + 4, 15, 600, INK, 'center');
-    y += 22;
-    text(`${L.issued} ${formatStamp(Math.floor(d.issued / 1000))}`, W / 2, y + 4, 10, 400, MUTED, 'center');
-    y += 16;
+    if (show.qr) {
+      if (!dry) ctx.drawImage(qr, W / 2 - 48, y, 96, 96);
+      y += 116;
+    }
+    if (show.code) {
+      text(L.code, W / 2, y + 4, 11, 400, MUTED, 'center');
+      y += 20;
+      text(rec.code, W / 2, y + 4, 15, 600, INK, 'center');
+      y += 22;
+    }
+    if (show.issued) {
+      text(`${L.issued} ${formatStamp(Math.floor(d.issued / 1000))}`, W / 2, y + 4, 10, 400, MUTED, 'center');
+      y += 16;
+    }
 
     // ตราฟังก์ชันที่ทำกับสลิปนี้ (Downloaded ⤓ / Verified ✓ …) — สีประจำฟังก์ชัน
     if (action) {

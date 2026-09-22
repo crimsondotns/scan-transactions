@@ -205,3 +205,11 @@ test('approve: allowance move flagged (not a send), To is the spender, contract 
   assert.equal(r.contract, '0xf2915d1e3c1b0c769d0c756ec43f1c1f6c99cd03');
   assert.equal(rowValue(r), null);
 });
+
+test('empty params in the pasted URL are filled, not duplicated; extra params kept', () => {
+  assert.equal(buildUrl('https://example.invalid/acts?ownerAddress', 'So1', null, 100, 'sol'), 'https://example.invalid/acts?ownerAddress=So1&limit=100');
+  assert.equal(buildUrl('https://example.invalid/acts?ownerAddress=&limit=&isRouter=true', 'So1', null, 100, 'sol'), 'https://example.invalid/acts?ownerAddress=So1&limit=100&isRouter=true');
+  assert.equal(buildUrl('https://example.invalid/acts?isRouter=true', 'So1', null, 100, 'sol'), 'https://example.invalid/acts?isRouter=true&ownerAddress=So1&limit=100');
+  assert.equal(buildUrl('https://example.invalid/h?id=', '0xAB', null, 20), 'https://example.invalid/h?id=0xAB&start_time=0&page_count=20');
+  assert.equal(metaUrl('https://example.invalid/meta?tokenAddresses=', ['A', 'B']), 'https://example.invalid/meta?tokenAddresses=A,B');
+});

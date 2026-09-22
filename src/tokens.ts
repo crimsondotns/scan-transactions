@@ -42,6 +42,9 @@ export function metaUrl(tpl: string, addresses: string[]): string {
   const u = tpl.trim();
   const joined = addresses.map(encodeURIComponent).join(',');
   if (u.includes('{addresses}')) return u.replaceAll('{addresses}', joined);
+  // วางมาเป็น ?tokenAddresses= (ว่าง) → เติมตรงนั้น ไม่ต่อซ้ำ
+  const empty = /([?&]tokenAddresses)(=?)(?=&|$)/;
+  if (empty.test(u)) return u.replace(empty, `$1=${joined}`);
   const sep = u.endsWith('?') || u.endsWith('&') ? '' : u.includes('?') ? '&' : '?';
   return `${u}${sep}tokenAddresses=${joined}`;
 }

@@ -91,12 +91,40 @@ export function hasPlaceholder(tpl: string): boolean {
  *  sol: ?ownerAddress={address}&limit={count}
  * แหล่งที่ใช้ชื่อพารามิเตอร์/รูปแบบอื่น → วาง URL ที่มี {address} {count} {cursor} {start} เองได้
  */
+/** พารามิเตอร์ที่ผู้ใช้วางมาแบบว่าง (?ownerAddress หรือ &limit=) → เติม placeholder ลงไปแทนที่จะต่อซ้ำ */
+function fillEmptyParam(url: string, name: string, value: string): string | null {
+  const re = new RegExp(`([?&]${name})(=?)(?=&|$)`);
+  return re.test(url) ? url.replace(re, `$1=${value}`) : null;
+}
+
+const PARAMS: Record<'evm' | 'sol', Array<[string, string]>> = {
+  evm: [
+    ['id', '{address}'],
+    ['start_time', '{start}'],
+    ['page_count', '{count}'],
+  ],
+  sol: [
+    ['ownerAddress', '{address}'],
+    ['limit', '{count}'],
+  ],
+};
+
 export function toTemplate(url: string, family: 'evm' | 'sol' = 'evm'): string {
-  const u = url.trim();
+  let u = url.trim();
   if (hasPlaceholder(u)) return u;
-  const sep = u.endsWith('?') || u.endsWith('&') ? '' : u.includes('?') ? '&' : '?';
-  if (family === 'sol') return `${u}${sep}ownerAddress={address}&limit={count}`;
-  return `${u}${sep}id={address}&start_time={start}&page_count={count}`;
+  // 1) พารามิเตอร์ว่างที่มีอยู่แล้ว → เติม placeholder ตรงนั้น (คงพารามิเตอร์อื่นของผู้ใช้ไว้ เช่น flag เพิ่มเติม)
+  const missing: Array<[string, string]> = [];
+  for (const [name, ph] of PARAMS[family]) {
+    const filled = fillEmptyParam(u, name, ph);
+    if (filled) u = filled;
+    else if (!new RegExp(`[?&]${name}=`).test(u)) missing.push([name, ph]);
+  }
+  // 2) ที่เหลือต่อท้าย
+  if (missing.length) {
+    const sep = u.endsWith('?') || u.endsWith('&') ? '' : u.includes('?') ? '&' : '?';
+    u = `${u}${sep}${missing.map(([n, ph]) => `${n}=${ph}`).join('&')}`;
+  }
+  return u;
 }
 
 export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number, family: 'evm' | 'sol' = 'evm'): string {

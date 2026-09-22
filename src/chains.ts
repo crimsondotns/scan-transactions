@@ -15,6 +15,8 @@ export interface ChainInfo {
 }
 
 const KEY = 'xcap.scan.chains.v1';
+const FAIL_KEY = 'xcap.scan.chains.fail';
+const FAIL_TTL = 60 * 60 * 1000;
 const TTL = 24 * 3600 * 1000;
 const PATH = '/v1/chain/list';
 
@@ -51,6 +53,14 @@ async function fetchList(url: string): Promise<ChainInfo[]> {
   const cache = readCache();
   const hit = cache[url];
   if (hit && Date.now() - hit.at < TTL && hit.chains.length) return hit.chains;
+  // เคยล้มเหลวภายใน 1 ชม. (CORS/404) → ไม่ยิงซ้ำทุกครั้งที่เปิดหน้า
+  let fails: Record<string, number> = {};
+  try {
+    fails = (JSON.parse(localStorage.getItem(FAIL_KEY) ?? '{}') as Record<string, number>) ?? {};
+  } catch {
+    /* ไม่มี storage */
+  }
+  if (!hit?.chains.length && fails[url] && Date.now() - fails[url] < FAIL_TTL) return [];
   let chains: ChainInfo[] = [];
   try {
     const res = await fetch(url, { headers: { accept: 'application/json' } });
@@ -59,6 +69,11 @@ async function fetchList(url: string): Promise<ChainInfo[]> {
   } catch (e) {
     // โหลดใหม่ไม่ได้ (หมดอายุ 24 ชม. แล้วแหล่งตอบ error/CORS) → ใช้ของเก่าที่เคยได้ต่อไป ดีกว่าหายไปทั้งชื่อ/โลโก้/explorer
     if (hit?.chains.length) return hit.chains;
+    try {
+      localStorage.setItem(FAIL_KEY, JSON.stringify({ ...fails, [url]: Date.now() }));
+    } catch {
+      /* ignore */
+    }
     throw e;
   }
   if (!chains.length && hit?.chains.length) return hit.chains;
@@ -81,7 +96,8 @@ export function useChains(settings: Settings): ChainMap {
     ...(/^https:\/\//i.test(settings.chainListUrl) ? [settings.chainListUrl] : []),
     ...new Set(
       settings.endpoints
-        .filter((e) => e.enabled)
+        // fallback <origin>/v1/chain/list มีเฉพาะแหล่งตระกูล EVM — แหล่ง Solana ไม่มี path นี้ ยิงไปก็โดน CORS/404 ในคอนโซลเปล่าๆ
+        .filter((e) => e.enabled && e.family === 'evm')
         .flatMap((e) => {
           try {
             return [new URL(e.url).origin + PATH];

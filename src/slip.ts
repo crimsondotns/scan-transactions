@@ -36,6 +36,9 @@ export interface SlipData {
   walletLabel: string;
   from: string | null;
   to: string | null;
+  /** ป้ายชื่อกระเป๋าของ from/to ถ้าเป็นกระเป๋าที่ผู้ใช้ตั้งชื่อไว้ — แสดงผลอย่างเดียว */
+  fromLabel?: string | null;
+  toLabel?: string | null;
   moves: SlipMove[];
   fee: number | null;
   feeSymbol: string;
@@ -74,6 +77,8 @@ export interface SlipExtra {
   protocol?: string | null;
   protocolKind?: string | null;
   reasons?: string[];
+  /** ชื่อกระเป๋าที่ผู้ใช้ตั้งของที่อยู่ (ถ้ามี) */
+  labelOf?: (addr: string) => string | undefined;
 }
 
 export function slipData(row: TxRow, wallet: { address: string; label: string } | undefined, chainName: string, native: string, url: string | null, extra: SlipExtra = {}): SlipData {
@@ -90,6 +95,8 @@ export function slipData(row: TxRow, wallet: { address: string; label: string } 
     walletLabel: wallet?.label ?? '',
     from: row.from,
     to: row.to,
+    fromLabel: row.from ? (extra.labelOf?.(row.from) ?? null) : null,
+    toLabel: row.to ? (extra.labelOf?.(row.to) ?? null) : null,
     moves: row.moves.filter((m) => m.amount !== 0).map((m) => ({ dir: m.dir, amount: m.amount, symbol: m.symbol, usd: m.approve ? null : usdOfMove(m), logo: m.logo, ...(m.approve ? { approve: true as const } : {}) })),
     fee: row.gasNative,
     feeSymbol: native,
@@ -559,9 +566,11 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     const y0 = y;
     // ชื่อกระเป๋า (Main / BETA 24) ซ่อนแยกได้ — เหลือแค่ที่อยู่ย่อ
     if (show.wallet) kv(L.wallet, show.walletLabel && d.walletLabel ? `${d.walletLabel} · ${shortAddr(d.wallet)}` : shortAddr(d.wallet));
-    if (show.wallet && d.from && d.from.toLowerCase() !== d.wallet.toLowerCase()) kv(L.from, shortAddr(d.from));
+    // from/to ที่เป็นกระเป๋าที่ตั้งชื่อไว้ → "ชื่อ · 0x…" (ปิด Wallet name แล้วเหลือแค่ที่อยู่)
+    const named = (addr: string, label: string | null | undefined) => (show.walletLabel && label ? `${label} · ${shortAddr(addr)}` : shortAddr(addr));
+    if (show.wallet && d.from && d.from.toLowerCase() !== d.wallet.toLowerCase()) kv(L.from, named(d.from, d.fromLabel));
     if (show.protocol && d.protocol) kv(d.protocolKind ?? L.protocol, d.protocol);
-    if (show.to && d.to && d.to.toLowerCase() !== d.wallet.toLowerCase()) kv(L.to, shortAddr(d.to));
+    if (show.to && d.to && d.to.toLowerCase() !== d.wallet.toLowerCase()) kv(L.to, named(d.to, d.toLabel));
     if (show.status) kv(L.status, ok ? `${L.statusOk} ✓` : `${L.statusFailed} ✗`);
     if (y > y0) {
       y += 2;

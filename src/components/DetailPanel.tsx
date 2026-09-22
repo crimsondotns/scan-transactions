@@ -279,6 +279,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
                 protocol: row.counterpartyName,
                 protocolKind: kind ? t(`kind.${kind}`) : null,
                 reasons: riskReasons(row, wallets, t),
+                labelOf: known,
               }),
             )
           }

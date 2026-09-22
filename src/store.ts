@@ -34,6 +34,14 @@ export type SlipField = (typeof SLIP_FIELDS)[number];
 export type SlipShow = Record<SlipField, boolean>;
 export const SLIP_SHOW_DEFAULT: SlipShow = Object.fromEntries(SLIP_FIELDS.map((f) => [f, true])) as SlipShow;
 
+/** ข้อมูลเชนที่ผู้ใช้ใส่เอง (ทับ/เติม chain list): โลโก้ + explorer ต่อ chain id */
+export interface ChainOverride {
+  id: string;
+  name?: string;
+  logo?: string;
+  explorer?: string;
+}
+
 export interface Settings {
   endpoints: Endpoint[];
   pageSize: number;
@@ -47,6 +55,8 @@ export interface Settings {
   slipShow: SlipShow;
   /** ทางผ่านคำขอของผู้ใช้เอง (CORS) — ว่าง = ยิงตรง (dev ใช้ /__proxy ของ vite) */
   proxyUrl: string;
+  /** เชนที่ผู้ใช้กำหนดเอง (โลโก้/explorer) — ใช้ก่อน chain list */
+  chains: ChainOverride[];
 }
 
 interface State {
@@ -56,7 +66,7 @@ interface State {
 }
 
 const KEY = 'xcap.scan.v1';
-const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', hideScam: false, slipShow: SLIP_SHOW_DEFAULT, proxyUrl: '' } };
+const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', hideScam: false, slipShow: SLIP_SHOW_DEFAULT, proxyUrl: '', chains: [] } };
 
 export const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
 export const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
@@ -84,7 +94,7 @@ function load(): State {
         const p = w && typeof w.address === 'string' ? parseAddress(w.address) : null;
         return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false }] : [];
       }),
-      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '', priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '' },
+      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '', priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '', chains: Array.isArray(s.chains) ? (s.chains as ChainOverride[]).filter((c) => c && typeof c.id === 'string') : [] },
     };
   } catch {
     return DEFAULT;
@@ -181,8 +191,16 @@ export function useStore() {
   const setPriceUrl = useCallback((priceUrl: string) => commit({ ...state, settings: { ...state.settings, priceUrl: priceUrl.trim() } }), []);
   const setHideScam = useCallback((hideScam: boolean) => commit({ ...state, settings: { ...state.settings, hideScam } }), []);
   const setProxyUrl = useCallback((proxyUrl: string) => commit({ ...state, settings: { ...state.settings, proxyUrl: proxyUrl.trim() } }), []);
+  /* เชนกำหนดเอง: id เดิม = แทนที่ */
+  const setChain = useCallback((c: ChainOverride) => {
+    const id = c.id.trim().toLowerCase();
+    if (!id) return;
+    const rest = state.settings.chains.filter((x) => x.id !== id);
+    commit({ ...state, settings: { ...state.settings, chains: [...rest, { ...c, id }] } });
+  }, []);
+  const removeChain = useCallback((id: string) => commit({ ...state, settings: { ...state.settings, chains: state.settings.chains.filter((x) => x.id !== id) } }), []);
   const setSlipShow = useCallback((field: SlipField, on: boolean) => commit({ ...state, settings: { ...state.settings, slipShow: { ...state.settings.slipShow, [field]: on } } }), []);
   const setPageSize = useCallback((pageSize: number) => commit({ ...state, settings: { ...state.settings, pageSize } }), []);
 
-  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl };
+  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl, setChain, removeChain };
 }

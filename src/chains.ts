@@ -126,5 +126,18 @@ export function useChains(settings: Settings): ChainMap {
     };
   }, [urls]);
 
-  return map;
+  // เชนที่ผู้ใช้กำหนดเอง ทับ/เติมของที่ได้จาก chain list
+  const overrides = JSON.stringify(settings.chains);
+  const [merged, setMerged] = useState<ChainMap>(map);
+  useEffect(() => {
+    const m: ChainMap = new Map(map);
+    for (const o of settings.chains) {
+      const base = m.get(o.id);
+      m.set(o.id, { id: o.id, name: o.name || base?.name || o.id, logo: https(o.logo) ?? base?.logo ?? null, explorer: https(o.explorer) ?? base?.explorer ?? null, symbol: base?.symbol ?? null });
+    }
+    setMerged(m);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map, overrides]);
+
+  return merged;
 }

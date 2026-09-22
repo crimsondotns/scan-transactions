@@ -83,6 +83,8 @@ Do not declare work done while any of these is red.
 ## CORS / proxy (2026-09-22)
 - ทุก fetch ไปแหล่งข้อมูล (history / metadata / price / chain list) ผ่าน `proxied()` ใน `src/proxy.ts`: ผู้ใช้ตั้ง **Proxy URL** ใน Settings (`{url}` หรือ prefix) → ใช้; ไม่ตั้ง + dev → `/__proxy?url=` ของ vite (plugin `devProxy` ใน vite.config.ts ส่งต่อ header ยกเว้น host/origin/referer/cookie); production static → ยิงตรง (ต้องเป็นแหล่งที่เปิด CORS หรือผู้ใช้มี proxy เอง)
 
+- Settings → "Custom chains": ผู้ใช้ใส่ chain id + ชื่อ + โลโก้ + explorer เอง (`settings.chains`) → `useChains` merge ทับ chain list; ทางเดียวที่โลโก้/explorer ของเชนที่ chain list ไม่มี (เช่น sol) เข้ามาได้ — ห้ามฝัง URL โลโก้ในโค้ด
+
 ## Token metadata + สลิป (2026-09-22)
 - แหล่งข้อมูลแต่ละอันมี `metaUrl` (เลือกใส่) — หลังโหลดหน้า โทเคนที่ยังไม่รู้ชื่อ/สัญลักษณ์/โลโก้ (`unknownTokens`) ถูกขอเป็นชุด ≤50 ที่อยู่ เว้น 1.5 วิ (`src/tokens.ts`, แคช localStorage 7 วัน `xcap.scan.tokens`) แล้วเติมลงแถวก่อนแสดง (`applyTokenMeta`) — ไม่ยิงขอราคา/metadata แยกตอน render
 - Solana-family ที่ไม่มี placeholder ประกอบเป็น `?ownerAddress={address}&limit={count}`; แหล่งที่ใช้ path/พารามิเตอร์อื่นให้ผู้ใช้วาง URL ที่มี `{address}` `{count}` `{cursor}` เอง

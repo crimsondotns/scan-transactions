@@ -60,7 +60,7 @@ function MetaField({ id, value, onSave }: { id: string; value: string; onSave: (
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
-  const { settings, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setSlipShow, setProxyUrl } = useStore();
+  const { settings, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setSlipShow, setProxyUrl, setChain, removeChain } = useStore();
   const [dragFrom, setDragFrom] = useState<number | null>(null);
   const [dragOver, setDragOver] = useState<number | null>(null);
   const { toast } = useToast();
@@ -75,6 +75,11 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const [chainErr, setChainErr] = useState<string | null>(null);
   const [priceUrl, setPriceUrlText] = useState(settings.priceUrl);
   const [priceErr, setPriceErr] = useState<string | null>(null);
+  const [chainId, setChainId] = useState('');
+  const [chainName, setChainName] = useState('');
+  const [chainLogo, setChainLogo] = useState('');
+  const [chainExplorer, setChainExplorer] = useState('');
+  const [chainFormErr, setChainFormErr] = useState<string | null>(null);
   const [proxyUrl, setProxyUrlText] = useState(settings.proxyUrl);
   const [proxyErr, setProxyErr] = useState<string | null>(null);
 
@@ -84,7 +89,14 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     const detected = detectEndpoint(url);
     if (!detected) return setErr(t('settings.badUrl'));
     if (metaUrl.trim() && !/^https:\/\//i.test(metaUrl.trim())) return setMetaErr(t('settings.badUrl'));
-    addEndpoint({ ...detected, family: family === 'auto' ? detected.family : family, url: url.trim(), authHeader: authHeader.trim() || undefined, apiKey: apiKey.trim() || undefined, metaUrl: metaUrl.trim() || undefined });
+    addEndpoint({
+      ...detected,
+      family: family === 'auto' ? detected.family : family,
+      url: url.trim(),
+      authHeader: authHeader.trim() || undefined,
+      apiKey: apiKey.trim() || undefined,
+      metaUrl: metaUrl.trim() || undefined,
+    });
     toast(t('settings.added'));
     setUrl('');
     setMetaUrl('');
@@ -135,7 +147,13 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 <div className="wallet-meta">
                   <span className="wallet-label with-logo">
                     {ep.name}
-                    <Dropdown size="sm" value={ep.family} onChange={(f) => updateEndpoint(ep.id, { family: f })} label={t('settings.family')} options={FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))} />
+                    <Dropdown
+                      size="sm"
+                      value={ep.family}
+                      onChange={(f) => updateEndpoint(ep.id, { family: f })}
+                      label={t('settings.family')}
+                      options={FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))}
+                    />
                   </span>
                   <span className="wallet-addr" title={ep.url}>
                     {ep.apiKey && <Icon name="lock" width={12} height={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />}
@@ -144,8 +162,22 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                   </span>
                   <MetaField id={ep.id} value={ep.metaUrl ?? ''} onSave={(v) => updateEndpoint(ep.id, { metaUrl: v || undefined })} />
                 </div>
-                <button type="button" className="switch" role="switch" aria-checked={ep.enabled} onClick={() => updateEndpoint(ep.id, { enabled: !ep.enabled })} aria-label={t('settings.enable', { name: ep.name })} title={t('settings.enable', { name: ep.name })} />
-                <button type="button" className="btn btn-icon" onClick={() => removeEndpoint(ep.id)} aria-label={t('settings.remove', { name: ep.name })} title={t('settings.remove', { name: ep.name })}>
+                <button
+                  type="button"
+                  className="switch"
+                  role="switch"
+                  aria-checked={ep.enabled}
+                  onClick={() => updateEndpoint(ep.id, { enabled: !ep.enabled })}
+                  aria-label={t('settings.enable', { name: ep.name })}
+                  title={t('settings.enable', { name: ep.name })}
+                />
+                <button
+                  type="button"
+                  className="btn btn-icon"
+                  onClick={() => removeEndpoint(ep.id)}
+                  aria-label={t('settings.remove', { name: ep.name })}
+                  title={t('settings.remove', { name: ep.name })}
+                >
                   <Icon name="trash" />
                 </button>
               </li>
@@ -177,7 +209,13 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 spellCheck={false}
                 aria-invalid={err ? 'true' : undefined}
               />
-              <Dropdown size="sm" value={family} onChange={setFamily} label={t('settings.family')} options={[{ value: 'auto' as const, label: t('family.auto') }, ...FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))]} />
+              <Dropdown
+                size="sm"
+                value={family}
+                onChange={setFamily}
+                label={t('settings.family')}
+                options={[{ value: 'auto' as const, label: t('family.auto') }, ...FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))]}
+              />
               <button type="submit" className="btn btn-primary" disabled={url.trim() === ''}>
                 {t('settings.addBtn')}
               </button>
@@ -420,6 +458,125 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
             spellCheck={false}
           />
         </div>
+        {/* เชนกำหนดเอง: โลโก้/explorer ต่อ chain id — ใช้ก่อน chain list (เช่นเชนที่ chain list ไม่มี) */}
+        <form
+          aria-labelledby="chains-h"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            const id = chainId.trim().toLowerCase();
+            if (!/^[a-z0-9_-]{1,32}$/.test(id)) return setChainFormErr(t('settings.badChain'));
+            for (const v of [chainLogo, chainExplorer]) if (v.trim() && !/^https:\/\//i.test(v.trim())) return setChainFormErr(t('settings.badUrl'));
+            setChain({ id, name: chainName.trim() || undefined, logo: chainLogo.trim() || undefined, explorer: chainExplorer.trim() || undefined });
+            setChainId('');
+            setChainName('');
+            setChainLogo('');
+            setChainExplorer('');
+            setChainFormErr(null);
+            toast(t('settings.chainSaved'));
+          }}
+        >
+          <h3 id="chains-h" className="panel-title">
+            {t('settings.chains')}
+          </h3>
+          {settings.chains.length > 0 && (
+            <ul className="sources slip-fields" aria-label={t('settings.chains')}>
+              {settings.chains.map((c) => (
+                <li key={c.id} className="source">
+                  <span className="source-icon" data-on="true">
+                    {c.logo ? <img src={c.logo} alt="" width={20} height={20} style={{ borderRadius: '50%' }} /> : <Icon name="hexagon" />}
+                  </span>
+                  <div className="wallet-meta">
+                    <span className="wallet-label">
+                      {c.name ?? c.id} <span className="hint mono">{c.id}</span>
+                    </span>
+                    <span className="wallet-addr" title={c.explorer ?? ''}>
+                      {c.explorer ?? '—'}
+                    </span>
+                  </div>
+                  <button type="button" className="btn btn-icon" onClick={() => removeChain(c.id)} aria-label={t('settings.remove', { name: c.id })} title={t('settings.remove', { name: c.id })}>
+                    <Icon name="trash" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="inline auth-row">
+            <div className="field" style={{ maxWidth: 140 }}>
+              <label className="label" htmlFor="ch-id">
+                {t('settings.chainId')}
+              </label>
+              <input
+                id="ch-id"
+                name="chainId"
+                type="text"
+                className="input mono"
+                value={chainId}
+                onChange={(e) => {
+                  setChainId(e.target.value);
+                  setChainFormErr(null);
+                }}
+                autoComplete="off"
+                spellCheck={false}
+                aria-invalid={chainFormErr ? 'true' : undefined}
+              />
+            </div>
+            <div className="field">
+              <label className="label" htmlFor="ch-name">
+                {t('settings.chainName')}
+              </label>
+              <input id="ch-name" name="chainName" type="text" className="input" value={chainName} onChange={(e) => setChainName(e.target.value)} autoComplete="off" spellCheck={false} />
+            </div>
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="ch-logo">
+              {t('settings.chainLogo')}
+            </label>
+            <input
+              id="ch-logo"
+              name="chainLogo"
+              type="url"
+              inputMode="url"
+              className="input mono"
+              value={chainLogo}
+              onChange={(e) => {
+                setChainLogo(e.target.value);
+                setChainFormErr(null);
+              }}
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="ch-exp">
+              {t('settings.chainExplorer')}
+            </label>
+            <div className="inline">
+              <input
+                id="ch-exp"
+                name="chainExplorer"
+                type="url"
+                inputMode="url"
+                className="input mono"
+                value={chainExplorer}
+                onChange={(e) => {
+                  setChainExplorer(e.target.value);
+                  setChainFormErr(null);
+                }}
+                autoComplete="off"
+                spellCheck={false}
+              />
+              <button type="submit" className="btn btn-primary" disabled={chainId.trim() === ''}>
+                {t('settings.addBtn')}
+              </button>
+            </div>
+            {chainFormErr && (
+              <span className="error" aria-live="polite">
+                {chainFormErr}
+              </span>
+            )}
+          </div>
+        </form>
         {/* ป้ายบนสลิป: สวิตช์ต่อรายการ (ไม่มี checkbox) — มีผลกับสลิปที่เปิดครั้งถัดไป */}
         <section aria-labelledby="slip-h">
           <h3 id="slip-h" className="panel-title">
@@ -431,7 +588,15 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 <div className="wallet-meta">
                   <span className="wallet-label">{t(`slipField.${f}`)}</span>
                 </div>
-                <button type="button" className="switch" role="switch" aria-checked={settings.slipShow[f]} onClick={() => setSlipShow(f, !settings.slipShow[f])} aria-label={t(`slipField.${f}`)} title={t(`slipField.${f}`)} />
+                <button
+                  type="button"
+                  className="switch"
+                  role="switch"
+                  aria-checked={settings.slipShow[f]}
+                  onClick={() => setSlipShow(f, !settings.slipShow[f])}
+                  aria-label={t(`slipField.${f}`)}
+                  title={t(`slipField.${f}`)}
+                />
               </li>
             ))}
           </ul>

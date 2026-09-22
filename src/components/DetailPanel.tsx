@@ -89,7 +89,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
   const gasUsd = row.gasNative !== null ? usdOf(row.gasNative, row.gasUsd, row.chain, null, native) : row.gasUsd;
   const totalCost = swapCost !== null ? swapCost + (gasUsd ?? 0) : gasUsd;
 
-  /* แถวสินทรัพย์บรรทัดเดียว: [โลโก้] NEST | ◈ on HyperEVM | −18,441.2753 — เส้นคั่นเต็มความสูง */
+  /* แถวสินทรัพย์: [โลโก้] สัญลักษณ์ + (◈ on เชน) ซ้าย, จำนวน + USD ขวา */
   const Asset = ({ m }: { m: Move }) => (
     <div className="ev-asset">
       <span className="ev-asset-icon">
@@ -98,13 +98,13 @@ export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }:
           <Logo src={chainLogo} name={row.chain} size={16} />
         </span>
       </span>
-      <span className="ev-symbol">{m.symbol}</span>
-      <span className="ev-sep" aria-hidden="true" />
-      <span className="ev-net">
-        <ChainGlyph />
-        {t('detail.on', { chain: chainName })}
+      <span className="ev-asset-info">
+        <span className="ev-symbol">{m.symbol}</span>
+        <span className="ev-net">
+          <ChainGlyph />
+          {t('detail.on', { chain: chainName })}
+        </span>
       </span>
-      <span className="ev-sep" aria-hidden="true" />
       <span className="ev-amount-wrap">
         <button
           type="button"

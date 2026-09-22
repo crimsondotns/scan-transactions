@@ -80,6 +80,9 @@ Do not declare work done while any of these is red.
 - `DetailPanel` และ `.drawer-scrim` render ผ่าน `createPortal(…, document.body)` — เป็น sibling ของ `#root` ไม่อยู่ในกล่องตาราง; `.drawer` fixed `top/right/bottom: 0; width: min(440px,100vw)` z-index 1000, scrim 999; **ห้ามมีกติกาดัน layout** (เอา `.layout[data-drawer]` margin ออกแล้ว) — ตารางต้องนิ่งเมื่อเปิดแผง
 - Settings = "settings panel": แถวแหล่งข้อมูลไม่มีกรอบรอบการ์ด คั่นด้วย hairline: grip ลากจัดลำดับ (`reorderEndpoints`) · ไอคอนชนิด · ชื่อ + dropdown รูปแบบที่อยู่ · "Priority N · URL" · สวิตช์ `.switch` (role=switch) · ลบ
 
+## Rate limit (2026-09-22)
+- ทุก fetch ผ่าน `limitedFetch` (`src/limiter.ts`): พร้อมกัน ≤2, เว้น 300ms, โดน 429 → พักทั้งคิว (Retry-After หรือ 5s×2ⁿ ≤60s) แล้วยิงซ้ำเองสูงสุด 4 ครั้ง — ห้ามเรียก fetch ตรง
+
 ## CORS / proxy (2026-09-22)
 - ทุก fetch ไปแหล่งข้อมูล (history / metadata / price / chain list) ผ่าน `proxied()` ใน `src/proxy.ts`: ผู้ใช้ตั้ง **Proxy URL** ใน Settings (`{url}` หรือ prefix) → ใช้; ไม่ตั้ง + dev → `/__proxy?url=` ของ vite (plugin `devProxy` ใน vite.config.ts ส่งต่อ header ยกเว้น host/origin/referer/cookie); production static → ยิงตรง (ต้องเป็นแหล่งที่เปิด CORS หรือผู้ใช้มี proxy เอง)
 

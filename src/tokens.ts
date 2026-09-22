@@ -4,6 +4,7 @@
  */
 import { parseTokenMeta, type TokenMeta } from './feed';
 import { proxied } from './proxy';
+import { limitedFetch } from './limiter';
 import type { Endpoint } from './store';
 
 const KEY = 'xcap.scan.tokens';
@@ -77,7 +78,7 @@ export async function ensureTokenMeta(ep: Endpoint, addresses: string[]): Promis
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i]!;
       try {
-        const res = await fetch(proxied(metaUrl(ep.metaUrl!, batch)), { headers });
+        const res = await limitedFetch(proxied(metaUrl(ep.metaUrl!, batch)), { headers });
         if (res.status === 429) return;
         if (!res.ok) continue;
         const meta = parseTokenMeta(await res.json());

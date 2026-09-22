@@ -1,4 +1,5 @@
 import { proxied } from './proxy';
+import { limitedFetch } from './limiter';
 /**
  * แคชราคาโทเคน (USD ต่อหน่วย) — เก็บจากข้อมูลที่แหล่งข้อมูลส่งมากับแต่ละธุรกรรม
  * ไม่มีการยิงขอราคาแยก: ราคาที่รู้ล่าสุดของโทเคนนั้นถูกจำไว้ แล้วใช้เติมให้แถวที่แหล่งไม่ให้มูลค่า USD
@@ -113,7 +114,7 @@ export function refreshPrice(template: string, chain: string, tokenId: string | 
   if (inflight) return inflight;
   const job = (async () => {
     try {
-      const res = await fetch(proxied(priceRequestUrl(template, chain, tokenId, symbol)), { headers: { accept: 'application/json' } });
+      const res = await limitedFetch(proxied(priceRequestUrl(template, chain, tokenId, symbol)), { headers: { accept: 'application/json' } });
       if (!res.ok) return priceOf(chain, tokenId, symbol);
       const p = pickPrice(await res.json());
       if (p !== null) rememberPrice(chain, tokenId, symbol, p);

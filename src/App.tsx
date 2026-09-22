@@ -111,7 +111,7 @@ export function App() {
   const errors = active.flatMap((w) => Object.entries(feeds[w.id]?.errors ?? {}).map(([epId, e]) => ({ w, ep: settings.endpoints.find((x) => x.id === epId), e })));
 
   function errMsg({ w, ep, e }: (typeof errors)[number]): string {
-    const msg = e.kind === 'http' ? t('tx.errorHttp', { status: e.status }) : e.kind === 'shape' ? t('tx.errorShape') : t('tx.errorNet');
+    const msg = e.kind === 'http' && e.status === 429 ? t('tx.errorRate') : e.kind === 'http' ? t('tx.errorHttp', { status: e.status }) : e.kind === 'shape' ? t('tx.errorShape') : t('tx.errorNet');
     return `${w.label} · ${ep?.name ?? '?'}: ${t('tx.error', { msg })}`;
   }
 

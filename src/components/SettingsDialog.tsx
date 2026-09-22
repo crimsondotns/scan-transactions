@@ -1,9 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { useI18n } from '../i18n';
-import { detectEndpoint, useStore } from '../store';
+import { detectEndpoint, useStore, type Family } from '../store';
+import { Dropdown } from './Dropdown';
 import { Dialog } from './Dialog';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
+
+const FAMILIES: Family[] = ['evm', 'sol'];
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
@@ -11,6 +14,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [err, setErr] = useState<string | null>(null);
+  const [family, setFamily] = useState<Family | 'auto'>('auto');
   const [chainUrl, setChainUrl] = useState(settings.chainListUrl);
   const [chainErr, setChainErr] = useState<string | null>(null);
   const [priceUrl, setPriceUrlText] = useState(settings.priceUrl);
@@ -21,7 +25,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     e.preventDefault();
     const detected = detectEndpoint(url);
     if (!detected) return setErr(t('settings.badUrl'));
-    addEndpoint({ ...detected, url: url.trim() });
+    addEndpoint({ ...detected, family: family === 'auto' ? detected.family : family, url: url.trim() });
     toast(t('settings.added'));
     setUrl('');
     setErr(null);
@@ -33,20 +37,21 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         {settings.endpoints.length === 0 ? (
           <p className="hint">{t('settings.none')}</p>
         ) : (
-          <ul className="wallets" aria-label={t('settings.list')}>
+          <ul className="sources" aria-label={t('settings.list')}>
             {settings.endpoints.map((ep) => (
-              <li key={ep.id} className="wallet">
+              <li key={ep.id} className="source">
                 <label className="wallet-check">
                   <input type="checkbox" checked={ep.enabled} onChange={(e) => updateEndpoint(ep.id, { enabled: e.target.checked })} aria-label={t('settings.enable', { name: ep.name })} />
                 </label>
                 <div className="wallet-meta">
                   <span className="wallet-label">
-                    {ep.name} <span className="chip">{t(`family.${ep.family}`)}</span>
+                    {ep.name}
                   </span>
                   <span className="wallet-addr" title={ep.url}>
                     {ep.url}
                   </span>
                 </div>
+                <Dropdown size="sm" align="right" value={ep.family} onChange={(f) => updateEndpoint(ep.id, { family: f })} label={t('settings.family')} options={FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))} />
                 <button
                   type="button"
                   className="btn btn-icon"
@@ -85,6 +90,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                 spellCheck={false}
                 aria-invalid={err ? 'true' : undefined}
               />
+              <Dropdown size="sm" value={family} onChange={setFamily} label={t('settings.family')} options={[{ value: 'auto' as const, label: t('family.auto') }, ...FAMILIES.map((f) => ({ value: f, label: t(`family.${f}`) }))]} />
               <button type="submit" className="btn btn-primary" disabled={url.trim() === ''}>
                 {t('settings.addBtn')}
               </button>

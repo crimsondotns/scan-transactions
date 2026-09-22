@@ -24,7 +24,7 @@ const AUTO: Record<Breakpoint, Variant> = { mobile: 'compact', tablet: 'card', d
  * compact/list/accordion ขยายในที่; card/grid เปิดเป็นแผ่นล่าง (มือถือ) หรือโมดัล
  * ไอคอนตา = ซ่อน/แสดงข้อมูลของกระเป๋านั้นในตาราง (enabled=false ใน store)
  */
-export function WalletPanel({ feeds, activeId, onSwitch, onRemove, onExpand }: { feeds: Record<string, WalletFeed>; activeId: string | null; onSwitch: (id: string | null) => void; onRemove: (id: string) => void; onExpand: (w: Wallet) => void }) {
+export function WalletPanel({ feeds, activeId, onSwitch, onRemove, onExpand, hasSource }: { feeds: Record<string, WalletFeed>; activeId: string | null; onSwitch: (id: string | null) => void; onRemove: (id: string) => void; onExpand: (w: Wallet) => void; hasSource: (w: Wallet) => boolean }) {
   const { t } = useI18n();
   const { wallets, settings, setWalletView, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets } = useStore();
   const bp = useBreakpoint();
@@ -106,6 +106,7 @@ export function WalletPanel({ feeds, activeId, onSwitch, onRemove, onExpand }: {
 
   const stateOf = (w: Wallet) => {
     const f = feeds[w.id];
+    if (!f && !hasSource(w)) return 'nosource';
     return f?.loading ? 'loading' : f && Object.keys(f.errors).length ? 'error' : f?.loaded ? 'ok' : 'idle';
   };
 

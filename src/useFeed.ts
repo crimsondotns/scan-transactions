@@ -5,6 +5,16 @@
  * โหลดแบบขี้เกียจ: ไม่ยิงตอนเปิดหน้า ยิงเฉพาะเมื่อผู้ใช้เลือกกระเป๋า และกระเป๋าที่โหลดแล้วใช้แคชในหน่วยความจำ
  */
 import { useCallback, useRef, useState } from 'react';
+
+export interface Progress {
+  done: number;
+  total: number;
+  running: boolean;
+  stopped: 'rate' | 'cancel' | null;
+}
+
+const BATCH = 5;
+const BATCH_GAP_MS = 2000;
 import { FeedError, fetchPage, type Cursor, type TxRow } from './feed';
 import type { Endpoint, Settings, Wallet } from './store';
 
@@ -92,6 +102,39 @@ export function useFeed(settings: Settings) {
     [load]
   );
 
+  /* โหลดแบบเว้นจังหวะ: ทีละ 5 กระเป๋าพร้อมกัน เว้น 2 วิ แล้วชุดถัดไป — เหมือนคนกดทีละอัน กัน rate limit
+     หยุดเองเมื่อเจอ 429 และผู้ใช้ยกเลิกได้ */
+  const [progress, setProgress] = useState<Progress>({ done: 0, total: 0, running: false, stopped: null });
+  const cancelRef = useRef(false);
+  const loadStaggered = useCallback(
+    async (ws: Wallet[]) => {
+      const todo = ws.filter((w) => !latest.current[w.id]?.loaded && endpointsFor(w, settings).length);
+      if (!todo.length) return;
+      cancelRef.current = false;
+      setProgress({ done: 0, total: todo.length, running: true, stopped: null });
+      for (let i = 0; i < todo.length; i += BATCH) {
+        if (cancelRef.current) {
+          setProgress((p) => ({ ...p, running: false, stopped: 'cancel' }));
+          return;
+        }
+        const batch = todo.slice(i, i + BATCH);
+        await Promise.all(batch.map((w) => load(w, 'reset')));
+        setProgress((p) => ({ ...p, done: Math.min(todo.length, i + batch.length) }));
+        const limited = batch.some((w) => Object.values(latest.current[w.id]?.errors ?? {}).some((e) => e.kind === 'http' && e.status === 429));
+        if (limited) {
+          setProgress((p) => ({ ...p, running: false, stopped: 'rate' }));
+          return;
+        }
+        if (i + BATCH < todo.length) await new Promise((r) => setTimeout(r, BATCH_GAP_MS));
+      }
+      setProgress((p) => ({ ...p, running: false }));
+    },
+    [load, settings]
+  );
+  const cancelStaggered = useCallback(() => {
+    cancelRef.current = true;
+  }, []);
+
   /** โหลดถ้ายังไม่มีในแคช (เคยโหลดสำเร็จหรือกำลังโหลด → ไม่ยิงซ้ำ) */
   const ensure = useCallback(
     (w: Wallet) => {
@@ -112,7 +155,7 @@ export function useFeed(settings: Settings) {
     });
   }, []);
 
-  return { feeds, load, loadMany, ensure, reset, forget };
+  return { feeds, load, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget };
 }
 
 export function hasOlder(f: WalletFeed | undefined): boolean {

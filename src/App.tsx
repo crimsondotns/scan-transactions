@@ -20,7 +20,7 @@ import { ThemeToggle } from './components/ThemeToggle';
 export function App() {
   const { t } = useI18n();
   const { wallets, settings } = useStore();
-  const { feeds, loadMany, ensure, reset, forget } = useFeed(settings);
+  const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   /* หน้า: #/ = แดชบอร์ด, #/w/<id> = ธุรกรรมของกระเป๋า — เก็บใน hash ให้ปุ่มย้อนกลับของเบราว์เซอร์ทำงาน */
@@ -90,6 +90,16 @@ export function App() {
         .sort((a, b) => b.time - a.time),
     [active, feeds]
   );
+  /* เปิดแดชบอร์ด → โหลดกระเป๋าที่ยังไม่มีข้อมูลแบบเว้นจังหวะ (5 ต่อชุด เว้น 2 วิ) เริ่มครั้งเดียวต่อชุดแหล่งข้อมูล */
+  const startedFor = useRef<string | null>(null);
+  useEffect(() => {
+    if (page !== 'dashboard' || !hasEndpoint || !active.length) return;
+    if (startedFor.current === epKey) return;
+    startedFor.current = epKey;
+    void loadStaggered(active);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, hasEndpoint, epKey, active.length]);
+
   const walletRows = useMemo(() => (pageWallet ? rows.filter((r) => r.walletId === pageWallet) : rows), [rows, pageWallet]);
   const anyLoading = active.some((w) => feeds[w.id]?.loading);
   const activeWalletObj = wallets.find((w) => w.id === pageWallet) ?? null;
@@ -146,7 +156,7 @@ export function App() {
                   ))}
                 </div>
               )}
-              <RecentTable rows={rows} wallets={wallets} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} onLoadAll={() => void loadMany(active, 'reset')} />
+              <RecentTable rows={rows} wallets={wallets} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} progress={progress} onLoadAll={() => void loadStaggered(active.filter((w) => !feeds[w.id]?.loaded))} onCancel={cancelStaggered} />
             </div>
           ) : (
             <>

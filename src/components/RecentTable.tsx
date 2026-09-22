@@ -2,6 +2,7 @@ import { useI18n } from '../i18n';
 import type { TxRow } from '../feed';
 import type { Wallet } from '../store';
 import type { ChainMap } from '../chains';
+import type { Progress } from '../useFeed';
 import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative, shortAddr } from '../format';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
@@ -14,7 +15,7 @@ const LIMIT = 10;
  * หน้า 1 ตารางที่ 2: ธุรกรรมล่าสุด (พรีวิว) จากทุกกระเป๋าที่โหลดแล้ว — Type · From · To · Submitted · Amount · Network fee
  * ขนาดคงที่ 10 แถว ไม่มีเลื่อนโหลดเพิ่ม (กัน rate limit) — ดูทั้งหมดของกระเป๋าได้ที่หน้า 2; คลิกแถว = เปิดแผงรายละเอียดขวา (แผงเดิม)
  */
-export function RecentTable({ rows, wallets, chains, selected, onSelect, loading, onLoadAll }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; onLoadAll: () => void }) {
+export function RecentTable({ rows, wallets, chains, selected, onSelect, loading, progress, onLoadAll, onCancel }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; progress: Progress; onLoadAll: () => void; onCancel: () => void }) {
   const { t } = useI18n();
   const byAddr = new Map(wallets.map((w) => [w.address.toLowerCase(), w]));
   const recent = rows.slice(0, LIMIT);
@@ -40,12 +41,32 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
         <h2 id="recent-h" className="panel-title">
           {t('recent.title')}
         </h2>
-        <span className="hint">{rows.length ? t('wallets.state.ok', { n: rows.length }) : ''}</span>
+        <span className="hint" aria-live="polite">
+          {progress.running ? (
+            <>
+              <span className="spinner" aria-hidden="true" /> {t('recent.progress', { done: progress.done, total: progress.total })}
+            </>
+          ) : progress.stopped === 'rate' ? (
+            <span className="error">{t('recent.rateLimited')}</span>
+          ) : progress.stopped === 'cancel' ? (
+            t('recent.cancelled')
+          ) : rows.length ? (
+            t('wallets.state.ok', { n: rows.length })
+          ) : (
+            ''
+          )}
+        </span>
         <span className="top-spacer" />
-        <button type="button" className="btn" disabled={loading || !wallets.length} onClick={onLoadAll}>
-          <Icon name="refresh" />
-          {loading ? t('wallets.loading') : t('tx.loadAll')}
-        </button>
+        {progress.running ? (
+          <button type="button" className="btn" onClick={onCancel}>
+            {t('recent.cancel')}
+          </button>
+        ) : (
+          <button type="button" className="btn" disabled={loading || !wallets.length} onClick={onLoadAll}>
+            <Icon name="refresh" />
+            {loading ? t('wallets.loading') : t('tx.loadAll')}
+          </button>
+        )}
       </div>
       {recent.length === 0 && !loading ? (
         <p className="hint">{t('recent.empty')}</p>

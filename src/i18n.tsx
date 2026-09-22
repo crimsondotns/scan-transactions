@@ -96,6 +96,10 @@ const th = {
 
   'recent.title': 'ธุรกรรมล่าสุด',
   'recent.empty': 'เลือกกระเป๋าหรือกดโหลดเพื่อดูธุรกรรมล่าสุด',
+  'recent.progress': 'โหลดแล้ว {done}/{total} กระเป๋า',
+  'recent.cancel': 'ยกเลิก',
+  'recent.rateLimited': 'หยุดโหลด — แหล่งข้อมูลจำกัดคำขอ ลองใหม่ภายหลัง',
+  'recent.cancelled': 'ยกเลิกแล้ว',
   'nav.back': 'กลับ',
   'nav.dashboard': 'แดชบอร์ด',
   'tx.col.from': 'จาก',
@@ -271,6 +275,10 @@ const en: Record<MessageKey, string> = {
 
   'recent.title': 'Recent transactions',
   'recent.empty': 'Pick a wallet or load to see recent transactions',
+  'recent.progress': '{done}/{total} wallets loaded',
+  'recent.cancel': 'Cancel',
+  'recent.rateLimited': 'Stopped — the source is rate limiting, try again later',
+  'recent.cancelled': 'Cancelled',
   'nav.back': 'Back',
   'nav.dashboard': 'Dashboard',
   'tx.col.from': 'From',

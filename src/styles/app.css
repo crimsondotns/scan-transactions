@@ -1157,6 +1157,10 @@ th[aria-sort='descending'] .th-btn {
   border-radius: var(--radius-sm);
   transition: opacity var(--motion-fast) var(--easing-standard);
 }
+.copyable-price {
+  font-size: var(--size-body-lg);
+  font-variant-numeric: tabular-nums;
+}
 .copyable-number:hover {
   opacity: 0.7;
 }

@@ -71,7 +71,8 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
   const rateRows = real
     .filter((m, i, arr) => arr.findIndex((y) => y.symbol === m.symbol) === i)
     .map((m) => ({ symbol: m.symbol, price: priceOf(row.chain, m.tokenId, m.symbol) ?? m.price }))
-    .filter((x) => x.price !== null && x.price > 0);
+    .filter((x): x is { symbol: string; price: number } => x.price !== null && x.price > 0)
+    .map((x) => ({ symbol: x.symbol, price: Number(x.price.toPrecision(12)) }));
   const single = real[0] ?? row.moves[0] ?? null;
   // ค่าใช้จ่ายของสวอป: มูลค่าที่ส่งออก − มูลค่าที่ได้รับ (ค่าธรรมเนียมสวอป/slippage/ราคาขยับ) แยกจากค่าเครือข่าย
   // มูลค่า USD ของแต่ละขา: ที่แหล่งให้มาก่อน ไม่มีค่อยใช้ราคาล่าสุดจากแคช (ไม่ยิงขอราคาแยก)
@@ -191,7 +192,9 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
           )}
           {rateRows.map((x) => (
             <Row key={x.symbol} label={t('detail.rate', { symbol: x.symbol })}>
-              {formatPrice(x.price)}
+              <button type="button" className="copyable-number copyable-price" data-value={String(x.price)} title={String(x.price)} aria-label={t('tx.copy', { what: String(x.price) })} onClick={(e) => void copyValue(e.currentTarget.dataset.value ?? '')}>
+                {formatPrice(x.price)}
+              </button>
             </Row>
           ))}
           {!isSwap && row.from && <AddrRow label={t('detail.from')} addr={row.from} />}

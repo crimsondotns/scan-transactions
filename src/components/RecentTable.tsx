@@ -164,7 +164,8 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
                         ))}
                         {outs.map((m, i) => (
                           <span key={`o${i}`} className="amt-out">
-                            −{formatAmount(m.amount)} {m.symbol}
+                            {m.approve ? '' : '−'}
+                            {formatAmount(m.amount)} {m.symbol}
                           </span>
                         ))}
                         {!real.length && <span className="amt-out">—</span>}

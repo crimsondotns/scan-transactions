@@ -30,6 +30,7 @@ export function useSlipLabels() {
     failed: t('slip.failedTitle'),
     received: t('slip.received'),
     sent: t('slip.sent'),
+    approved: t('slip.approved'),
     swapCost: t('detail.swapCost'),
     protocol: t('detail.protocol'),
   });

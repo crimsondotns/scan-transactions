@@ -1294,6 +1294,9 @@ th[aria-sort='descending'] .th-btn {
 .ev-amount[data-dir='out'] {
   color: var(--color-muted);
 }
+.ev-amount[data-dir='approve'] {
+  color: var(--color-ink);
+}
 .ev-amount[data-dir='in'] {
   color: var(--color-positive);
 }

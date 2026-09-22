@@ -27,7 +27,7 @@ export function rowValue(r: TxRow): { value: number; sign: '+' | '−' | '' } | 
   let hasIn = false;
   let hasOut = false;
   for (const m of r.moves) {
-    if (m.usd === null || m.amount === 0) continue;
+    if (m.usd === null || m.amount === 0 || m.approve) continue;
     if (m.dir === 'in') {
       inUsd += m.usd;
       hasIn = true;
@@ -233,7 +233,8 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
                         ))}
                         {outs.map((m, i) => (
                           <span key={`o${i}`} className="amt-out">
-                            −{formatAmount(m.amount)} {m.symbol}
+                            {m.approve ? '' : '−'}
+                            {formatAmount(m.amount)} {m.symbol}
                           </span>
                         ))}
                         {real.length === 0 && <span className="amt-out">—</span>}

@@ -119,16 +119,16 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
         <button
           type="button"
           className="ev-amount copyable-number"
-          data-dir={m.dir}
+          data-dir={m.approve ? 'approve' : m.dir}
           data-value={String(m.amount)}
-          title={`${m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`}
+          title={`${m.approve ? '' : m.dir === 'in' ? '+' : '−'}${formatAmountFull(m.amount)} ${m.symbol}`}
           aria-label={t('tx.copy', { what: `${formatAmountFull(m.amount)} ${m.symbol}` })}
           onClick={(e) => void copyValue(e.currentTarget.dataset.value ?? '')}
         >
-          {m.dir === 'in' ? '+' : '−'}
+          {m.approve ? '' : m.dir === 'in' ? '+' : '−'}
           {formatAmountShort(m.amount)}
         </button>
-        {moveUsd(m) !== null && <span className="ev-amount-usd">{formatUsdExact(moveUsd(m) as number)}</span>}
+        {m.approve ? <span className="ev-amount-usd">{t('detail.allowance')}</span> : moveUsd(m) !== null && <span className="ev-amount-usd">{formatUsdExact(moveUsd(m) as number)}</span>}
       </span>
     </div>
   );

@@ -22,6 +22,8 @@ export interface Move {
   flagged: boolean;
   /** โลโก้โทเคนจากแหล่งข้อมูล (ถ้ามี) — ไม่มีก็ใช้ตัวอักษรแทน */
   logo: string | null;
+  /** อนุมัติวงเงิน (approve) — ไม่มีเหรียญเคลื่อนจริง จำนวนคือ allowance ห้ามนับเป็นส่ง/รับ */
+  approve?: true;
 }
 
 export interface TxRow {
@@ -199,7 +201,7 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
     const type: TxType = approve ? 'approve' : moves.some((m) => m.dir === 'in') && moves.some((m) => m.dir === 'out') ? 'swap' : moves.some((m) => m.dir === 'out') ? 'send' : moves.some((m) => m.dir === 'in') ? 'receive' : 'contract';
     if (approve) {
       const tok = isObj(tokens[str(approve.token_id) ?? '']) ? (tokens[str(approve.token_id) ?? ''] as Dict) : {};
-      moves.push({ dir: 'out', amount: num(approve.value) ?? 0, symbol: str(tok.optimized_symbol) ?? str(tok.symbol) ?? '', name: str(tok.name), usd: null, price: num(tok.price), tokenId: str(approve.token_id)?.startsWith('0x') ? str(approve.token_id) : null, flagged: false, logo: httpUrl(tok.logo_url) });
+      moves.push({ dir: 'out', amount: num(approve.value) ?? 0, symbol: str(tok.optimized_symbol) ?? str(tok.symbol) ?? '', name: str(tok.name), usd: null, price: num(tok.price), tokenId: str(approve.token_id)?.startsWith('0x') ? str(approve.token_id) : null, flagged: false, logo: httpUrl(tok.logo_url), approve: true });
     }
 
     const projectId = str(item.project_id);
@@ -210,7 +212,8 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
     const recvFrom = Array.isArray(item.receives) ? item.receives.map((m) => (isObj(m) ? str(m.from_addr) : null)).find((v): v is string => !!v) : undefined;
     const isTokenTransfer = !approve && !projectId && (str(tx.name) === 'transfer' || str(tx.name) === 'transferFrom' || (num(tx.value) === 0 && moves.length === 1));
     const fromAddr = isTokenTransfer && recvFrom ? recvFrom : str(tx.from_addr);
-    const toAddr = isTokenTransfer ? (sendTo ?? other ?? str(tx.to_addr)) : str(tx.to_addr);
+    // approve: ผู้รับคือ spender (โปรโตคอลที่ได้สิทธิ์) ส่วน tx.to_addr คือสัญญาโทเคน
+    const toAddr = approve ? (str(approve.spender) ?? other ?? str(tx.to_addr)) : isTokenTransfer ? (sendTo ?? other ?? str(tx.to_addr)) : str(tx.to_addr);
 
     // เหรียญพื้นเมือง: key ใน token_dict = ชื่อเชน (hood → ETH, hyper → HYPE)
     const native = isObj(tokens[chain]) ? (tokens[chain] as Dict) : {};

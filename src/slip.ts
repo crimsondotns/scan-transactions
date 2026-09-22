@@ -16,6 +16,8 @@ export interface SlipMove {
   dir: 'in' | 'out';
   amount: number;
   symbol: string;
+  /** อนุมัติวงเงิน — ไม่ใช่การส่ง */
+  approve?: true;
   /** แสดงผลอย่างเดียว ไม่อยู่ในแฮช */
   usd?: number | null;
   logo?: string | null;
@@ -83,7 +85,7 @@ export function slipData(row: TxRow, wallet: { address: string; label: string } 
     walletLabel: wallet?.label ?? '',
     from: row.from,
     to: row.to,
-    moves: row.moves.filter((m) => m.amount !== 0).map((m) => ({ dir: m.dir, amount: m.amount, symbol: m.symbol, usd: usdOfMove(m), logo: m.logo })),
+    moves: row.moves.filter((m) => m.amount !== 0).map((m) => ({ dir: m.dir, amount: m.amount, symbol: m.symbol, usd: m.approve ? null : usdOfMove(m), logo: m.logo, ...(m.approve ? { approve: true as const } : {}) })),
     fee: row.gasNative,
     feeSymbol: native,
     time: row.time,
@@ -100,7 +102,7 @@ export function slipData(row: TxRow, wallet: { address: string; label: string } 
 
 /** สตริงที่แฮช: JSON ของฟิลด์ตามลำดับที่กำหนด (ไม่ขึ้นกับลำดับ key ของอ็อบเจ็กต์) */
 function canonical(d: SlipData): string {
-  return JSON.stringify([d.v, d.hash, d.chain, d.type, d.status, d.wallet, d.from, d.to, d.moves.map((m) => [m.dir, m.amount, m.symbol]), d.fee, d.feeSymbol, d.time, d.issued]);
+  return JSON.stringify([d.v, d.hash, d.chain, d.type, d.status, d.wallet, d.from, d.to, d.moves.map((m) => [m.dir, m.amount, m.symbol, m.approve ? 1 : 0]), d.fee, d.feeSymbol, d.time, d.issued]);
 }
 
 export async function slipCode(d: SlipData): Promise<string> {
@@ -224,6 +226,7 @@ interface Labels {
   failed: string;
   received: string;
   sent: string;
+  approved: string;
   swapCost: string;
   protocol: string;
   wallet: string;
@@ -401,9 +404,9 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
     // ตัวเลขใหญ่
     if (lead && show.headline) {
       const isIn = lead.dir === 'in';
-      text(isIn ? L.received : L.sent, W / 2, y + 4, 12, 400, MUTED, 'center');
+      text(lead.approve ? L.approved : isIn ? L.received : L.sent, W / 2, y + 4, 12, 400, MUTED, 'center');
       y += 14;
-      const big = `${isIn ? '+' : '−'}${formatAmountFull(lead.amount)} ${lead.symbol}`;
+      const big = `${lead.approve ? '' : isIn ? '+' : '−'}${formatAmountFull(lead.amount)} ${lead.symbol}`;
       ctx.font = `700 26px ${FONT}`;
       const size = ctx.measureText(big).width > W - PAD * 2 ? 20 : 26;
       text(big, W / 2, y + 26, size, 700, isIn ? POSITIVE : INK, 'center');
@@ -430,7 +433,7 @@ export async function renderSlip(rec: SlipRecord, L: Labels, action: SlipAction 
       text(m.symbol, PAD + 46, y + 16, 14, 600);
       text(`${L.on} ${d.chainName}`, PAD + 46, y + 31, 11, 400, MUTED);
       // แถวสินทรัพย์: 4 ทศนิยม (เหมือนแผงขวา) — ทศนิยมเต็มอยู่ที่ตัวเลขใหญ่ Received/Sent ด้านบนเท่านั้น
-      text(`${m.dir === 'in' ? '+' : '−'}${formatAmountShort(m.amount)}`, W - PAD, y + 16, 15, 600, INK, 'right');
+      text(`${m.approve ? '' : m.dir === 'in' ? '+' : '−'}${formatAmountShort(m.amount)}`, W - PAD, y + 16, 15, 600, INK, 'right');
       if (show.usd && m.usd !== null && m.usd !== undefined) text(formatUsdExact(m.usd), W - PAD, y + 31, 11, 400, MUTED, 'right');
       y += 46;
     });

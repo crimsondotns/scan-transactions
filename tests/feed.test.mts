@@ -194,3 +194,14 @@ test('token transfer: To is the recipient from sends[].to_addr, not the token co
   assert.equal(page.rows[0]!.from, ME);
   assert.equal(page.rows[1]!.from, '0x498e711800dbdff630bc1e5c4598749b5826e2b2');
 });
+
+test('approve: allowance move flagged (not a send), To is the spender, contract is the token', async () => {
+  mock({ history_list: [{ cate_id: 'approve', id: '0x655e', idx: 0, chain: 'hood', time_at: 1790045593, other_addr: '0x0000000000001ff3684f28c67538d4d072c22734', project_id: 'hood_0x', receives: [], sends: [], token_approve: { spender: '0x0000000000001ff3684f28c67538d4d072c22734', token_id: '0xf2915d1e3c1b0c769d0c756ec43f1c1f6c99cd03', value: 293.69 }, tx: { name: 'approve', status: 1, from_addr: ME, to_addr: '0xf2915d1e3c1b0c769d0c756ec43f1c1f6c99cd03', value: 0 } }], token_dict: {}, project_dict: {} });
+  const page = await fetchPage('https://x.invalid/{address}', 'w', ME, null, 20);
+  const r = page.rows[0]!;
+  assert.equal(r.type, 'approve');
+  assert.equal(r.moves[0]!.approve, true);
+  assert.equal(r.to, '0x0000000000001ff3684f28c67538d4d072c22734');
+  assert.equal(r.contract, '0xf2915d1e3c1b0c769d0c756ec43f1c1f6c99cd03');
+  assert.equal(rowValue(r), null);
+});

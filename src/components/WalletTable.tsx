@@ -5,11 +5,11 @@ import type { WalletFeed } from '../useFeed';
 import { shortAddr } from '../format';
 import { Icon } from './Icon';
 import { AddWalletDialog } from './AddWalletDialog';
-import { ImportDialog } from './ImportDialog';
 import { Identicon } from './Identicon';
 import { ConfirmDialog, type ConfirmState } from './ConfirmDialog';
 import { useInfinite } from '../useInfinite';
 import { MoreSentinel } from './MoreSentinel';
+import { SkeletonBar } from './Skeleton';
 
 type SortKey = 'label' | 'address' | 'tx';
 const PAGE = 10;
@@ -23,7 +23,6 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
   const { t } = useI18n();
   const { wallets, removeWallet, toggleWallet, clearWallets } = useStore();
   const [adding, setAdding] = useState(false);
-  const [importing, setImporting] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<ConfirmState | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'label', dir: 'asc' });
 
@@ -91,10 +90,6 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
         <span className="hint">{t('wallets.count', { n: wallets.length })}</span>
         <span className="top-spacer" />
         <div className="row-actions">
-          <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
-            <Icon name="upload" />
-            {t('wallets.import')}
-          </button>
           <button type="button" className="btn" onClick={() => setAdding(true)}>
             <Icon name="plus" />
             {t('wallets.add')}
@@ -157,10 +152,14 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
                         </span>
                       </td>
                       <td className="num">
-                        <span className="wallet-state" data-state={state} aria-live="polite">
-                          {state === 'loading' ? <span className="spinner" aria-hidden="true" /> : <span className="wallet-dot" aria-hidden="true" />}
-                          {stateText}
-                        </span>
+                        {state === 'loading' ? (
+                          <SkeletonBar width={72} />
+                        ) : (
+                          <span className="wallet-state" data-state={state} aria-live="polite">
+                            <span className="wallet-dot" aria-hidden="true" />
+                            {stateText}
+                          </span>
+                        )}
                       </td>
                       <td className="num">
                         <span className="wallet-actions" onClick={(e) => e.stopPropagation()}>
@@ -183,7 +182,6 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
       </div>
 
       <AddWalletDialog open={adding} onClose={() => setAdding(false)} />
-      <ImportDialog open={importing} onClose={() => setImporting(false)} />
       <ConfirmDialog state={confirmDialog} onConfirm={confirmAction} onCancel={() => setConfirmDialog(null)} />
     </section>
   );

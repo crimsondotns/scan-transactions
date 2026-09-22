@@ -616,7 +616,7 @@ input[type='file'].input::file-selector-button {
   font-size: var(--size-caption);
   font-weight: var(--weight-medium);
   color: var(--color-muted);
-  padding: var(--space-3) var(--space-3);
+  padding: var(--space-4) var(--space-3);
   white-space: nowrap;
 }
 .tx td {
@@ -732,6 +732,76 @@ input[type='file'].input::file-selector-button {
   font-weight: var(--weight-medium);
 }
 
+.sk-row td {
+  height: 64px;
+}
+.tx tbody tr.sk-row {
+  cursor: default;
+}
+.tx tbody tr.sk-row:hover td {
+  background: transparent;
+}
+.sk-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.num .sk-cell {
+  justify-content: flex-end;
+  width: 100%;
+}
+/* shimmer: พื้นเทาอ่อน + แถบสว่างวิ่งผ่าน (pseudo-element เลื่อน, ไม่ใช้ gradient) และเต้นเบาๆ วน 1.5 วิ */
+.sk {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+  background: var(--color-line-subtle);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+.sk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--color-hover);
+  opacity: 0.9;
+  transform: translateX(-150%);
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+.sk-bar {
+  height: 12px;
+  border-radius: var(--radius-sm);
+  max-width: 100%;
+}
+.sk-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-pill);
+  flex: none;
+}
+@keyframes shimmer {
+  from {
+    transform: translateX(-150%);
+  }
+  to {
+    transform: translateX(400%);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sk,
+  .sk::after {
+    animation: none;
+  }
+}
 .more {
   display: flex;
   align-items: center;

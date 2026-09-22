@@ -8,6 +8,7 @@ import { Identicon } from './components/Identicon';
 import { shortAddr } from './format';
 import { WalletTable } from './components/WalletTable';
 import { RecentTable } from './components/RecentTable';
+import { ImportDialog } from './components/ImportDialog';
 import { TxTable } from './components/TxTable';
 import { DetailPanel } from './components/DetailPanel';
 import type { TxRow } from './feed';
@@ -21,6 +22,7 @@ export function App() {
   const { wallets, settings } = useStore();
   const { feeds, loadMany, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [importing, setImporting] = useState(false);
   /* หน้า: #/ = แดชบอร์ด, #/w/<id> = ธุรกรรมของกระเป๋า — เก็บใน hash ให้ปุ่มย้อนกลับของเบราว์เซอร์ทำงาน */
   const [hash, setHash] = useState(() => window.location.hash);
   useEffect(() => {
@@ -109,6 +111,10 @@ export function App() {
           {t('app.name')} <span className="brand-sub">{t('app.sub')}</span>
         </span>
         <span className="top-spacer" />
+        <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
+          <Icon name="upload" />
+          {t('wallets.import')}
+        </button>
         <span className="top-status" data-ok={hasEndpoint}>
           {hasEndpoint ? t('status.endpointSet', { n: enabledEps.length }) : t('status.noEndpoint')}
         </span>
@@ -140,7 +146,7 @@ export function App() {
                   ))}
                 </div>
               )}
-              <RecentTable rows={rows} wallets={wallets} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} hasMore={active.some((w) => hasOlder(feeds[w.id]))} onMore={() => void loadMany(active.filter((w) => hasOlder(feeds[w.id])), 'older')} onLoadAll={() => void loadMany(active, 'reset')} />
+              <RecentTable rows={rows} wallets={wallets} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} onLoadAll={() => void loadMany(active, 'reset')} />
             </div>
           ) : (
             <>
@@ -175,6 +181,7 @@ export function App() {
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ImportDialog open={importing} onClose={() => setImporting(false)} />
       {selected !== null && <button type="button" className="drawer-scrim" aria-label={t('dialog.close')} onClick={closeDetail} />}
       <DetailPanel row={selected} wallets={wallets} chains={chains} settings={settings} onClose={closeDetail} />
     </>

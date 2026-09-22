@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useInfinite } from '../useInfinite';
 import { MoreSentinel } from './MoreSentinel';
+import { SkeletonRows } from './Skeleton';
 import { useI18n } from '../i18n';
 import { useStore, type Wallet } from '../store';
 import type { TxRow, TxType } from '../feed';
@@ -126,9 +127,9 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
         </span>
       </div>
 
-      {filtered.length === 0 ? (
+      {filtered.length === 0 && !loading ? (
         <div className="empty">
-          <p>{loading ? t('wallets.loading') : rows.length ? t('tx.emptyFiltered') : t('tx.emptyLoaded')}</p>
+          <p>{rows.length ? t('tx.emptyFiltered') : t('tx.emptyLoaded')}</p>
         </div>
       ) : (
         <div className="table-wrap">
@@ -142,6 +143,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
               </tr>
             </thead>
             <tbody>
+              {filtered.length === 0 && loading && <SkeletonRows rows={8} cols={[140, 110, 120, 80]} />}
               {shown.map((r) => {
                 const real = r.moves.filter((m) => m.amount !== 0);
                 const ins = real.filter((m) => m.dir === 'in');

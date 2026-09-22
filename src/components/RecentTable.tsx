@@ -6,20 +6,18 @@ import { formatAmount, formatFeeNative, formatFeeUsd, formatRelative, shortAddr 
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { Identicon } from './Identicon';
-import { useInfinite } from '../useInfinite';
-import { MoreSentinel } from './MoreSentinel';
+import { SkeletonRows } from './Skeleton';
 
-const PAGE = 20;
+const LIMIT = 10;
 
 /**
  * หน้า 1 ตารางที่ 2: ธุรกรรมล่าสุด (พรีวิว) จากทุกกระเป๋าที่โหลดแล้ว — Type · From · To · Submitted · Amount · Network fee
- * แสดง 20 แถวล่าสุด เลื่อนลงเพิ่มทีละ 20 หมดแล้วขอชุดเก่ากว่าจากทุกกระเป๋า (cursor ต่อกระเป๋า = เวลาแถวสุดท้าย) คลิกแถว = เปิดแผงรายละเอียดขวา (แผงเดิม)
+ * ขนาดคงที่ 10 แถว ไม่มีเลื่อนโหลดเพิ่ม (กัน rate limit) — ดูทั้งหมดของกระเป๋าได้ที่หน้า 2; คลิกแถว = เปิดแผงรายละเอียดขวา (แผงเดิม)
  */
-export function RecentTable({ rows, wallets, chains, selected, onSelect, loading, hasMore, onMore, onLoadAll }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; hasMore: boolean; onMore: () => void; onLoadAll: () => void }) {
+export function RecentTable({ rows, wallets, chains, selected, onSelect, loading, onLoadAll }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; onLoadAll: () => void }) {
   const { t } = useI18n();
   const byAddr = new Map(wallets.map((w) => [w.address.toLowerCase(), w]));
-  const inf = useInfinite({ total: rows.length, page: PAGE, hasMore, loading, fetchMore: onMore });
-  const recent = rows.slice(0, inf.visible);
+  const recent = rows.slice(0, LIMIT);
 
   const Party = ({ addr }: { addr: string | null }) => {
     if (!addr) return <span className="hint">—</span>;
@@ -49,8 +47,8 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
           {loading ? t('wallets.loading') : t('tx.loadAll')}
         </button>
       </div>
-      {recent.length === 0 ? (
-        <p className="hint">{loading ? t('wallets.loading') : t('recent.empty')}</p>
+      {recent.length === 0 && !loading ? (
+        <p className="hint">{t('recent.empty')}</p>
       ) : (
         <div className="table-wrap wtab-wrap">
           <table className="tx recent">
@@ -71,6 +69,7 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
               </tr>
             </thead>
             <tbody>
+              {recent.length === 0 && loading && <SkeletonRows rows={5} cols={[120, 90, 90, 100, 110, 70]} />}
               {recent.map((r) => {
                 const real = r.moves.filter((m) => m.amount !== 0);
                 const ins = real.filter((m) => m.dir === 'in');
@@ -162,7 +161,6 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
               })}
             </tbody>
           </table>
-          <MoreSentinel sentinel={inf.sentinel} loading={loading && recent.length > 0} exhausted={inf.exhausted} page={PAGE} count={rows.length} />
         </div>
       )}
     </section>

@@ -66,5 +66,11 @@ Do not declare work done while any of these is red.
 
 ## Infinite scroll (2026-09-22)
 
-- `src/useInfinite.ts` + `MoreSentinel`: โชว์ทีละชุดจากรายการในเครื่อง (ตารางกระเป๋า 10 · ธุรกรรมล่าสุด 20 · ธุรกรรมของกระเป๋า 25) sentinel ท้ายตารางเข้าใกล้จอ (~80%) → เพิ่มชุดถัดไป; โชว์หมดแล้วและ `hasOlder` → ขอชุดเก่ากว่าจากแหล่ง (cursor ต่อกระเป๋าใน `feeds[id].next`) ระหว่างโหลดไม่ยิงซ้ำ ท้ายตารางมี "Loading more…" ความสูงคงที่ (ไม่กระโดด) และ "All loaded" เฉพาะเมื่อเคยโหลดเพิ่ม
+- `src/useInfinite.ts` + `MoreSentinel`: โชว์ทีละชุดจากรายการในเครื่อง (ตารางกระเป๋า 10 · ธุรกรรมของกระเป๋า 25) — **ตารางธุรกรรมล่าสุดในหน้า 1 คงที่ 10 แถว ไม่มีเลื่อนโหลด (กัน rate limit)** sentinel ท้ายตารางเข้าใกล้จอ (~80%) → เพิ่มชุดถัดไป; โชว์หมดแล้วและ `hasOlder` → ขอชุดเก่ากว่าจากแหล่ง (cursor ต่อกระเป๋าใน `feeds[id].next`) ระหว่างโหลดไม่ยิงซ้ำ ท้ายตารางมี "Loading more…" ความสูงคงที่ (ไม่กระโดด) และ "All loaded" เฉพาะเมื่อเคยโหลดเพิ่ม
 - ปุ่ม Load older ถูกแทนด้วยการเลื่อน; `resetKey` (ตัวกรอง/เรียง/กระเป๋า) รีเซ็ตจำนวนที่โชว์
+
+## Skeleton / header (2026-09-22)
+
+- `components/Skeleton.tsx`: `SkeletonRows` (แถว shimmer สูง 64px เท่าแถวจริง) ใช้ในตารางธุรกรรมทั้งสองตอนโหลดครั้งแรก, `SkeletonBar` ในช่อง Transactions ของตารางกระเป๋าตอนกระเป๋านั้นโหลด; shimmer ทำด้วย pseudo-element เลื่อน + pulse 1.5s (ห้าม gradient ตาม check)
+- ปุ่ม Import file อยู่ที่หัวเว็บ (XCap · Import · Settings); ตารางกระเป๋ามี Add/Clear
+- หัวคอลัมน์ตาราง padding 16px แนวตั้ง, เซลล์ 12px

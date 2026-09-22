@@ -416,18 +416,201 @@ input[type='file'].input::file-selector-button {
 }
 .wallet {
   position: relative;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  padding-left: var(--space-3);
-  align-items: center;
-  gap: var(--space-1);
-  padding-right: var(--space-2);
-  margin-inline: calc(-1 * var(--space-2));
   border-radius: var(--radius-md);
-  border-top: 0;
   transition: background-color var(--motion-fast) var(--easing-standard);
 }
-/* ที่จับลาก + ช่องเลือก — จางไว้ ไม่เด่น */
+/* แถวหลักของกระเป๋า (compact/list/accordion) */
+.wallet-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.wallet-row:hover {
+  background: var(--color-hover);
+}
+.wallet[data-selected='true'] .wallet-row {
+  background: var(--color-soft);
+}
+.wallet-chevron .chev {
+  transition: transform var(--motion-fast) var(--easing-standard);
+}
+.wallet[data-open='true'] .wallet-chevron .chev {
+  transform: rotate(180deg);
+}
+/* ส่วนขยาย — เลื่อนเปิดนุ่มด้วย grid-template-rows */
+.wallet-expand {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--motion-slow) var(--easing-standard);
+}
+.wallet[data-open='true'] .wallet-expand {
+  grid-template-rows: 1fr;
+}
+.wallet-expand-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+.wallet-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-2) var(--space-3) var(--space-3);
+}
+.wallet-detail-addr {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--color-muted);
+  font-size: var(--size-caption);
+}
+.wallet-detail-addr .wallet-state {
+  margin-left: auto;
+}
+.wallet-tx {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.wallet-tx-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: var(--space-1) 0;
+  font-size: var(--size-caption);
+  border-top: 1px solid var(--color-line-subtle);
+}
+.wallet-tx-type {
+  font-weight: var(--weight-medium);
+}
+.wallet-tx-time {
+  color: var(--color-tertiary);
+}
+.wallet-tx-amt {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--color-muted);
+}
+.wallet-tx-amt[data-dir='in'] {
+  color: var(--color-positive);
+}
+.wallet-detail-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+/* compact: หัว + ไอคอน + ชื่อสั้นๆ */
+.wallets[data-variant='compact'] .wallet-row {
+  min-height: 40px;
+}
+.wallets[data-variant='compact'] .wallet-label {
+  flex: 1;
+  min-width: 0;
+}
+/* list: แถวเต็ม ปุ่มสลับกลางแถว (สถานะอยู่ในส่วนขยาย) ปุ่มไอคอนชิดกัน */
+.wallets[data-variant='list'] .wallet-switch {
+  flex: 1;
+  padding-inline: 0;
+}
+.wallets[data-variant='list'] .wallet-row {
+  gap: var(--space-1);
+}
+.wallets[data-variant='list'] .wallet-switch {
+  gap: var(--space-2);
+  margin-right: var(--space-1);
+}
+/* accordion: แผงเต็มแต่ละกระเป๋า เปิดได้ทีละอัน */
+.wallets[data-variant='accordion'] {
+  gap: var(--space-2);
+}
+.wallets[data-variant='accordion'] .wallet {
+  border: 1px solid var(--color-line-subtle);
+  border-radius: var(--radius-lg);
+}
+.wallets[data-variant='accordion'] .wallet-row {
+  min-height: 52px;
+  border-radius: var(--radius-lg);
+}
+.wallets[data-variant='accordion'] .wallet[data-open='true'] .wallet-row {
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+.wallets[data-variant='accordion'] .wallet-meta {
+  flex: 1;
+}
+/* card: กล่องต่อกระเป๋า ไอคอนบน */
+.wallets[data-variant='card'],
+.wallets[data-variant='grid'] {
+  display: grid;
+  gap: var(--space-3);
+}
+.wallets[data-variant='card'] {
+  grid-template-columns: 1fr;
+}
+.wallets[data-variant='grid'] {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.wallet-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-4);
+  border: 1px solid var(--color-line-subtle);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--motion-fast) var(--easing-standard);
+}
+.wallet-card:hover {
+  background: var(--color-hover);
+}
+.wallet-card:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+.wallet[data-selected='true'] .wallet-card {
+  background: var(--color-soft);
+}
+.wallet-card .wallet-meta {
+  width: 100%;
+}
+.wallet-card-top {
+  position: absolute;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.wallet-card .wallet-grip {
+  position: static;
+  width: auto;
+}
+.wallets[data-variant='grid'] .wallet-card {
+  padding: var(--space-3);
+  align-items: center;
+  text-align: center;
+}
+.wallets[data-variant='grid'] .wallet-card .wallet-meta {
+  align-items: center;
+}
+.wallets[data-variant='grid'] .wallet-addr {
+  display: none;
+}
+
 .wallet-grip {
   position: absolute;
   left: 0;
@@ -447,6 +630,7 @@ input[type='file'].input::file-selector-button {
   height: 14px;
 }
 .wallet:hover .wallet-grip,
+.wallet-card:hover .wallet-grip,
 .wallet[data-selected='true'] .wallet-grip {
   opacity: 1;
 }
@@ -512,9 +696,7 @@ input[type='file'].input::file-selector-button {
   color: var(--color-muted);
 }
 /* ไฮไลต์ hover/เลือก ครอบทั้งแถวรวมปุ่มตา/ถังขยะ */
-.wallet:hover {
-  background: var(--color-hover);
-}
+
 .wallet[data-active='true'] {
   background: var(--color-soft);
 }
@@ -554,8 +736,7 @@ input[type='file'].input::file-selector-button {
 }
 /* แถวกระเป๋า = ปุ่มสลับกระเป๋าที่ดู */
 .wallet-switch {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
   width: 100%;
@@ -598,6 +779,7 @@ input[type='file'].input::file-selector-button {
 }
 .wallet-meta {
   min-width: 0;
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;

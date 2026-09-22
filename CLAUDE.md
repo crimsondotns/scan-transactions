@@ -54,3 +54,12 @@ Do not declare work done while any of these is red.
 - ไม่ยิงแหล่งข้อมูลตอนเปิดหน้าหรือตอนเพิ่ม/นำเข้ากระเป๋า — ยิงเฉพาะเมื่อผู้ใช้คลิกกระเป๋า (แผงซ้ายหรือ dropdown ในตาราง) หรือกด "Load all wallets" เอง
 - `useFeed.feeds[walletId]` คือแคชในหน่วยความจำ: `ensure(w)` โหลดเฉพาะเมื่อยัง `loaded`/`loading` ไม่เป็นจริง; แหล่งข้อมูลเปลี่ยน → `reset()` ล้างแคช ไม่โหลดใหม่เอง
 - สถานะโหลดต่อกระเป๋า: วงหมุน `.spinner` ในแถวกระเป๋า ตารางขึ้น "Loading…" ระหว่างรอ
+
+## Wallet panel variants (2026-09-22)
+
+- `settings.walletView`: `auto | compact | list | card | grid | accordion` (Dropdown ในแถบ Select all/Deselect all)
+- auto ตามจอ: มือถือ <640 = compact · แท็บเล็ต 640–1024 = card · เดสก์ท็อป >1024 = list (`src/useBreakpoint.ts`)
+- ทุกแบบใช้ `<li class="wallet" data-variant data-open data-selected data-hidden>` เดียวกัน: ช่องเลือก, ที่จับลาก (reorder), ขยาย/ย่อ
+- compact/list/accordion ขยายในที่ (`.wallet-expand` grid-template-rows 0fr→1fr); accordion เปิดได้ทีละอัน
+- card/grid กด = เปิด `Dialog` (มือถือเป็น bottom sheet เอง) — grid เป็น 2 คอลัมน์
+- ขยาย = `onExpand(w)` → `ensure(w)` (lazy) แล้วแสดง `Detail`: ที่อยู่ + คัดลอก, สถานะ, 5 ธุรกรรมล่าสุด, ปุ่ม "Show in table" (สลับ active), ตา/ถังขยะ

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useI18n } from '../i18n';
 import { SLIP_FIELDS, detectEndpoint, useStore, type Family } from '../store';
 import { Dropdown } from './Dropdown';
@@ -7,6 +7,56 @@ import { Icon } from './Icon';
 import { useToast } from './Toast';
 
 const FAMILIES: Family[] = ['evm', 'sol'];
+
+/* Token metadata URL ต่อแหล่ง — แก้ได้หลังเพิ่มแหล่งแล้ว (ปุ่ม Add ติดเมื่อค่าเปลี่ยน; ล้างค่าแล้วกด = เอาออก) */
+function MetaField({ id, value, onSave }: { id: string; value: string; onSave: (v: string) => void }) {
+  const { t } = useI18n();
+  const [text, setText] = useState(value);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => setText(value), [value]);
+  return (
+    <form
+      className="source-meta"
+      onSubmit={(e) => {
+        e.preventDefault();
+        const v = text.trim();
+        if (v && !/^https:\/\//i.test(v)) return setErr(t('settings.badUrl'));
+        setErr(null);
+        onSave(v);
+      }}
+      noValidate
+    >
+      <label className="label" htmlFor={`meta-${id}`}>
+        {t('settings.metaUrl')}
+      </label>
+      <div className="inline">
+        <input
+          id={`meta-${id}`}
+          name="metaUrl"
+          type="url"
+          inputMode="url"
+          className="input input-sm mono"
+          value={text}
+          onChange={(e) => {
+            setText(e.target.value);
+            setErr(null);
+          }}
+          autoComplete="off"
+          spellCheck={false}
+          aria-invalid={err ? 'true' : undefined}
+        />
+        <button type="submit" className="btn btn-primary btn-sm" disabled={text.trim() === value}>
+          {t('settings.addBtn')}
+        </button>
+      </div>
+      {err && (
+        <span className="error" aria-live="polite">
+          {err}
+        </span>
+      )}
+    </form>
+  );
+}
 
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
@@ -92,6 +142,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                     {ep.metaUrl && <Icon name="layers" width={12} height={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />}
                     {ep.enabled ? t('settings.priority', { n: settings.endpoints.filter((x) => x.enabled).indexOf(ep) + 1 }) : t('settings.disabled')} · {ep.url}
                   </span>
+                  <MetaField id={ep.id} value={ep.metaUrl ?? ''} onSave={(v) => updateEndpoint(ep.id, { metaUrl: v || undefined })} />
                 </div>
                 <button type="button" className="switch" role="switch" aria-checked={ep.enabled} onClick={() => updateEndpoint(ep.id, { enabled: !ep.enabled })} aria-label={t('settings.enable', { name: ep.name })} title={t('settings.enable', { name: ep.name })} />
                 <button type="button" className="btn btn-icon" onClick={() => removeEndpoint(ep.id)} aria-label={t('settings.remove', { name: ep.name })} title={t('settings.remove', { name: ep.name })}>

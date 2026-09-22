@@ -183,3 +183,14 @@ test('protocolKind: bridge beats swap in method name; plain swap with a project 
   const page = await fetchPage('https://x.invalid/{address}', 'w', ME, null, 20);
   assert.deepEqual(page.rows.map((r) => protocolKind(r)), ['bridge', 'dex', 'aggregator']);
 });
+
+test('token transfer: To is the recipient from sends[].to_addr, not the token contract in tx.to_addr', async () => {
+  mock({ history_list: [
+    { cate_id: 'send', id: '0x90af', idx: 0, chain: 'hood', time_at: 1788932197, other_addr: '0x498e711800dbdff630bc1e5c4598749b5826e2b2', receives: [], sends: [{ amount: 7106.129, price: null, to_addr: '0x498e711800dbdff630bc1e5c4598749b5826e2b2', token_id: '0xe8ffd7e24187f72afb08d75b1bb13088a989a791' }], tx: { name: 'transfer', status: 1, from_addr: ME, to_addr: '0xe8ffd7e24187f72afb08d75b1bb13088a989a791', value: 0, eth_gas_fee: 0.00001, usd_gas_fee: 0.02 } },
+    { cate_id: 'receive', id: '0x91', idx: 0, chain: 'hood', time_at: 1788932100, other_addr: '0x498e711800dbdff630bc1e5c4598749b5826e2b2', receives: [{ amount: 5, price: null, from_addr: '0x498e711800dbdff630bc1e5c4598749b5826e2b2', token_id: '0xe8ffd7e24187f72afb08d75b1bb13088a989a791' }], sends: [], tx: { name: 'transfer', status: 1, from_addr: '0x498e711800dbdff630bc1e5c4598749b5826e2b2', to_addr: '0xe8ffd7e24187f72afb08d75b1bb13088a989a791', value: 0 } },
+  ], token_dict: {}, project_dict: {} });
+  const page = await fetchPage('https://x.invalid/{address}', 'w', ME, null, 20);
+  assert.equal(page.rows[0]!.to, '0x498e711800dbdff630bc1e5c4598749b5826e2b2');
+  assert.equal(page.rows[0]!.from, ME);
+  assert.equal(page.rows[1]!.from, '0x498e711800dbdff630bc1e5c4598749b5826e2b2');
+});

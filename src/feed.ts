@@ -205,6 +205,12 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
     const projectId = str(item.project_id);
     const project = projectId && isObj(projects[projectId]) ? (projects[projectId] as Dict) : null;
     const other = str(item.other_addr) ?? (str(tx.from_addr)?.toLowerCase() === address ? str(tx.to_addr) : str(tx.from_addr));
+    // โอนโทเคน: tx.to_addr คือสัญญาโทเคน ไม่ใช่ผู้รับ — ผู้รับจริงอยู่ที่ sends[].to_addr / other_addr; ขารับก็เช่นกัน (receives[].from_addr)
+    const sendTo = Array.isArray(item.sends) ? item.sends.map((m) => (isObj(m) ? str(m.to_addr) : null)).find((v): v is string => !!v) : undefined;
+    const recvFrom = Array.isArray(item.receives) ? item.receives.map((m) => (isObj(m) ? str(m.from_addr) : null)).find((v): v is string => !!v) : undefined;
+    const isTokenTransfer = !approve && !projectId && (str(tx.name) === 'transfer' || str(tx.name) === 'transferFrom' || (num(tx.value) === 0 && moves.length === 1));
+    const fromAddr = isTokenTransfer && recvFrom ? recvFrom : str(tx.from_addr);
+    const toAddr = isTokenTransfer ? (sendTo ?? other ?? str(tx.to_addr)) : str(tx.to_addr);
 
     // เหรียญพื้นเมือง: key ใน token_dict = ชื่อเชน (hood → ETH, hyper → HYPE)
     const native = isObj(tokens[chain]) ? (tokens[chain] as Dict) : {};
@@ -229,8 +235,8 @@ function fromHistoryList(body: Dict, walletId: string, address: string): Page {
       counterparty: other,
       // ชื่อโปรโตคอล: จาก project_dict ก่อน ไม่มีค่อยเดาจาก project_id (ตัด prefix เชน เช่น arb_lifiprotocol → Lifiprotocol)
       counterpartyName: (project ? str(project.name) : null) ?? (projectId ? prettyProjectId(projectId, chain) : null),
-      from: str(tx.from_addr),
-      to: str(tx.to_addr),
+      from: fromAddr,
+      to: toAddr,
       contract: projectId || approve || type === 'swap' || type === 'contract' ? str(tx.to_addr) : null,
       nonce: num(tx.nonce),
       gasUsd,

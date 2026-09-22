@@ -24,8 +24,9 @@ html {
   text-decoration: none !important;
 }
 
-/* clip ไม่ใช่ hidden — hidden ทำให้ body กลายเป็น scroll container แล้ว sticky ทุกตัวหยุดทำงาน */
-html,
+/* ตั้งที่ body อย่างเดียว ปล่อย html เป็น visible เพื่อให้ค่า overflow ของ body ส่งต่อไปที่ viewport
+   (ถ้าตั้งที่ html ด้วย body จะกลายเป็น scroll container เอง แล้ว sticky ทุกตัวหยุดทำงาน
+   รวมถึงตอน App ตั้ง body.style.overflow = 'auto' หลังปิดแผงขวา) */
 body {
   overflow-x: clip;
 }

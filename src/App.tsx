@@ -23,12 +23,9 @@ export function App() {
   /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const closeDetail = useCallback(() => setSelected(null), []);
-  /* เปิดแผงขวา → ล็อกไม่ให้หน้าหลักเลื่อน ปิดแล้วคืนค่าตาม stylesheet */
+  /* เปิดแผงขวา → ล็อกไม่ให้หน้าหลักเลื่อน ปิดแล้วกลับเป็น auto */
   useEffect(() => {
-    document.body.style.overflow = selected ? 'hidden' : '';
-    return () => {
-      document.body.style.overflow = '';
-    };
+    document.body.style.overflow = selected ? 'hidden' : 'auto';
   }, [selected]);
 
   const enabledEps = settings.endpoints.filter((e) => e.enabled);

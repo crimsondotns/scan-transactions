@@ -118,6 +118,22 @@ select {
   background: var(--color-bg);
   border-bottom: 1px solid var(--color-line-subtle);
 }
+/* เงาโผล่เฉพาะตอนหน้าเลื่อนแล้ว (data-scrolled จาก App) — ::after ค่อยๆ จางเข้า ไม่กระตุก */
+.top::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  box-shadow: var(--shadow-sticky);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-base) var(--easing-standard);
+}
+.top[data-scrolled='true']::after {
+  opacity: 1;
+}
 .brand {
   display: inline-flex;
   align-items: center;

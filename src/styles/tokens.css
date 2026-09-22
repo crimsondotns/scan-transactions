@@ -28,6 +28,7 @@
   --weight-regular: 400;
   --weight-book: 500;
   --weight-medium: 600;
+  --weight-bold: 700;
   /* ตัวเลข/hash ก็ใช้ Suisse — ไม่มี monospace; tabular-nums จัดหลักให้ */
   --font-mono: var(--font-sans);
 

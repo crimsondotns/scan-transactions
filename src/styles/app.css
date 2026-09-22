@@ -16,6 +16,14 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* ไม่มีขีดเส้นใต้ที่ไหนเลย รวมตอน hover */
+* {
+  text-decoration: none;
+}
+*:hover {
+  text-decoration: none !important;
+}
+
 /* clip ไม่ใช่ hidden — hidden ทำให้ body กลายเป็น scroll container แล้ว sticky ทุกตัวหยุดทำงาน */
 html,
 body {
@@ -1202,8 +1210,8 @@ th[aria-sort='descending'] .th-btn {
 }
 .ev-group-title {
   padding: var(--space-3) 0 var(--space-1);
-  font-size: var(--size-body-lg);
-  font-weight: var(--weight-medium);
+  font-size: var(--size-heading-sm);
+  font-weight: var(--weight-bold);
   color: var(--color-ink);
 }
 .ev-amount-wrap {

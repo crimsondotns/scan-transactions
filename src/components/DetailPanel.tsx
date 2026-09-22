@@ -35,7 +35,6 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
   const host = chain?.explorer?.replace(/\/$/, '') ?? null;
   const txUrl = host ? `${host}/tx/${row.hash}` : null;
   const explorerName = host ? host.replace(/^https?:\/\/(www\.)?/, '') : '';
-  const addrUrl = (a: string) => (host ? `${host}/address/${a}` : null);
 
   const real = row.moves.filter((m) => m.amount !== 0);
   const ins = real.filter((m) => m.dir === 'in');
@@ -93,7 +92,6 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
 
   const known = (a: string) => wallets.find((w) => w.address.toLowerCase() === a.toLowerCase())?.label;
   const AddrRow = ({ label, addr, short }: { label: ReactNode; addr: string; short?: ReactNode }) => {
-    const url = addrUrl(addr);
     short ??= known(addr);
     return (
       <Row label={label}>
@@ -104,11 +102,6 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
           <button type="button" className="btn btn-icon" onClick={() => void copy(addr)} aria-label={t('tx.copy', { what: String(label) })} title={t('tx.copy', { what: String(label) })}>
             <Icon name="copy" />
           </button>
-          {url && (
-            <a className="btn btn-icon" href={url} target="_blank" rel="noopener noreferrer" aria-label={t('detail.explorer', { what: String(label) })} title={t('detail.explorer', { what: String(label) })}>
-              <Icon name="external" />
-            </a>
-          )}
         </span>
       </Row>
     );
@@ -188,11 +181,6 @@ export function DetailPanel({ row, wallets, chains, onClose }: { row: TxRow | nu
               <button type="button" className="btn btn-icon" onClick={() => void copy(row.hash)} aria-label={t('tx.copy', { what: t('tx.col.hash') })} title={t('tx.copy', { what: t('tx.col.hash') })}>
                 <Icon name="copy" />
               </button>
-              {txUrl && (
-                <a className="btn btn-icon" href={txUrl} target="_blank" rel="noopener noreferrer" aria-label={t('detail.explorer', { what: t('tx.col.hash') })} title={t('detail.explorer', { what: t('tx.col.hash') })}>
-                  <Icon name="external" />
-                </a>
-              )}
             </span>
           </Row>
           {row.nonce !== null && <Row label={t('detail.nonce')}>{row.nonce}</Row>}

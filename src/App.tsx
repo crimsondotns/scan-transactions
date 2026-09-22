@@ -23,6 +23,13 @@ export function App() {
   /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const closeDetail = useCallback(() => setSelected(null), []);
+  /* เปิดแผงขวา → ล็อกไม่ให้หน้าหลักเลื่อน ปิดแล้วคืนค่าตาม stylesheet */
+  useEffect(() => {
+    document.body.style.overflow = selected ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selected]);
 
   const enabledEps = settings.endpoints.filter((e) => e.enabled);
   const chains = useChains(settings);

@@ -1,4 +1,5 @@
 /** toast เฉพาะ action ที่เปลี่ยนข้อมูล — หายเองใน 2.5 วิ ประกาศผ่าน aria-live */
+import { createPortal } from 'react-dom';
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
 interface ToastApi {
@@ -17,13 +18,16 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <Ctx.Provider value={api}>
       {children}
-      <div className="toasts" aria-live="polite">
-        {items.map((i) => (
-          <div key={i.id} className="toast">
-            {i.msg}
-          </div>
-        ))}
-      </div>
+      {createPortal(
+        <div className="toasts" aria-live="polite">
+          {items.map((i) => (
+            <div key={i.id} className="toast">
+              {i.msg}
+            </div>
+          ))}
+        </div>,
+        document.body
+      )}
     </Ctx.Provider>
   );
 }

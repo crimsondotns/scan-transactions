@@ -1,11 +1,14 @@
-/** ไดอะล็อกบน <dialog> native — ปิดด้วย Esc / คลิกฉากหลัง โฟกัสวนอยู่ในตัวเอง */
+/** ไดอะล็อกบน <dialog> native — portal ไป body, เปิดแล้วทุกอย่างข้างนอก inert (modal.ts); ปิดด้วย Esc / คลิกฉากหลัง */
 import { useEffect, useRef, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { useModalLayer } from '../modal';
 import { useI18n } from '../i18n';
 import { Icon } from './Icon';
 
 export function Dialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const ref = useRef<HTMLDialogElement>(null);
   const { t } = useI18n();
+  useModalLayer(ref, open);
 
   useEffect(() => {
     const el = ref.current;
@@ -14,7 +17,7 @@ export function Dialog({ open, onClose, title, children }: { open: boolean; onCl
     else if (!open && el.open) el.close();
   }, [open]);
 
-  return (
+  return createPortal(
     <dialog
       ref={ref}
       className="dlg"
@@ -34,6 +37,7 @@ export function Dialog({ open, onClose, title, children }: { open: boolean; onCl
           {children}
         </div>
       )}
-    </dialog>
+    </dialog>,
+    document.body
   );
 }

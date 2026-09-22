@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useI18n } from './i18n';
 import { useStore } from './store';
@@ -19,6 +19,7 @@ import { VerifyDialog } from './components/VerifyDialog';
 import { parseShare } from './slip';
 import { LangMenu } from './components/LangMenu';
 import { ThemeToggle } from './components/ThemeToggle';
+import { useModalLayer } from './modal';
 
 export function App() {
   const { t } = useI18n();
@@ -45,10 +46,6 @@ export function App() {
   /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const closeDetail = useCallback(() => setSelected(null), []);
-  /* เปิดแผงขวา → ล็อกไม่ให้หน้าหลักเลื่อน ปิดแล้วกลับเป็น auto */
-  useEffect(() => {
-    document.body.style.overflow = selected ? 'hidden' : 'auto';
-  }, [selected]);
 
   const enabledEps = settings.endpoints.filter((e) => e.enabled);
   const chains = useChains(settings);
@@ -215,12 +212,23 @@ export function App() {
       />
       {/* แผงขวา + ม่าน: portal ไป body — เป็น sibling ของทั้งหน้า ไม่อยู่ในกล่องตาราง จึงไม่ดันตาราง */}
       {createPortal(
-        <>
+        <DrawerLayer active={selected !== null}>
           {selected !== null && <button type="button" className="drawer-scrim" aria-label={t('dialog.close')} onClick={closeDetail} />}
           <DetailPanel row={selected} wallets={wallets} chains={chains} settings={settings} onClose={closeDetail} />
-        </>,
+        </DrawerLayer>,
         document.body
       )}
     </>
+  );
+}
+
+/* กล่องชั้นของแผงขวา (ม่าน + แผง) — เปิดแล้วส่วนอื่นของหน้า inert; ปิดแล้วเป็น div ว่างที่ไม่กินที่ */
+function DrawerLayer({ active, children }: { active: boolean; children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useModalLayer(ref, active);
+  return (
+    <div ref={ref} className="drawer-layer" data-active={active}>
+      {children}
+    </div>
   );
 }

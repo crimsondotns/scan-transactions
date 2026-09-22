@@ -1,5 +1,6 @@
 /** สลิปธุรกรรม — เปิดภาพแบบ lightbox (ม่านมืด + ภาพกลาง + ปิดมุมขวาบน) ไม่ใช่ไดอะล็อก ไม่มีแถบปุ่ม — ผู้ใช้คลิกขวา/ลากภาพเซฟเองแบบรูปทั่วไป */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useModalLayer } from '../modal';
 import { createPortal } from 'react-dom';
 import { useI18n } from '../i18n';
 import { useStore } from '../store';
@@ -54,6 +55,8 @@ export function useSlipImage(rec: SlipRecord | null, action: SlipAction | null =
 /** lightbox: portal ไป body, z สูงกว่าแผงขวา — Esc / คลิกม่าน ปิด; ล็อกโฟกัสไว้ที่ปุ่มปิด */
 export function SlipLightbox({ data, onClose }: { data: SlipData; onClose: () => void }) {
   const { t } = useI18n();
+  const box = useRef<HTMLDivElement>(null);
+  useModalLayer(box, true);
   const [rec, setRec] = useState<SlipRecord | null>(null);
   useEffect(() => {
     let alive = true;
@@ -79,7 +82,7 @@ export function SlipLightbox({ data, onClose }: { data: SlipData; onClose: () =>
   }, [onClose]);
   const img = useSlipImage(rec);
   return createPortal(
-    <div className="lightbox" role="dialog" aria-modal="true" aria-label={t('slip.title')}>
+    <div ref={box} className="lightbox" role="dialog" aria-modal="true" aria-label={t('slip.title')}>
       <button type="button" className="lightbox-scrim" aria-label={t('dialog.close')} onClick={onClose} />
       <button type="button" className="btn btn-icon lightbox-close" onClick={onClose} aria-label={t('dialog.close')} autoFocus>
         <Icon name="x" />

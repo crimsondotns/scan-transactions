@@ -111,7 +111,7 @@ export function App() {
 
       <div className="layout" data-drawer={selected !== null} data-side={sideOpen}>
         <aside className="side">
-          <WalletPanel feeds={feeds} activeId={activeWallet} collapsed={!sideOpen} onSwitch={selectWallet} onRemove={forget} onToggle={toggleSide} hasSource={(w) => endpointsFor(w, settings).length > 0} />
+          <WalletPanel feeds={feeds} chains={chains} activeId={activeWallet} collapsed={!sideOpen} onSwitch={selectWallet} onRemove={forget} onToggle={toggleSide} hasSource={(w) => endpointsFor(w, settings).length > 0} />
           <p className="hint">{t('foot.local')}</p>
         </aside>
 

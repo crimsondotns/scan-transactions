@@ -48,8 +48,10 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
   const chainLogo = chain?.logo ?? row.chainLogo ?? null;
   const chainName = chain?.name ?? row.chain;
   const native = row.nativeSymbol ?? chain?.symbol ?? row.chain.toUpperCase();
-  const host = chain?.explorer?.replace(/\/$/, '') ?? null;
-  const txUrl = host ? `${host}/tx/${row.hash}` : null;
+  /* ลิงก์ explorer: จาก chain list ก่อน ไม่มีค่อยดูว่าแหล่งข้อมูลแนบ URL มากับแถวไหม; ไม่มีทั้งคู่ → ปุ่มปิด (ไม่ซ่อน) */
+  const rawUrl = ['tx_url', 'explorer_url', 'url', 'link'].map((k) => row.raw[k]).find((v): v is string => typeof v === 'string' && /^https:\/\//i.test(v)) ?? null;
+  const host = chain?.explorer?.replace(/\/$/, '') ?? (rawUrl ? new URL(rawUrl).origin : null);
+  const txUrl = chain?.explorer ? `${host}/tx/${row.hash}` : rawUrl;
   const explorerName = host ? host.replace(/^https?:\/\/(www\.)?/, '') : '';
 
   const real = row.moves.filter((m) => m.amount !== 0);
@@ -225,13 +227,19 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
 
       </div>
 
-      {txUrl && (
-        <div className="drawer-foot">
+      <div className="drawer-foot">
+        {txUrl ? (
           <a className="btn btn-primary" href={txUrl} target="_blank" rel="noopener noreferrer">
+            <Icon name="external" />
             {t('detail.viewOn', { name: explorerName })}
           </a>
-        </div>
-      )}
+        ) : (
+          <button type="button" className="btn btn-primary" disabled title={t('detail.noExplorer')}>
+            <Icon name="external" />
+            {t('detail.noExplorer')}
+          </button>
+        )}
+      </div>
     </aside>
   );
 }

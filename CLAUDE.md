@@ -55,8 +55,8 @@ Do not declare work done while any of these is red.
 - `useFeed.feeds[walletId]` คือแคชในหน่วยความจำ: `ensure(w)` โหลดเฉพาะเมื่อยัง `loaded`/`loading` ไม่เป็นจริง; แหล่งข้อมูลเปลี่ยน → `reset()` ล้างแคช ไม่โหลดใหม่เอง
 - สถานะโหลดต่อกระเป๋า: วงหมุน `.spinner` ในแถวกระเป๋า ตารางขึ้น "Loading…" ระหว่างรอ
 
-## Wallet panel = sidebar (2026-09-22, แทน 5 variants)
+## Wallet panel = ตารางกระเป๋า (2026-09-22)
 
-- ไม่มี checkbox / select-all / ขยายในแถว / accordion — คลิกแถว = เลือกกระเป๋า (`selectWallet` → lazy load) แล้วตารางขวาแสดง; ตา = ซ่อน/แสดง (ไม่แตะ selection); ถังขยะ = ConfirmDialog
-- ย่อ/ขยาย: `sideOpen` ใน App (จำใน localStorage `xcap.scan.side`), ปุ่ม chevron ที่หัวแผง (`.side-chevron`) และหัวเว็บ (`.side-toggle`) — ขยาย `--side-w: 240px`, ย่อ `--side-c: 60px` (ไอคอน + badge จำนวนแถว), transition บน grid-template-columns; มือถือ ย่อ = เหลือแถวหัว
-- คลิกแถวตาราง → DetailPanel เดิม (drawer ขวา + scrim + ล็อกสกรอล) ไม่เปลี่ยน
+- แผงกระเป๋าเป็นตารางเต็มกว้างอยู่บนตารางธุรกรรม (layout คอลัมน์เดียว): Address (Identicon + label + ที่อยู่ย่อ) · Networks (โลโก้เชนที่พบในธุรกรรม สูงสุด 4 + "+N") · Transactions (จำนวนแถว/สถานะ) · ตา/ถังขยะ — หัวคอลัมน์เรียงได้ (`th-btn`), แสดง 7 แถวแรก + "Show all (N)"
+- คลิกแถว = เลือกกระเป๋า → lazy load → ตารางธุรกรรมด้านล่าง; ไม่มี checkbox/select-all/expand; chevron ที่หัวการ์ด = ย่อ/ขยายตาราง (จำใน localStorage `xcap.scan.side`)
+- ปุ่ม "View on <explorer>" ในแผงรายละเอียดต้องมีเสมอ: ใช้ explorer จาก chain list → URL ที่แถวแนบมา → ถ้าไม่มีทั้งคู่แสดงปุ่ม disabled "No explorer for this chain" (ไม่ซ่อน)

@@ -51,9 +51,17 @@ async function fetchList(url: string): Promise<ChainInfo[]> {
   const cache = readCache();
   const hit = cache[url];
   if (hit && Date.now() - hit.at < TTL && hit.chains.length) return hit.chains;
-  const res = await fetch(url, { headers: { accept: 'application/json' } });
-  if (!res.ok) throw new Error(String(res.status));
-  const chains = normalize(await res.json());
+  let chains: ChainInfo[] = [];
+  try {
+    const res = await fetch(url, { headers: { accept: 'application/json' } });
+    if (!res.ok) throw new Error(String(res.status));
+    chains = normalize(await res.json());
+  } catch (e) {
+    // โหลดใหม่ไม่ได้ (หมดอายุ 24 ชม. แล้วแหล่งตอบ error/CORS) → ใช้ของเก่าที่เคยได้ต่อไป ดีกว่าหายไปทั้งชื่อ/โลโก้/explorer
+    if (hit?.chains.length) return hit.chains;
+    throw e;
+  }
+  if (!chains.length && hit?.chains.length) return hit.chains;
   if (chains.length) {
     try {
       localStorage.setItem(KEY, JSON.stringify({ ...cache, [url]: { at: Date.now(), chains } }));

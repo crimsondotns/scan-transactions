@@ -14,7 +14,6 @@ import { slipData, type SlipData } from '../slip';
 import { SlipLightbox } from './SlipView';
 import { protocolKind } from '../kind';
 import { riskReasons } from '../risk';
-import { chainStyle } from '../chainStyle';
 
 export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void }) {
   /* สลิป: กดปุ่ม Slip → เปิดภาพสลิปแบบ lightbox ทับทุกอย่าง (ไม่ใช่ไดอะล็อก) — เปลี่ยนแถว/ปิดแผงแล้วรีเซ็ต */
@@ -64,14 +63,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
   const chainLogo = chain?.logo ?? row.chainLogo ?? null;
   const chainName = chain?.name ?? row.chain;
   const native = row.nativeSymbol ?? chain?.symbol ?? row.chain.toUpperCase();
-  const cs = chainStyle(row.chain, chainName);
   const kind = protocolKind(row);
-  const ChainGlyph = () =>
-    cs ? (
-      <span className="chain-glyph" aria-hidden="true">
-        {cs.glyph}
-      </span>
-    ) : null;
   /* ลิงก์ explorer: จาก chain list ก่อน ไม่มีค่อยดูว่าแหล่งข้อมูลแนบ URL มากับแถวไหม; ไม่มีทั้งคู่ → ปุ่มปิด (ไม่ซ่อน) */
   const rawUrl = ['tx_url', 'explorer_url', 'url', 'link'].map((k) => row.raw[k]).find((v): v is string => typeof v === 'string' && /^https:\/\//i.test(v)) ?? null;
   const host = chain?.explorer?.replace(/\/$/, '') ?? (rawUrl ? new URL(rawUrl).origin : null);
@@ -112,7 +104,6 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
       <span className="ev-asset-info">
         <span className="ev-symbol">{m.symbol}</span>
         <span className="ev-net">
-          <ChainGlyph />
           {t('detail.on', { chain: chainName })}
         </span>
       </span>
@@ -159,7 +150,6 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
         <div className="ev-head">
           <h2 id="dt-h" className="ev-title">
             {t(`tx.type.${row.type}`)}
-            <ChainGlyph />
             {row.flagged && (
               <span className="flag" title={t('tx.scam')}>
                 <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} />

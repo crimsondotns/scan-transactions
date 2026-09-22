@@ -29,12 +29,6 @@
   --color-fn-print: #9333ea;
   --color-fn-share: #f59e0b;
   --color-fn-verify: #10b981;
-  /* สีประจำเชน (สเปกผู้ใช้ 2026-09-22) — ใช้ในภาพสลิปเท่านั้น (พื้นหัวสลิป/สัญลักษณ์เชน) */
-  --color-chain-eth: #f59e0b;
-  --color-chain-sol: #9333ea;
-  --color-chain-hyper: #0066ff;
-  --color-chain-polygon: #7c3aed;
-  --color-chain-bnb: #eab308;
   /* hover ของปุ่มหลัก (ink เจือจางเล็กน้อย) และของปุ่มรอง/ไอคอน/แถว */
   --color-ink-hover: #262626;
   --color-hover: var(--color-soft);

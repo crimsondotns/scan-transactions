@@ -230,12 +230,10 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
       <div className="drawer-foot">
         {txUrl ? (
           <a className="btn btn-primary" href={txUrl} target="_blank" rel="noopener noreferrer">
-            <Icon name="external" />
             {t('detail.viewOn', { name: explorerName })}
           </a>
         ) : (
           <button type="button" className="btn btn-primary" disabled title={t('detail.noExplorer')}>
-            <Icon name="external" />
             {t('detail.noExplorer')}
           </button>
         )}

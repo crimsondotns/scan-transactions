@@ -15,7 +15,8 @@ export interface Progress {
 
 const BATCH = 5;
 const BATCH_GAP_MS = 2000;
-import { FeedError, fetchPage, type Cursor, type TxRow } from './feed';
+import { FeedError, applyTokenMeta, fetchPage, unknownTokens, type Cursor, type TxRow } from './feed';
+import { ensureTokenMeta } from './tokens';
 import type { Endpoint, Settings, Wallet } from './store';
 
 export interface WalletFeed {
@@ -52,7 +53,10 @@ export function useFeed(settings: Settings) {
           const c = mode === 'older' ? cur.next[ep.id] : null;
           if (mode === 'older' && c === null) return { ep, page: null, error: null };
           try {
-            return { ep, page: await fetchPage(ep.url, w.id, w.address, c ?? null, settings.pageSize, { family: ep.family, authHeader: ep.authHeader, apiKey: ep.apiKey }), error: null };
+            const page = await fetchPage(ep.url, w.id, w.address, c ?? null, settings.pageSize, { family: ep.family, authHeader: ep.authHeader, apiKey: ep.apiKey });
+            // แหล่งที่ตั้ง URL metadata ไว้ → เติมชื่อ/สัญลักษณ์/โลโก้ของโทเคนที่ยังไม่รู้ก่อนแสดง
+            const ids = ep.metaUrl ? unknownTokens(page.rows) : [];
+            return { ep, page: ids.length ? { ...page, rows: applyTokenMeta(page.rows, await ensureTokenMeta(ep, ids)) } : page, error: null };
           } catch (e) {
             return { ep, page: null, error: e instanceof FeedError ? e : new FeedError('net') };
           }

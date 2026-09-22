@@ -86,17 +86,14 @@ export function hasPlaceholder(tpl: string): boolean {
 /**
  * URL ที่ไม่มี placeholder → ประกอบให้ตามตระกูล:
  *  evm: ?id={address}&start_time={start}&page_count={count}
- *  sol: /{address}?limit={count}&before={cursor}  (ที่อยู่อยู่ใน path)
+ *  sol: ?ownerAddress={address}&limit={count}
+ * แหล่งที่ใช้ชื่อพารามิเตอร์/รูปแบบอื่น → วาง URL ที่มี {address} {count} {cursor} {start} เองได้
  */
 export function toTemplate(url: string, family: 'evm' | 'sol' = 'evm'): string {
   const u = url.trim();
   if (hasPlaceholder(u)) return u;
-  if (family === 'sol') {
-    const [base, query = ''] = u.split('?');
-    const sep = query ? `?${query}&` : '?';
-    return `${base!.replace(/\/$/, '')}/{address}${sep}limit={count}&before={cursor}`;
-  }
   const sep = u.endsWith('?') || u.endsWith('&') ? '' : u.includes('?') ? '&' : '?';
+  if (family === 'sol') return `${u}${sep}ownerAddress={address}&limit={count}`;
   return `${u}${sep}id={address}&start_time={start}&page_count={count}`;
 }
 
@@ -150,7 +147,7 @@ const httpUrl = (v: unknown): string | null => (typeof v === 'string' && /^https
 
 function normalize(body: unknown, walletId: string, address: string): Page {
   if (isObj(body) && Array.isArray(body.history_list)) return fromHistoryList(body, walletId, address);
-  const list = Array.isArray(body) ? body : isObj(body) && Array.isArray(body.result) ? body.result : isObj(body) && Array.isArray(body.data) ? body.data : null;
+  const list = Array.isArray(body) ? body : isObj(body) ? (['result', 'data', 'activities', 'items', 'transactions', 'txs'].map((k) => body[k]).find(Array.isArray) ?? (isObj(body.data) ? ['activities', 'items', 'list'].map((k) => (body.data as Dict)[k]).find(Array.isArray) : null) ?? null) : null;
   if (!list) throw new FeedError('shape');
   if (list.some((x) => isObj(x) && (typeof x.signature === 'string' || Array.isArray(x.tokenTransfers) || Array.isArray(x.nativeTransfers)))) return fromSignatureList(list, walletId, address);
   return fromFlatList(list, walletId, address);
@@ -257,11 +254,12 @@ function fromFlatList(list: unknown[], walletId: string, address: string): Page 
     const raw = num(item.value) ?? 0;
     const amount = str(item.tokenDecimal) || raw > 1e15 ? raw / 10 ** decimals : raw;
     const out = from === address;
-    const symbol = str(item.tokenSymbol) ?? str(item.symbol) ?? '';
+    const flatToken = str(item.contractAddress) ?? str(item.token_id) ?? str(item.tokenAddress) ?? str(item.mint) ?? null;
+    const symbol = str(item.tokenSymbol) ?? str(item.symbol) ?? (flatToken ? shortId(flatToken) : '');
     const flatChain = str(item.chain) ?? '—';
     const flatPrice = num(item.price) ?? num(item.tokenPrice);
-    rememberPrice(flatChain, str(item.contractAddress) ?? str(item.token_id) ?? null, symbol, flatPrice, time);
-    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, name: str(item.tokenName), usd: null, price: flatPrice, tokenId: str(item.contractAddress) ?? str(item.token_id), flagged: lookalike(symbol), logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) }] : [];
+    rememberPrice(flatChain, flatToken, symbol, flatPrice, time);
+    const moves: Move[] = amount > 0 ? [{ dir: out ? 'out' : 'in', amount, symbol, name: str(item.tokenName) ?? str(item.name), usd: num(item.usd) ?? num(item.valueUsd), price: flatPrice, tokenId: flatToken, flagged: lookalike(symbol), logo: httpUrl(item.tokenLogo) ?? httpUrl(item.logo_url) ?? httpUrl(item.image) ?? httpUrl(item.logo) }] : [];
     const gasPrice = num(item.gasPrice);
     const gasUsed = num(item.gasUsed);
     rows.push({
@@ -311,11 +309,12 @@ function fromSignatureList(list: unknown[], walletId: string, address: string): 
         const dir: Move['dir'] = from === address ? 'out' : 'in';
         other ??= dir === 'out' ? to || null : from || null;
         const amount = native ? (num(m.amount) ?? 0) / 1e9 : (num(m.tokenAmount) ?? num(m.amount) ?? 0);
-        const symbol = native ? 'SOL' : (str(m.symbol) ?? shortId(str(m.mint) ?? ''));
+        const mint = native ? null : (str(m.mint) ?? str(m.tokenAddress) ?? str(m.address));
+        const symbol = native ? 'SOL' : (str(m.symbol) ?? shortId(mint ?? ''));
         const solUsd = num(m.usd);
         const solPrice = num(m.price) ?? num(m.priceUsd) ?? (solUsd !== null && amount ? solUsd / amount : null);
-        rememberPrice(str(item.chain) ?? 'sol', native ? null : str(m.mint), symbol, solPrice, time);
-        moves.push({ dir, amount, symbol, name: str(m.name), usd: solUsd, price: solPrice, tokenId: native ? null : str(m.mint), flagged: lookalike(symbol), logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
+        rememberPrice(str(item.chain) ?? 'sol', mint, symbol, solPrice, time);
+        moves.push({ dir, amount, symbol, name: str(m.name), usd: solUsd, price: solPrice, tokenId: mint, flagged: lookalike(symbol), logo: native ? null : (httpUrl(m.logo) ?? httpUrl(m.image) ?? httpUrl(m.logo_url)) });
       }
     };
     push(item.nativeTransfers, true);
@@ -360,4 +359,50 @@ function cursorOf(rows: TxRow[]): Cursor | null {
 
 function shortId(id: string): string {
   return id.length > 10 ? `${id.slice(0, 6)}…` : id || '?';
+}
+
+/* ----------------------------- token metadata ----------------------------- */
+
+export interface TokenMeta {
+  name: string | null;
+  symbol: string | null;
+  decimals: number | null;
+  logo: string | null;
+}
+
+/** โทเคนในหน้าที่ยังไม่รู้ชื่อ/สัญลักษณ์/โลโก้ — ไปขอ metadata เพิ่มจาก URL ที่ผู้ใช้ตั้ง */
+export function unknownTokens(rows: TxRow[]): string[] {
+  const ids = new Set<string>();
+  for (const r of rows) for (const m of r.moves) if (m.tokenId && (m.name === null || m.logo === null || m.symbol.endsWith('…'))) ids.add(m.tokenId);
+  return [...ids];
+}
+
+/** เติมชื่อ/สัญลักษณ์/โลโก้ลงแถว (แถวใหม่ ไม่แก้ของเดิม) */
+export function applyTokenMeta(rows: TxRow[], meta: Map<string, TokenMeta>): TxRow[] {
+  if (!meta.size) return rows;
+  return rows.map((r) => {
+    let touched = false;
+    const moves = r.moves.map((m) => {
+      const t = m.tokenId ? meta.get(m.tokenId) : undefined;
+      if (!t) return m;
+      touched = true;
+      const symbol = m.symbol.endsWith('…') || !m.symbol ? (t.symbol ?? m.symbol) : m.symbol;
+      return { ...m, symbol, name: m.name ?? t.name, logo: m.logo ?? t.logo, flagged: m.flagged || lookalike(symbol) };
+    });
+    return touched ? { ...r, moves, flagged: r.flagged || moves.some((m) => m.flagged) } : r;
+  });
+}
+
+/** แปลงคำตอบ metadata ทุกรูปที่พบ: รายการ [{address,…}] หรือ map { address: {…} } หรือห่อใน data/result */
+export function parseTokenMeta(body: unknown): Map<string, TokenMeta> {
+  const out = new Map<string, TokenMeta>();
+  let list: unknown = body;
+  if (isObj(list)) list = ['data', 'result', 'tokens', 'items'].map((k) => (list as Dict)[k]).find((v) => v !== undefined) ?? list;
+  const add = (addr: string | null, v: unknown) => {
+    if (!addr || !isObj(v)) return;
+    out.set(addr, { name: str(v.name), symbol: str(v.symbol), decimals: num(v.decimals), logo: httpUrl(v.logoURI) ?? httpUrl(v.logo_uri) ?? httpUrl(v.logo) ?? httpUrl(v.image) ?? httpUrl(v.icon) ?? httpUrl(v.logo_url) });
+  };
+  if (Array.isArray(list)) for (const v of list) add(isObj(v) ? (str(v.address) ?? str(v.mint) ?? str(v.tokenAddress) ?? str(v.id)) : null, v);
+  else if (isObj(list)) for (const [k, v] of Object.entries(list)) add(k, v);
+  return out;
 }

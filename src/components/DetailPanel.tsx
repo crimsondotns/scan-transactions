@@ -11,8 +11,9 @@ import { CopyButton } from './CopyButton';
 import { Logo } from './Logo';
 import { Identicon } from './Identicon';
 import { useToast } from './Toast';
+import { slipData, type SlipData } from '../slip';
 
-export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void }) {
+export function DetailPanel({ row, wallets, chains, settings, onClose, onSlip }: { row: TxRow | null; wallets: Wallet[]; chains: ChainMap; settings: Settings; onClose: () => void; onSlip: (d: SlipData) => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
   /* คลิกตัวเลข → คัดลอกค่าเต็มความละเอียด (ไม่ใช่ที่แสดง) */
@@ -248,6 +249,10 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
       </div>
 
       <div className="drawer-foot">
+        <button type="button" className="btn" onClick={() => onSlip(slipData(row, wallet, chainName, native, txUrl))}>
+          <Icon name="receipt" />
+          {t('slip.open')}
+        </button>
         {txUrl ? (
           <a className="btn btn-primary" href={txUrl} target="_blank" rel="noopener noreferrer">
             {t('detail.viewOn', { name: explorerName })}

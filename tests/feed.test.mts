@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import { parseCsv } from '../src/importWallets.ts';
 import { detectEndpoint, parseAddress } from '../src/store.ts';
 import { rowValue } from '../src/components/TxTable.tsx';
-import { buildUrl, fetchPage, lookalike, toTemplate } from '../src/feed.ts';
+import { applyTokenMeta, buildUrl, fetchPage, lookalike, parseTokenMeta, toTemplate, unknownTokens } from '../src/feed.ts';
+import { metaUrl } from '../src/tokens.ts';
 
 const ME = '0x42a8000000000000000000000000000000000000';
 const fixture = {
@@ -143,9 +144,24 @@ test('price cache: remembers newest price per token, fills USD, builds price req
   assert.equal(await refreshPrice('', 'arb', null, 'ETH'), 2734.64); // ไม่มี URL → ใช้แคช
 });
 
-test('sol family composes address into the path and drops empty cursor params', () => {
-  assert.equal(buildUrl('https://example.invalid/tx/', 'So1ana', null, 30, 'sol'), 'https://example.invalid/tx/So1ana?limit=30');
-  assert.equal(buildUrl('https://example.invalid/tx', 'So1ana', { start: 1, cursor: 'sig1' }, 30, 'sol'), 'https://example.invalid/tx/So1ana?limit=30&before=sig1');
-  assert.equal(buildUrl('https://example.invalid/tx?x=1', 'So1ana', null, 5, 'sol'), 'https://example.invalid/tx/So1ana?x=1&limit=5');
-  assert.equal(buildUrl('https://example.invalid/h', '0xabc', null, 20), 'https://example.invalid/h?id=0xabc&start_time=0&page_count=20');
+test('sol family composes owner query; placeholders still drop empty cursor params', () => {
+  assert.equal(buildUrl('https://example.invalid/tx', 'So1ana', null, 30, 'sol'), 'https://example.invalid/tx?ownerAddress=So1ana&limit=30');
+  assert.equal(buildUrl('https://example.invalid/tx?x=1', 'So1ana', null, 5, 'sol'), 'https://example.invalid/tx?x=1&ownerAddress=So1ana&limit=5');
+  assert.equal(buildUrl('https://example.invalid/tx/{address}?limit={count}&before={cursor}', 'So1ana', { start: 1, cursor: 'sig1' }, 30, 'sol'), 'https://example.invalid/tx/So1ana?limit=30&before=sig1');
+});
+
+test('token metadata: batch URL, tolerant parser, merge into rows', async () => {
+  assert.equal(metaUrl('https://example.invalid/meta', ['A', 'B']), 'https://example.invalid/meta?tokenAddresses=A,B');
+  assert.equal(metaUrl('https://example.invalid/meta?ids={addresses}', ['A']), 'https://example.invalid/meta?ids=A');
+  const meta = parseTokenMeta({ data: [{ address: 'MintAAAAAAAA', name: 'USD Coin', symbol: 'USDC', decimals: 6, logoURI: 'https://img.invalid/usdc.png' }] });
+  assert.equal(meta.get('MintAAAAAAAA')?.name, 'USD Coin');
+  const meta2 = parseTokenMeta({ MintB: { symbol: 'B', name: 'Bee' } });
+  assert.equal(meta2.get('MintB')?.symbol, 'B');
+  mock([{ signature: 'sigA', timestamp: 1700000500, type: 'TRANSFER', fee: 5000, feePayer: SOL, nativeTransfers: [], tokenTransfers: [{ fromUserAccount: 'pool', toUserAccount: SOL, tokenAmount: 100, mint: 'MintAAAAAAAA' }] }]);
+  const page = await fetchPage('https://x.invalid/{address}', 'w', SOL, null, 20);
+  assert.deepEqual(unknownTokens(page.rows), ['MintAAAAAAAA']);
+  const rows = applyTokenMeta(page.rows, meta);
+  assert.equal(rows[0]!.moves[0]!.symbol, 'USDC');
+  assert.equal(rows[0]!.moves[0]!.name, 'USD Coin');
+  assert.equal(rows[0]!.moves[0]!.logo, 'https://img.invalid/usdc.png');
 });

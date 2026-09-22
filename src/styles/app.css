@@ -1820,3 +1820,76 @@ dialog.dlg::backdrop {
     width: min(520px, 80vw);
   }
 }
+
+/* สลิป — พรีวิวภาพ (เอกสารขาว/ดำเสมอ) + ปุ่มส่งออก */
+.slip-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 160px;
+  max-height: min(60dvh, 640px);
+  overflow: auto;
+  background: var(--color-soft);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+.slip-preview img {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-soft);
+}
+.slip-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.slip-actions .btn {
+  justify-content: center;
+}
+.verdict {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-soft);
+}
+.verdict > svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+.verdict > span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.verdict[data-verdict='tampered'] > svg,
+.verdict[data-verdict='tampered'] strong {
+  color: var(--color-danger);
+}
+.verdict[data-verdict='unknown'] > svg {
+  color: var(--color-muted);
+}
+.drawer-foot {
+  gap: var(--space-2);
+}
+.drawer-foot .btn:first-child:not(:last-child) {
+  min-width: 0;
+}
+.slip-print {
+  display: none;
+}
+@media print {
+  body:has(.slip-print) > :not(.slip-print) {
+    display: none !important;
+  }
+  .slip-print {
+    display: block;
+    width: 100%;
+    max-width: 160mm;
+    margin: 0 auto;
+  }
+}

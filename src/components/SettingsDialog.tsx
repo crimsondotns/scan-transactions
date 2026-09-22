@@ -19,6 +19,8 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const [family, setFamily] = useState<Family | 'auto'>('auto');
   const [authHeader, setAuthHeader] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [metaUrl, setMetaUrl] = useState('');
+  const [metaErr, setMetaErr] = useState<string | null>(null);
   const [chainUrl, setChainUrl] = useState(settings.chainListUrl);
   const [chainErr, setChainErr] = useState<string | null>(null);
   const [priceUrl, setPriceUrlText] = useState(settings.priceUrl);
@@ -29,9 +31,11 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     e.preventDefault();
     const detected = detectEndpoint(url);
     if (!detected) return setErr(t('settings.badUrl'));
-    addEndpoint({ ...detected, family: family === 'auto' ? detected.family : family, url: url.trim(), authHeader: authHeader.trim() || undefined, apiKey: apiKey.trim() || undefined });
+    if (metaUrl.trim() && !/^https:\/\//i.test(metaUrl.trim())) return setMetaErr(t('settings.badUrl'));
+    addEndpoint({ ...detected, family: family === 'auto' ? detected.family : family, url: url.trim(), authHeader: authHeader.trim() || undefined, apiKey: apiKey.trim() || undefined, metaUrl: metaUrl.trim() || undefined });
     toast(t('settings.added'));
     setUrl('');
+    setMetaUrl('');
     setAuthHeader('');
     setApiKey('');
     setErr(null);
@@ -83,6 +87,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                   </span>
                   <span className="wallet-addr" title={ep.url}>
                     {ep.apiKey && <Icon name="lock" width={12} height={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />}
+                    {ep.metaUrl && <Icon name="layers" width={12} height={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />}
                     {ep.enabled ? t('settings.priority', { n: settings.endpoints.filter((x) => x.enabled).indexOf(ep) + 1 }) : t('settings.disabled')} · {ep.url}
                   </span>
                 </div>
@@ -143,6 +148,31 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               </label>
               <input id="ep-key" name="apiKey" type="password" className="input mono" value={apiKey} onChange={(e) => setApiKey(e.target.value)} autoComplete="off" spellCheck={false} />
             </div>
+          </div>
+          <div className="field">
+            <label className="label" htmlFor="ep-meta">
+              {t('settings.metaUrl')}
+            </label>
+            <input
+              id="ep-meta"
+              name="metaUrl"
+              type="url"
+              inputMode="url"
+              className="input mono"
+              value={metaUrl}
+              onChange={(e) => {
+                setMetaUrl(e.target.value);
+                setMetaErr(null);
+              }}
+              autoComplete="off"
+              spellCheck={false}
+              aria-invalid={metaErr ? 'true' : undefined}
+            />
+            {metaErr && (
+              <span className="error" aria-live="polite">
+                {metaErr}
+              </span>
+            )}
           </div>
         </form>
 

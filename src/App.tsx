@@ -15,6 +15,9 @@ import { DetailPanel } from './components/DetailPanel';
 import type { TxRow } from './feed';
 import { useChains } from './chains';
 import { SettingsDialog } from './components/SettingsDialog';
+import { SlipDialog } from './components/SlipDialog';
+import { VerifyDialog } from './components/VerifyDialog';
+import { parseShare, type SlipData } from './slip';
 import { LangMenu } from './components/LangMenu';
 import { ThemeToggle } from './components/ThemeToggle';
 
@@ -32,6 +35,13 @@ export function App() {
     return () => window.removeEventListener('hashchange', on);
   }, []);
   const pageWallet = hash.startsWith('#/w/') ? decodeURIComponent(hash.slice(4)) : null;
+  /* #/v/<code>[.<data>] = ลิงก์ตรวจสลิป → เปิดไดอะล็อกตรวจทับแดชบอร์ด */
+  const share = useMemo(() => (hash.startsWith('#/v/') ? parseShare(decodeURIComponent(hash.slice(4))) : null), [hash]);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  useEffect(() => {
+    if (share) setVerifyOpen(true);
+  }, [share]);
+  const [slip, setSlip] = useState<SlipData | null>(null);
   const page: 'dashboard' | 'wallet' = pageWallet ? 'wallet' : 'dashboard';
   const [selected, setSelected] = useState<TxRow | null>(null);
   /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
@@ -129,6 +139,9 @@ export function App() {
         <span className="top-status" data-ok={hasEndpoint}>
           {hasEndpoint ? t('status.endpointSet', { n: enabledEps.length }) : t('status.noEndpoint')}
         </span>
+        <button type="button" className="btn btn-icon" onClick={() => setVerifyOpen(true)} aria-label={t('slip.verify')} title={t('slip.verify')}>
+          <Icon name="shield" />
+        </button>
         <button type="button" className="btn btn-icon" onClick={() => setSettingsOpen(true)} aria-label={t('nav.settings')} title={t('nav.settings')}>
           <Icon name="settings" />
         </button>
@@ -193,11 +206,21 @@ export function App() {
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} />
+      <SlipDialog data={slip} onClose={() => setSlip(null)} />
+      <VerifyDialog
+        open={verifyOpen}
+        initial={share}
+        onClose={() => {
+          setVerifyOpen(false);
+          if (share) window.location.hash = '#/';
+        }}
+        seen={(h) => rows.some((r) => r.hash === h)}
+      />
       {/* แผงขวา + ม่าน: portal ไป body — เป็น sibling ของทั้งหน้า ไม่อยู่ในกล่องตาราง จึงไม่ดันตาราง */}
       {createPortal(
         <>
           {selected !== null && <button type="button" className="drawer-scrim" aria-label={t('dialog.close')} onClick={closeDetail} />}
-          <DetailPanel row={selected} wallets={wallets} chains={chains} settings={settings} onClose={closeDetail} />
+          <DetailPanel row={selected} wallets={wallets} chains={chains} settings={settings} onClose={closeDetail} onSlip={setSlip} />
         </>,
         document.body
       )}

@@ -24,6 +24,8 @@ export interface Endpoint {
   /** header ยืนยันตัวตน (เลือกใส่) — อยู่ใน localStorage เครื่องนี้เท่านั้น */
   authHeader?: string;
   apiKey?: string;
+  /** URL ขอ metadata โทเคน (ชื่อ/สัญลักษณ์/โลโก้) เป็นชุด — ว่าง = ไม่ขอ */
+  metaUrl?: string;
 }
 
 export interface Settings {

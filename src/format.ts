@@ -34,10 +34,10 @@ export function formatAmount(v: number): string {
   return v.toLocaleString(locale, { maximumSignificantDigits: 4 });
 }
 
-/** แบบย่อในแผงรายละเอียด: ทศนิยม 4 ตำแหน่งเสมอ (18,441.2753 · 4.3745) — ค่าเต็มคัดลอกได้จาก data-value */
+/** แบบย่อในแผงรายละเอียด: ทศนิยมไม่เกิน 4 ตำแหน่ง ตัดศูนย์ท้าย (18,506 · 18,506.2753 · 4.3745 · 4) — ค่าเต็มคัดลอกได้จาก data-value */
 export function formatAmountShort(v: number): string {
   if (!Number.isFinite(v)) return '—';
-  return v.toLocaleString(locale, { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+  return v.toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 4 });
 }
 
 /** ตัวเลขเต็มความละเอียดที่ข้อมูลมี (ไม่ปัด) มีตัวคั่นหลัก — ใช้ในแผงรายละเอียด */

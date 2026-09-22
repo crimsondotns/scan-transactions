@@ -4,7 +4,11 @@ import { useStore } from './store';
 import { endpointsFor, hasOlder, useFeed } from './useFeed';
 import { XCapMark } from './components/XCapMark';
 import { Icon } from './components/Icon';
-import { WalletPanel } from './components/WalletPanel';
+import { Identicon } from './components/Identicon';
+import { shortAddr } from './format';
+import { WalletSidebar } from './components/WalletSidebar';
+import { WalletTable } from './components/WalletTable';
+import { RecentTable } from './components/RecentTable';
 import { TxTable } from './components/TxTable';
 import { DetailPanel } from './components/DetailPanel';
 import type { TxRow } from './feed';
@@ -18,6 +22,15 @@ export function App() {
   const { wallets, settings } = useStore();
   const { feeds, loadMany, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /* หน้า: #/ = แดชบอร์ด, #/w/<id> = ธุรกรรมของกระเป๋า — เก็บใน hash ให้ปุ่มย้อนกลับของเบราว์เซอร์ทำงาน */
+  const [hash, setHash] = useState(() => window.location.hash);
+  useEffect(() => {
+    const on = () => setHash(window.location.hash);
+    window.addEventListener('hashchange', on);
+    return () => window.removeEventListener('hashchange', on);
+  }, []);
+  const pageWallet = hash.startsWith('#/w/') ? decodeURIComponent(hash.slice(4)) : null;
+  const page: 'dashboard' | 'wallet' = pageWallet ? 'wallet' : 'dashboard';
   const [selected, setSelected] = useState<TxRow | null>(null);
   /* แผงกระเป๋าย่อเป็นไอคอน (60px) — จำไว้ในเครื่อง */
   const [sideOpen, setSideOpen] = useState(() => {
@@ -68,6 +81,24 @@ export function App() {
     },
     [wallets, hasEndpoint, settings, ensure]
   );
+  /* ไปหน้า 2 ของกระเป๋า (จาก sidebar หรือแถวในตารางกระเป๋า) */
+  const openWallet = useCallback(
+    (id: string | null) => {
+      selectWallet(id);
+      window.location.hash = id ? `#/w/${encodeURIComponent(id)}` : '#/';
+    },
+    [selectWallet]
+  );
+  const goDashboard = useCallback(() => {
+    window.location.hash = '#/';
+  }, []);
+  /* เปิดด้วย URL ที่มี #/w/<id> → เลือกกระเป๋านั้นให้ (ถ้ายังมีอยู่) */
+  useEffect(() => {
+    if (!pageWallet) return;
+    if (!wallets.some((w) => w.id === pageWallet)) return goDashboard();
+    if (activeWallet !== pageWallet) selectWallet(pageWallet);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageWallet, wallets]);
 
   const rows = useMemo(
     () =>
@@ -76,8 +107,9 @@ export function App() {
         .sort((a, b) => b.time - a.time),
     [active, feeds]
   );
+  const walletRows = useMemo(() => (pageWallet ? rows.filter((r) => r.walletId === pageWallet) : rows), [rows, pageWallet]);
   const anyLoading = active.some((w) => feeds[w.id]?.loading);
-  const anyOlder = active.some((w) => hasOlder(feeds[w.id]));
+  const activeWalletObj = wallets.find((w) => w.id === pageWallet) ?? null;
   const errors = active.flatMap((w) => Object.entries(feeds[w.id]?.errors ?? {}).map(([epId, e]) => ({ w, ep: settings.endpoints.find((x) => x.id === epId), e })));
 
   function errMsg({ w, ep, e }: (typeof errors)[number]): string {
@@ -111,7 +143,7 @@ export function App() {
 
       <div className="layout" data-drawer={selected !== null} data-side={sideOpen}>
         <aside className="side">
-          <WalletPanel feeds={feeds} chains={chains} activeId={activeWallet} collapsed={!sideOpen} onSwitch={selectWallet} onRemove={forget} onToggle={toggleSide} hasSource={(w) => endpointsFor(w, settings).length > 0} />
+          <WalletSidebar feeds={feeds} activeId={pageWallet} collapsed={!sideOpen} onSwitch={openWallet} onRemove={forget} onToggle={toggleSide} hasSource={(w) => endpointsFor(w, settings).length > 0} />
           <p className="hint">{t('foot.local')}</p>
         </aside>
 
@@ -123,26 +155,35 @@ export function App() {
                 {t('nav.settings')}
               </button>
             </div>
-          ) : wallets.length === 0 ? (
-            <div className="empty">
-              <h2>{t('tx.emptyWallets')}</h2>
-            </div>
-          ) : !activeWallet && !active.some((w) => feeds[w.id]) ? (
-            <div className="empty">
-              <h2>{t('tx.emptyPick')}</h2>
-              <button type="button" className="btn" disabled={!active.length} onClick={() => void loadMany(active, 'reset')}>
-                <Icon name="refresh" />
-                {t('tx.loadAll')}
-              </button>
+          ) : page === 'dashboard' ? (
+            <div className="stack-lg">
+              <WalletTable feeds={feeds} activeId={pageWallet} onOpen={openWallet} onSwitch={selectWallet} onRemove={forget} hasSource={(w) => endpointsFor(w, settings).length > 0} />
+              {errors.length > 0 && (
+                <div className="field" aria-live="polite">
+                  {errors.map((x) => (
+                    <span key={`${x.w.id}:${x.ep?.id}`} className="error">
+                      {errMsg(x)}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <RecentTable rows={rows} wallets={wallets} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} onLoadAll={() => void loadMany(active, 'reset')} />
             </div>
           ) : (
             <>
               <div className="toolbar">
-                <h1 className="panel-title">{t('tx.title')}</h1>
+                <button type="button" className="btn btn-icon" onClick={goDashboard} aria-label={t('nav.back')} title={t('nav.back')}>
+                  <Icon name="chevronLeft" />
+                </button>
+                <h1 className="panel-title with-logo">
+                  {activeWalletObj ? <Identicon value={activeWalletObj.address} size={28} /> : null}
+                  {activeWalletObj?.label ?? t('tx.title')}
+                </h1>
+                {activeWalletObj && <span className="hint mono">{shortAddr(activeWalletObj.address)}</span>}
                 <span className="top-spacer" />
-                <button type="button" className="btn" disabled={anyLoading || !active.length} onClick={() => void loadMany(active, 'reset')}>
+                <button type="button" className="btn" disabled={anyLoading || !activeWalletObj} onClick={() => activeWalletObj && void loadMany([activeWalletObj], 'reset')}>
                   <Icon name="refresh" />
-                  {anyLoading ? t('wallets.loading') : t('tx.loadAll')}
+                  {anyLoading ? t('wallets.loading') : t('tx.reload')}
                 </button>
               </div>
               {errors.length > 0 && (
@@ -154,10 +195,10 @@ export function App() {
                   ))}
                 </div>
               )}
-              <TxTable rows={rows} wallets={active} chains={chains} wallet={activeWallet ?? ''} onWallet={(id) => selectWallet(id || null)} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} />
-              {anyOlder && (
+              <TxTable rows={walletRows} wallets={active} chains={chains} wallet={pageWallet ?? ''} onWallet={(id) => openWallet(id || null)} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} />
+              {activeWalletObj && hasOlder(feeds[activeWalletObj.id]) && (
                 <div className="tfoot">
-                  <button type="button" className="btn" disabled={anyLoading} onClick={() => void loadMany(active, 'older')}>
+                  <button type="button" className="btn" disabled={anyLoading} onClick={() => void loadMany([activeWalletObj], 'older')}>
                     {anyLoading ? t('wallets.loading') : t('tx.older')}
                   </button>
                 </div>

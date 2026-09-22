@@ -55,8 +55,11 @@ Do not declare work done while any of these is red.
 - `useFeed.feeds[walletId]` คือแคชในหน่วยความจำ: `ensure(w)` โหลดเฉพาะเมื่อยัง `loaded`/`loading` ไม่เป็นจริง; แหล่งข้อมูลเปลี่ยน → `reset()` ล้างแคช ไม่โหลดใหม่เอง
 - สถานะโหลดต่อกระเป๋า: วงหมุน `.spinner` ในแถวกระเป๋า ตารางขึ้น "Loading…" ระหว่างรอ
 
-## Wallet panel = ตารางกระเป๋า (2026-09-22)
+## โครงหน้า 2 หน้า (2026-09-22)
 
-- แผงกระเป๋าเป็นตารางเต็มกว้างอยู่บนตารางธุรกรรม (layout คอลัมน์เดียว): Address (Identicon + label + ที่อยู่ย่อ) · Networks (โลโก้เชนที่พบในธุรกรรม สูงสุด 4 + "+N") · Transactions (จำนวนแถว/สถานะ) · ตา/ถังขยะ — หัวคอลัมน์เรียงได้ (`th-btn`), แสดง 7 แถวแรก + "Show all (N)"
-- คลิกแถว = เลือกกระเป๋า → lazy load → ตารางธุรกรรมด้านล่าง; ไม่มี checkbox/select-all/expand; chevron ที่หัวการ์ด = ย่อ/ขยายตาราง (จำใน localStorage `xcap.scan.side`)
-- ปุ่ม "View on <explorer>" ในแผงรายละเอียดต้องมีเสมอ: ใช้ explorer จาก chain list → URL ที่แถวแนบมา → ถ้าไม่มีทั้งคู่แสดงปุ่ม disabled "No explorer for this chain" (ไม่ซ่อน)
+- เส้นทางใน hash: `#/` = แดชบอร์ด, `#/w/<walletId>` = ธุรกรรมของกระเป๋า (ปุ่มย้อนกลับเบราว์เซอร์ใช้ได้; เปิด URL ตรงจะเลือกกระเป๋าให้)
+- Sidebar ซ้าย (`WalletSidebar`, ย่อ 240→60px จำใน `xcap.scan.side`): avatar + label + ที่อยู่ + สถานะ, ตา/ถังขยะ, Import/Add/Clear; คลิกแถว = ไปหน้า 2 ของกระเป๋านั้น (`openWallet`)
+- หน้า 1 (`WalletTable` + `RecentTable`): ตารางกระเป๋า Label · Address · Transactions · ตา/ถังขยะ (เรียงได้, 7 แถว + Show all) คลิกแถว = หน้า 2; ตารางธุรกรรมล่าสุด 10 แถวจากทุกกระเป๋าที่โหลดแล้ว Type · From · To · Submitted · Amount · Network fee (+ ปุ่ม Load all wallets) คลิกแถว = แผงขวา
+- หน้า 2: ปุ่มกลับ + ชื่อกระเป๋า + Reload, `TxTable` เดิม (Type · Submitted · Amount · Network fee + ตัวกรอง) เฉพาะกระเป๋านั้น, Load older; คลิกแถว = แผงขวา
+- แผงขวา `DetailPanel` เป็น overlay ทั้งสองหน้า; ไม่มี checkbox ที่ไหนเลย
+- ปุ่ม "View on <explorer>" ในแผงรายละเอียดต้องมีเสมอ: chain list → URL ที่แถวแนบมา → ปุ่ม disabled "No explorer for this chain"; chain list โหลดใหม่ไม่ได้ → ใช้ชุดเก่าต่อ

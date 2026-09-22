@@ -72,7 +72,22 @@ export function SlipPicture({ img, alt, className }: { img: SlipImage & { url: s
   return (
     <div ref={box} className={`slip-pic ${className ?? ''}`} style={{ aspectRatio: `${img.width} / ${img.height}` }}>
       <img src={img.url} alt={alt} width={img.width} height={img.height} draggable={false} />
-      <div className="slip-text" style={{ width: img.width, height: img.height, transform: `scale(${scale})` }} aria-hidden="true">
+      <div
+        className="slip-text"
+        style={{ width: img.width, height: img.height, transform: `scale(${scale})` }}
+        aria-hidden="true"
+        /* คลิกขวา (ไม่มีข้อความถูกเลือกอยู่) → ปล่อยให้เมนูของเบราว์เซอร์ตกที่รูปข้างล่าง (Copy Image / Save Image) */
+        onPointerDown={(e) => {
+          if (e.button !== 2) return;
+          const sel = window.getSelection();
+          if (sel && !sel.isCollapsed && e.currentTarget.contains(sel.anchorNode)) return;
+          const el = e.currentTarget;
+          el.style.pointerEvents = 'none';
+          setTimeout(() => {
+            el.style.pointerEvents = '';
+          }, 600);
+        }}
+      >
         {img.texts.map((tx, i) => (
           <span key={i} style={{ left: tx.align === 'right' ? tx.x - tx.w : tx.align === 'center' ? tx.x - tx.w / 2 : tx.x, top: tx.y - tx.size * 0.92, fontSize: tx.size, fontWeight: tx.weight, width: tx.w, lineHeight: `${tx.size * 1.2}px` }}>
             {tx.s}

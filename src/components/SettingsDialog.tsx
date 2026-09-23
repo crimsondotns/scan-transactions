@@ -1,13 +1,22 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useI18n } from '../i18n';
+import { useI18n, type MessageKey } from '../i18n';
 import { SLIP_FIELDS, detectEndpoint, useStore, type Family } from '../store';
 import { Dropdown } from './Dropdown';
 import { Dialog } from './Dialog';
+import { DialogTabs, type TabDef } from './DialogTabs';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { useToast } from './Toast';
 
 const FAMILIES: Family[] = ['evm', 'sol'];
+
+type Tab = 'sources' | 'network' | 'chains' | 'slip';
+const TABS = (t: (k: MessageKey) => string): Array<TabDef<Tab>> => [
+  { id: 'sources', label: t('settings.tab.sources'), icon: 'layers' },
+  { id: 'network', label: t('settings.tab.network'), icon: 'swap' },
+  { id: 'chains', label: t('settings.tab.chains'), icon: 'hexagon' },
+  { id: 'slip', label: t('settings.slip'), icon: 'receipt' },
+];
 
 /* Token metadata URL ต่อแหล่ง — แก้ได้หลังเพิ่มแหล่งแล้ว (ปุ่ม Add ติดเมื่อค่าเปลี่ยน; ล้างค่าแล้วกด = เอาออก) */
 function MetaField({ id, value, onSave }: { id: string; value: string; onSave: (v: string) => void }) {
@@ -82,6 +91,7 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
   const [chainExplorer, setChainExplorer] = useState('');
   const [chainFormErr, setChainFormErr] = useState<string | null>(null);
   const [proxyUrl, setProxyUrlText] = useState(settings.proxyUrl);
+  const [tab, setTab] = useState<Tab>('sources');
   const [proxyErr, setProxyErr] = useState<string | null>(null);
 
   /* ปุ่มเพิ่มติดทันทีที่มีข้อความ — ตรวจความถูกต้องตอนกดส่ง ไม่ใช่ตอนพิมพ์ */
@@ -107,8 +117,10 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={t('settings.title')}>
-      <div className="stack">
+    <Dialog open={open} onClose={onClose} title={t('settings.title')} wide>
+      <DialogTabs tabs={TABS(t)} active={tab} onChange={setTab} label={t('settings.title')}>
+        {tab === 'sources' && (
+          <>
         {settings.endpoints.length === 0 ? (
           <p className="hint">{t('settings.none')}</p>
         ) : (
@@ -267,7 +279,10 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
             )}
           </div>
         </form>
-
+          </>
+        )}
+        {tab === 'network' && (
+          <>
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -459,6 +474,10 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
             spellCheck={false}
           />
         </div>
+          </>
+        )}
+        {tab === 'chains' && (
+          <>
         {/* เชนกำหนดเอง: โลโก้/explorer ต่อ chain id — ใช้ก่อน chain list (เช่นเชนที่ chain list ไม่มี) */}
         <form
           aria-labelledby="chains-h"
@@ -583,6 +602,10 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
             )}
           </div>
         </form>
+          </>
+        )}
+        {tab === 'slip' && (
+          <>
         {/* ป้ายบนสลิป: สวิตช์ต่อรายการ (ไม่มี checkbox) — มีผลกับสลิปที่เปิดครั้งถัดไป */}
         <section aria-labelledby="slip-h">
           <h3 id="slip-h" className="panel-title">
@@ -607,11 +630,13 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
             ))}
           </ul>
         </section>
-        <div className="dlg-actions">
-          <button type="button" className="btn" onClick={onClose}>
-            {t('dialog.close')}
-          </button>
-        </div>
+          </>
+        )}
+      </DialogTabs>
+      <div className="dlg-actions">
+        <button type="button" className="btn" onClick={onClose}>
+          {t('dialog.close')}
+        </button>
       </div>
     </Dialog>
   );

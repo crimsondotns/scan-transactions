@@ -3,9 +3,10 @@
  * ทุกอย่างทำงานในเบราว์เซอร์ล้วน — ข้อความใน UI ต้องไม่ทำให้เข้าใจว่ามีเซิร์ฟเวอร์เก็บของให้ (ดู docs/identity-and-sharing.md)
  */
 import { useEffect, useRef, useState } from 'react';
-import { useI18n } from '../i18n';
+import { useI18n, type MessageKey } from '../i18n';
 import { snapshot, useStore } from '../store';
 import { Dialog } from './Dialog';
+import { DialogTabs, type TabDef } from './DialogTabs';
 import { Dropdown } from './Dropdown';
 import { Icon } from './Icon';
 import { useToast } from './Toast';
@@ -16,6 +17,13 @@ import { buildShare, openShare, sharePath, shareFilename, ShareError, type Share
 import { absoluteUrl } from '../router';
 
 type Mode = 'merge' | 'replace';
+type Tab = 'identity' | 'data' | 'share' | 'limits';
+const TABS = (t: (k: MessageKey) => string): Array<TabDef<Tab>> => [
+  { id: 'identity', label: t('account.tab.identity'), icon: 'user' },
+  { id: 'data', label: t('account.tab.data'), icon: 'layers' },
+  { id: 'share', label: t('account.tab.share'), icon: 'link' },
+  { id: 'limits', label: t('account.tab.limits'), icon: 'shield' },
+];
 
 function download(name: string, text: string): void {
   const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
@@ -54,6 +62,11 @@ export function AccountDialog({ open, onClose, incoming = null }: { open: boolea
   const [shareFile, setShareFile] = useState<string | null>(null);
   const [openKey, setOpenKey] = useState('');
   const [openErr, setOpenErr] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>('identity');
+
+  useEffect(() => {
+    if (incoming) setTab('share');
+  }, [incoming]);
 
   useEffect(() => {
     setDisplayName(profile?.displayName ?? '');
@@ -144,9 +157,9 @@ export function AccountDialog({ open, onClose, incoming = null }: { open: boolea
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={t('account.title')}>
-      <div className="stack">
-        {incoming && (
+    <Dialog open={open} onClose={onClose} title={t('account.title')} wide>
+      <DialogTabs tabs={TABS(t)} active={tab} onChange={setTab} label={t('account.title')}>
+        {tab === 'share' && incoming && (
           <section className="field">
             <h3 className="panel-title">{t('account.incoming')}</h3>
             <p className="hint">{t('account.incomingNote')}</p>
@@ -157,7 +170,8 @@ export function AccountDialog({ open, onClose, incoming = null }: { open: boolea
             </div>
           </section>
         )}
-        {/* บัญชี */}
+        {tab === 'identity' && (
+          <>
         <section className="field">
           <h3 className="panel-title">{t('account.identity')}</h3>
           {state === 'ready' && identity ? (
@@ -238,7 +252,10 @@ export function AccountDialog({ open, onClose, incoming = null }: { open: boolea
           <p className="hint">{t('account.usernameNote')}</p>
         </section>
 
-        {/* ข้อมูลในเครื่อง */}
+          </>
+        )}
+        {tab === 'data' && (
+          <>
         <section className="field">
           <h3 className="panel-title">{t('account.data')}</h3>
           <p className="hint">{t('account.dataWhere', { wallets: wallets.length, sources: settings.endpoints.length })}</p>
@@ -289,7 +306,10 @@ export function AccountDialog({ open, onClose, incoming = null }: { open: boolea
           <p className="hint">{t('account.backupNote')}</p>
         </section>
 
-        {/* แพ็กเกจแชร์ */}
+          </>
+        )}
+        {tab === 'share' && (
+          <>
         <section className="field">
           <h3 className="panel-title">{t('account.share')}</h3>
           <div className="inline">
@@ -363,6 +383,10 @@ export function AccountDialog({ open, onClose, incoming = null }: { open: boolea
           <p className="hint">{t('account.shareNote')}</p>
         </section>
 
+          </>
+        )}
+        {tab === 'limits' && (
+          <>
         <section className="field">
           <h3 className="panel-title">{t('account.limits')}</h3>
           <ul className="hint stack-tight">
@@ -378,6 +402,13 @@ export function AccountDialog({ open, onClose, incoming = null }: { open: boolea
             {t('account.forget')}
           </button>
         </div>
+          </>
+        )}
+      </DialogTabs>
+      <div className="dlg-actions">
+        <button type="button" className="btn" onClick={onClose}>
+          {t('dialog.close')}
+        </button>
       </div>
     </Dialog>
   );

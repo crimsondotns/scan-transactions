@@ -5,7 +5,7 @@ import { useModalLayer } from '../modal';
 import { useI18n } from '../i18n';
 import { Icon } from './Icon';
 
-export function Dialog({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+export function Dialog({ open, onClose, title, children, wide = false }: { open: boolean; onClose: () => void; title: string; children: ReactNode; wide?: boolean }) {
   const ref = useRef<HTMLDialogElement>(null);
   const { t } = useI18n();
   useModalLayer(ref, open);
@@ -20,7 +20,7 @@ export function Dialog({ open, onClose, title, children }: { open: boolean; onCl
   return createPortal(
     <dialog
       ref={ref}
-      className="dlg"
+      className={wide ? 'dlg dlg-wide' : 'dlg'}
       onClose={onClose}
       onClick={(e) => {
         if (e.target === ref.current) onClose();

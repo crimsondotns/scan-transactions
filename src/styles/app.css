@@ -2009,3 +2009,84 @@ dialog.dlg::backdrop {
   gap: var(--space-1);
   min-width: 0;
 }
+
+/* ---------- ไดอะล็อกแบบมีแถบหัวข้อ (ตั้งค่า / บัญชี) ---------- */
+dialog.dlg-wide {
+  width: min(880px, calc(100vw - 2 * var(--space-4)));
+  height: min(640px, calc(100dvh - 2 * var(--space-4)));
+  display: flex;
+  flex-direction: column;
+}
+.dlg-tabs {
+  display: flex;
+  gap: var(--space-5);
+  min-height: 0;
+  flex: 1;
+}
+.dlg-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  flex: 0 0 180px;
+  padding-right: var(--space-4);
+  border-right: 1px solid var(--color-line-subtle);
+  overflow-y: auto;
+}
+.tab-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: var(--size-body);
+  text-align: left;
+  cursor: pointer;
+}
+.tab-item:hover {
+  background: var(--color-soft);
+  color: var(--color-ink);
+}
+.tab-item[aria-selected='true'] {
+  background: var(--color-soft);
+  color: var(--color-ink);
+  font-weight: var(--weight-medium);
+}
+.tab-item:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 2px;
+}
+.tab-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dlg-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding-right: var(--space-1);
+}
+@media (max-width: 720px) {
+  .dlg-tabs {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+  .dlg-rail {
+    flex: 0 0 auto;
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 0 0 var(--space-2);
+    border-right: 0;
+    border-bottom: 1px solid var(--color-line-subtle);
+  }
+  .tab-item {
+    flex: 0 0 auto;
+  }
+}

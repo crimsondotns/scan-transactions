@@ -32,14 +32,36 @@ const isObj = (v: unknown): v is Dict => typeof v === 'object' && v !== null && 
 const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
 const https = (v: unknown): string | null => (typeof v === 'string' && /^https:\/\//i.test(v) ? v : null);
 
-function normalize(body: unknown): ChainInfo[] {
-  const list = Array.isArray(body) ? body : isObj(body) && Array.isArray(body.data) ? body.data : isObj(body) && isObj(body.data) && Array.isArray(body.data.chains) ? body.data.chains : [];
+/** ค่าแรกที่ใช้ได้จากหลายชื่อฟิลด์ — รายชื่อเชนแต่ละเจ้าตั้งชื่อไม่เหมือนกัน */
+const pick = (c: Dict, keys: string[], f: (v: unknown) => string | null): string | null => {
+  for (const k of keys) {
+    const v = f(c[k]);
+    if (v) return v;
+  }
+  return null;
+};
+
+/**
+ * แปลงรายชื่อเชนให้เป็นรูปเดียว — รับได้ทั้งอาร์เรย์ตรงๆ และที่ห่อใน data / data.chains
+ * ชื่อฟิลด์ของแต่ละเจ้าไม่ตรงกัน (บางเจ้าส่ง explorer_host บางเจ้า explorer/browser และบางเจ้าเป็นรายการ explorers[])
+ * จึงลองหลายชื่อแทนที่จะยึดชื่อเดียว ไม่งั้นลิงก์ explorer จะว่างทั้งระบบโดยไม่มีอะไรฟ้อง
+ */
+export function normalize(body: unknown): ChainInfo[] {
+  const list = Array.isArray(body) ? body : isObj(body) && Array.isArray(body.data) ? body.data : isObj(body) && isObj(body.data) && Array.isArray(body.data.chains) ? body.data.chains : isObj(body) && Array.isArray(body.chains) ? body.chains : [];
   const out: ChainInfo[] = [];
   for (const c of list) {
     if (!isObj(c)) continue;
-    const id = str(c.id);
+    const id = str(c.id) ?? str(c.chain) ?? str(c.chainId) ?? str(c.short_name);
     if (!id) continue;
-    out.push({ id, name: str(c.name) ?? id, logo: https(c.logo_url), explorer: https(c.explorer_host), symbol: str(c.token_symbol) });
+    // explorers: [{ url }] — รูปแบบของรายชื่อเชนสาธารณะบางเจ้า
+    const fromList = Array.isArray(c.explorers) ? c.explorers.map((e) => (isObj(e) ? https(e.url) : null)).find((v) => v) : null;
+    out.push({
+      id,
+      name: str(c.name) ?? str(c.chainName) ?? id,
+      logo: pick(c, ['logo_url', 'svg_logo_url', 'logoURI', 'logo', 'icon', 'image'], https),
+      explorer: pick(c, ['explorer_host', 'explorer', 'explorer_url', 'explorerUrl', 'browser', 'block_explorer', 'blockExplorer'], https) ?? fromList ?? null,
+      symbol: pick(c, ['token_symbol', 'native_symbol', 'symbol', 'nativeSymbol'], str),
+    });
   }
   return out;
 }

@@ -18,10 +18,10 @@ function devProxy(): Plugin {
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const u = new URL(req.url ?? '/', 'http://localhost');
-        // /transactions (ไม่มี / ท้าย) → /transactions/ — เหมือนที่ static host ทำ
-        if (u.pathname === '/transactions') {
+        // /xcapscan (ไม่มี / ท้าย) → /xcapscan/ — เหมือนที่ static host ทำ
+        if (u.pathname === '/xcapscan') {
           res.statusCode = 302;
-          res.setHeader('location', `/transactions/${u.search}`);
+          res.setHeader('location', `/xcapscan/${u.search}`);
           return res.end();
         }
         if (!u.pathname.endsWith('/__proxy')) return next();
@@ -49,7 +49,7 @@ function devProxy(): Plugin {
 }
 
 export default defineConfig({
-  base: '/transactions/',
+  base: '/xcapscan/',
   plugins: [react(), devProxy()],
   server: { port: 5174, strictPort: true },
 });

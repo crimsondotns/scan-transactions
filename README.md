@@ -6,7 +6,7 @@ Static, browser-only transaction list for many wallets. No server, no account, n
 
 ```bash
 pnpm install
-pnpm dev          # http://localhost:5174/transactions/
+pnpm dev          # http://localhost:5174/xcapscan/
 pnpm typecheck
 pnpm check
 pnpm test

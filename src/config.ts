@@ -29,6 +29,22 @@ function parseJson(raw: string | undefined): unknown {
   }
 }
 
+/**
+ * ลายนิ้วมือของค่าที่ฝังตอน build — เก็บไว้ในเครื่องพร้อมข้อมูล
+ * ค่าที่ deploy เปลี่ยน (แก้ secret แล้ว build ใหม่) ลายนิ้วมือจะไม่ตรง เบราว์เซอร์ที่เคยเปิดไว้แล้วจึงรับค่าใหม่ได้
+ * ไม่ใช่เพื่อความปลอดภัย แค่ต้องการตัวเทียบสั้นๆ ที่ไม่ต้องเก็บค่าเดิมทั้งก้อน
+ */
+export function configFingerprint(raw: Array<string | undefined> = [env.VITE_SOURCES, env.VITE_CHAIN_LIST_URL, env.VITE_CHAINS]): string {
+  const text = raw.map((v) => v ?? '').join('\u0000');
+  if (!text) return '';
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0).toString(36);
+}
+
 /** แหล่งข้อมูลตั้งต้น — ใช้เฉพาะตอนเบราว์เซอร์นี้ยังไม่เคยมีข้อมูล ผู้ใช้แก้/ลบทับได้ตลอด */
 export function configuredEndpoints(raw = env.VITE_SOURCES): Endpoint[] {
   const list = parseJson(raw);

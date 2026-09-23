@@ -129,3 +129,42 @@ test('แท็กถูกล้างก่อนบันทึก: ตัด
   assert.deepEqual(cleanTags([' เก็บยาว ', 'ลูกค้า', 'เก็บยาว', '', '   ']), ['เก็บยาว', 'ลูกค้า']);
   assert.deepEqual(cleanTags([]), []);
 });
+
+/* ---- ค่าที่ฝังตอน build ต้องไปถึงเบราว์เซอร์ที่เคยเปิดไว้แล้ว ---- */
+import { applyBuildConfig, type BuildConfig } from '../src/store.ts';
+
+const cfgOf = (over: Partial<BuildConfig> = {}): BuildConfig => ({ endpoints: [{ id: 'c1', name: 'จาก build', url: 'https://one.example.invalid/{address}', family: 'erc20', enabled: true }], chainListUrl: 'https://list.example.invalid/new', chains: [{ id: 'sol', name: 'Solana', explorer: 'https://scan.example.invalid' }], fingerprint: 'aaa', ...over });
+const savedOf = (over: Partial<Parameters<typeof applyBuildConfig>[0]> = {}) => ({ endpoints: [{ id: 's1', name: 'ของเดิม', url: 'https://old.example.invalid/{address}', family: 'erc20' as const, enabled: true }], chainListUrl: 'https://list.example.invalid/old', chains: [], ...over });
+
+test('ค่าที่ฝังตอน build เปลี่ยน → เครื่องที่เคยเปิดไว้รับค่าใหม่ (ไม่ยึดสำเนาเก่าตลอดไป)', () => {
+  const out = applyBuildConfig(savedOf({ cfg: 'เก่า' }), cfgOf());
+  assert.equal(out.chainListUrl, 'https://list.example.invalid/new');
+  assert.equal(out.endpoints[0]?.id, 'c1');
+  assert.equal(out.chains[0]?.explorer, 'https://scan.example.invalid');
+});
+
+test('ลายนิ้วมือเท่าเดิม → ของในเครื่องชนะ (ไม่ทับของที่กู้คืนมาจากไฟล์สำรอง)', () => {
+  const out = applyBuildConfig(savedOf({ cfg: 'aaa' }), cfgOf());
+  assert.equal(out.chainListUrl, 'https://list.example.invalid/old');
+  assert.equal(out.endpoints[0]?.id, 's1');
+  assert.equal(out.chains.length, 1, 'เชนจาก build ที่ยังไม่มีในเครื่อง ยังถูกเติมให้');
+});
+
+test('เครื่องยังว่าง → เติมจาก build ให้ทั้งชุด', () => {
+  const out = applyBuildConfig({ endpoints: [], chainListUrl: '', chains: [], cfg: 'aaa' }, cfgOf());
+  assert.equal(out.endpoints[0]?.id, 'c1');
+  assert.equal(out.chainListUrl, 'https://list.example.invalid/new');
+});
+
+test('build ไม่ได้ตั้งค่าอะไรเลย (dev) → ไม่ไปลบของในเครื่อง', () => {
+  const out = applyBuildConfig(savedOf({ cfg: 'เก่า', chains: [{ id: 'sol', name: 'ของฉัน' }] }), { endpoints: [], chainListUrl: '', chains: [], fingerprint: '' });
+  assert.equal(out.endpoints[0]?.id, 's1');
+  assert.equal(out.chainListUrl, 'https://list.example.invalid/old');
+  assert.equal(out.chains[0]?.name, 'ของฉัน');
+});
+
+test('เชนที่ผู้ใช้มีเองและไม่ชนกับ build ยังอยู่ครบหลังค่าเปลี่ยน', () => {
+  const out = applyBuildConfig(savedOf({ cfg: 'เก่า', chains: [{ id: 'sol', name: 'ทับของ build' }, { id: 'base', name: 'ของฉัน' }] }), cfgOf());
+  assert.equal(out.chains.find((c) => c.id === 'sol')?.name, 'Solana', 'id ที่ชนกัน ค่าใหม่จาก build ชนะ');
+  assert.equal(out.chains.find((c) => c.id === 'base')?.name, 'ของฉัน');
+});

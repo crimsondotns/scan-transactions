@@ -3,7 +3,7 @@
  * ไม่มีบัญชี ไม่มี sync: กระเป๋าและแหล่งข้อมูลอยู่บนเครื่องนี้เท่านั้น
  */
 import { useCallback, useSyncExternalStore } from 'react';
-import { configuredChainListUrl, configuredEndpoints, withConfiguredChains } from './config';
+import { configFingerprint, configuredChainListUrl, configuredChains, configuredEndpoints, withConfiguredChains } from './config';
 
 export type Family = 'erc20' | 'sol';
 /** ค่าที่บันทึกไว้เดิมใช้คำว่า evm — แปลงตอนอ่านเพื่อไม่ให้ข้อมูลเก่าพัง */
@@ -68,7 +68,41 @@ interface State {
   v: 2;
   wallets: Wallet[];
   settings: Settings;
+  /** ลายนิ้วมือของค่าที่ฝังตอน build ตอนที่บันทึกครั้งล่าสุด (ดู applyBuildConfig) */
+  cfg?: string;
 }
+
+/** ค่าที่ฝังตอน build ที่มีผลกับข้อมูลในเครื่อง */
+export interface BuildConfig {
+  endpoints: Endpoint[];
+  chainListUrl: string;
+  chains: ChainOverride[];
+  fingerprint: string;
+}
+
+/**
+ * รวมค่าที่ฝังตอน build เข้ากับค่าที่บันทึกไว้ในเครื่อง
+ *
+ * แหล่งข้อมูลและรายชื่อเชนไม่มีช่องให้แก้ในหน้าเว็บแล้ว (มาจากตอน build อย่างเดียว)
+ * ค่าที่บันทึกไว้จึงเป็นแค่สำเนาของ build ครั้งก่อน — พอเปลี่ยน secret แล้ว deploy ใหม่
+ * เบราว์เซอร์ที่เคยเปิดไว้ต้องรับค่าใหม่ ไม่ใช่ยึดสำเนาเก่าไว้ตลอดไป (เคยทำให้ลิงก์ explorer หายทั้งระบบ)
+ * ลายนิ้วมือยังเท่าเดิม = ไม่มีอะไรเปลี่ยน ให้ของในเครื่องชนะ (เช่นที่กู้คืนมาจากไฟล์สำรอง)
+ */
+export function applyBuildConfig(saved: { endpoints: Endpoint[]; chainListUrl: string; chains: ChainOverride[]; cfg?: string }, cfg: BuildConfig): { endpoints: Endpoint[]; chainListUrl: string; chains: ChainOverride[] } {
+  // ค่าที่ฝังตอน build เปลี่ยนไปจากตอนที่บันทึกไว้ (หรือเครื่องนี้ยังไม่เคยจำลายนิ้วมือ)
+  const changed = cfg.fingerprint !== '' && saved.cfg !== cfg.fingerprint;
+  const takeEndpoints = cfg.endpoints.length > 0 && (changed || saved.endpoints.length === 0);
+  const takeUrl = cfg.chainListUrl !== '' && (changed || saved.chainListUrl === '');
+  // เชนจาก build ชนะของเก่าที่ id ซ้ำกันเมื่อค่าเปลี่ยน; เชนที่ผู้ใช้กู้คืนมาเองและไม่ชนกัน ยังอยู่ครบ
+  const keep = changed ? saved.chains.filter((c) => !cfg.chains.some((x) => x.id === c.id)) : saved.chains;
+  return {
+    endpoints: takeEndpoints ? cfg.endpoints : saved.endpoints,
+    chainListUrl: takeUrl ? cfg.chainListUrl : saved.chainListUrl,
+    chains: withConfiguredChains(keep, cfg.chains),
+  };
+}
+
+const buildConfig = (): BuildConfig => ({ endpoints: configuredEndpoints(), chainListUrl: configuredChainListUrl(), chains: configuredChains(), fingerprint: configFingerprint() });
 
 const KEY = 'xcap.scan.v1';
 const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', hideScam: false, slipShow: SLIP_SHOW_DEFAULT, proxyUrl: '', chains: [] } };
@@ -104,15 +138,23 @@ function load(): State {
   try {
     const raw = localStorage.getItem(KEY);
     // เบราว์เซอร์นี้ยังไม่เคยมีข้อมูล → เริ่มจากค่าที่ตั้งไว้ตอน build (ถ้ามี) จากนั้นผู้ใช้แก้ได้เองตลอด
-    if (!raw) return { ...DEFAULT, settings: { ...DEFAULT.settings, endpoints: configuredEndpoints(), chainListUrl: configuredChainListUrl(), chains: withConfiguredChains([]) } };
+    const cfg = buildConfig();
+    if (!raw) return { ...DEFAULT, cfg: cfg.fingerprint, settings: { ...DEFAULT.settings, ...applyBuildConfig({ endpoints: [], chainListUrl: '', chains: [] }, cfg) } };
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const wallets = Array.isArray(parsed.wallets) ? (parsed.wallets as Wallet[]) : [];
     const s = (parsed.settings ?? {}) as Partial<Settings> & { endpoint?: string };
     // v1 เก็บแหล่งข้อมูลเดียวเป็นสตริง → กลายเป็นรายการหนึ่งรายการ (ERC-20)
     const saved: Endpoint[] = Array.isArray(s.endpoints) ? s.endpoints : s.endpoint ? [{ id: 'ep1', name: 'ERC-20', url: s.endpoint, family: 'erc20', enabled: true }] : [];
-    // เคยเปิดเว็บไว้ตอนยังไม่ได้ตั้งค่า (เบราว์เซอร์จึงมีสถานะที่ไม่มีแหล่งข้อมูลค้างอยู่)
-    // → เติมจากค่าที่ฝังตอน build ให้ ไม่งั้นต้องล้างข้อมูลเบราว์เซอร์เองถึงจะเห็น
-    const endpoints: Endpoint[] = (saved.length ? saved : configuredEndpoints()).map((e) => ({ ...e, family: toFamily(e.family) }));
+    const merged = applyBuildConfig(
+      {
+        endpoints: saved.map((e) => ({ ...e, family: toFamily(e.family) })),
+        chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '',
+        chains: Array.isArray(s.chains) ? (s.chains as ChainOverride[]).filter((c) => c && typeof c.id === 'string') : [],
+        ...(typeof parsed.cfg === 'string' ? { cfg: parsed.cfg } : {}),
+      },
+      cfg
+    );
+    const endpoints: Endpoint[] = merged.endpoints.map((e) => ({ ...e, family: toFamily(e.family) }));
     return {
       v: 2,
       wallets: wallets.flatMap((w) => {
@@ -120,7 +162,8 @@ function load(): State {
         const tags = readTags(w as unknown as Record<string, unknown>);
         return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false, ...(tags.length ? { tags } : {}) }] : [];
       }),
-      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' && s.chainListUrl ? s.chainListUrl : configuredChainListUrl(), priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '', chains: withConfiguredChains(Array.isArray(s.chains) ? (s.chains as ChainOverride[]).filter((c) => c && typeof c.id === 'string') : []) },
+      cfg: cfg.fingerprint,
+      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: merged.chainListUrl, priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '', chains: merged.chains },
     };
   } catch {
     return DEFAULT;

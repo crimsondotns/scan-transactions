@@ -10,6 +10,7 @@ import type { GroupId } from '../groups';
 import { lastTime, netUsd, rowsOfToken, signClassOf, tokenSummary, totals, withinDays } from '../flow';
 import { formatAmount, formatPrice, formatRelative, formatUsdExact, shortAddr } from '../format';
 import { useI18n } from '../i18n';
+import { useCopy } from '../copy';
 import { FlowChart, RangeChips, Stat, type Range } from '../components/FlowChart';
 import { useGroupLabel } from '../components/GroupNav';
 import { PageTabs } from '../components/PageTabs';
@@ -23,6 +24,7 @@ import { useStickyHead } from '../useStickyHead';
 
 export function AssetPage({ symbol, wallet, all, rows, chains, group, range, onRange, onBack, onBackWallet, onWallet, onScopeAll, selected, onSelect, loading }: { symbol: string; wallet: Wallet | null; all: Wallet[]; rows: TxRow[]; chains: ChainMap; group: GroupId; range: Range; onRange: (r: Range) => void; onBack: () => void; onBackWallet: () => void; onWallet: (id: string) => void; onScopeAll: () => void; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean }) {
   const { t } = useI18n();
+  const copy = useCopy();
   const [tab, setTab] = useState<'history' | 'holders'>('history');
   const holdersHead = useStickyHead();
   const groupLabel = useGroupLabel(all, group);
@@ -63,7 +65,15 @@ export function AssetPage({ symbol, wallet, all, rows, chains, group, range, onR
           <span className="who">
             <TokenLogo token={token?.logo ?? null} tokenName={symbol} chain={chain?.logo ?? null} chainName={chain?.name ?? token?.chain ?? ''} size={44} />
             <span className="act-text">
-              <span className="act-title head-name">{symbol}</span>
+              {token?.tokenId ? (
+                <button type="button" className="act-title head-name copy-name" title={t('token.copyAddress', { sym: symbol })} aria-label={t('token.copyAddress', { sym: symbol })} onClick={() => copy(token.tokenId ?? '')}>
+                  {symbol}
+                </button>
+              ) : (
+                <span className="act-title head-name" title={t('token.native')}>
+                  {symbol}
+                </span>
+              )}
               <span className="act-sub">
                 {[token?.name ?? null, chain?.name ?? token?.chain ?? null, price === null ? null : t('token.perUnit', { price: formatPrice(price) })].filter(Boolean).join(' · ')}
               </span>

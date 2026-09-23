@@ -9,7 +9,8 @@ import type { Endpoint } from './store';
 
 const KEY = 'xcap.scan.tokens';
 const TTL = 7 * 24 * 60 * 60 * 1000;
-const BATCH = 50;
+/* ชุดละ 20 ที่อยู่ — แหล่งที่เป็น endpoint ค้นหามักตัดผลลัพธ์เมื่อคิวรียาวเกิน ชุดเล็กจึงได้ครบกว่า */
+const BATCH = 20;
 const GAP_MS = 1500;
 
 type Entry = TokenMeta & { t: number };

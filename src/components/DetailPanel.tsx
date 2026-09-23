@@ -104,7 +104,15 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
         </span>
       </span>
       <span className="ev-asset-info">
-        <span className="ev-symbol">{m.symbol}</span>
+        {m.tokenId ? (
+          <button type="button" className="ev-symbol copy-name" title={t('token.copyAddress', { sym: m.symbol })} aria-label={t('token.copyAddress', { sym: m.symbol })} onClick={() => void copyValue(m.tokenId ?? '')}>
+            {m.symbol}
+          </button>
+        ) : (
+          <span className="ev-symbol" title={t('token.native')}>
+            {m.symbol}
+          </span>
+        )}
         <span className="ev-net">
           {t('detail.on', { chain: chainName })}
         </span>

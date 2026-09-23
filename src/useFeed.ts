@@ -15,7 +15,7 @@ export interface Progress {
 
 const BATCH = 5;
 const BATCH_GAP_MS = 2000;
-import { FeedError, applyTokenMeta, fetchPage, unknownTokens, type Cursor, type TxRow } from './feed';
+import { FeedError, applyTokenMeta, fetchPage, unknownTokens, type Cursor, type TokenMeta, type TxRow } from './feed';
 import { ensureTokenMeta } from './tokens';
 import type { Endpoint, Settings, Wallet } from './store';
 
@@ -39,6 +39,34 @@ export function useFeed(settings: Settings) {
   const inflight = useRef(new Set<string>());
   const latest = useRef(feeds);
   latest.current = feeds;
+
+  /**
+   * เติมชื่อ/สัญลักษณ์/โลโก้ของโทเคนที่ยังไม่รู้จักในแถวที่โหลดมาแล้ว
+   * เรียกซ้ำได้: ที่อยู่ที่เคยขอสำเร็จอยู่ในแคช จึงไม่ยิงซ้ำ ที่ยังไม่สำเร็จเท่านั้นที่ยิงใหม่
+   */
+  const fillMeta = useCallback(
+    async (w: Wallet, tries = 3, delay = 1200): Promise<void> => {
+      const eps = endpointsFor(w, settings).filter((e) => e.metaUrl);
+      if (!eps.length) return;
+      for (let i = 0; i < tries; i++) {
+        const ids = unknownTokens(latest.current[w.id]?.rows ?? []);
+        if (!ids.length) return;
+        const meta = new Map<string, TokenMeta>();
+        for (const ep of eps) for (const [k, v] of await ensureTokenMeta(ep, ids)) meta.set(k, v);
+        if (meta.size) {
+          setFeeds((s) => {
+            const f = s[w.id];
+            if (!f) return s;
+            const rows = applyTokenMeta(f.rows, meta);
+            return rows === f.rows ? s : { ...s, [w.id]: { ...f, rows } };
+          });
+          return;
+        }
+        await new Promise((r) => setTimeout(r, delay * (i + 1)));
+      }
+    },
+    [settings]
+  );
 
   const load = useCallback(
     async (w: Wallet, mode: 'reset' | 'older') => {
@@ -89,8 +117,11 @@ export function useFeed(settings: Settings) {
         return { ...s, [w.id]: { rows, next, errors, loading: false, loaded: true } };
       });
       inflight.current.delete(w.id);
+      /* โทเคนของเชนตระกูล Solana ไม่มีชื่อ/โลโก้มากับธุรกรรมเลย ต้องขอ metadata แยกเสมอ
+         รอบแรกพลาดได้ (429 / เน็ตสะดุด) แล้วจะค้างเป็นตัวย่อที่อยู่กับวงกลมตัวอักษรทั้งหน้า → ตามเก็บให้อีกสองรอบ */
+      void fillMeta(w);
     },
-    [settings]
+    [settings, fillMeta]
   );
 
   const loadMany = useCallback(

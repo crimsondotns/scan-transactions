@@ -4,12 +4,14 @@ import type { TxRow } from '../feed';
 import { tokenSummary, signClassOf } from '../flow';
 import { formatUsdExact } from '../format';
 import { useI18n } from '../i18n';
+import { useCopy } from '../copy';
 import { Logo } from './Logo';
 import { useStickyHead } from '../useStickyHead';
 import { SkeletonRows } from './Skeleton';
 
 export function TokenTable({ rows, onToken, loading = false }: { rows: TxRow[]; onToken: (symbol: string) => void; loading?: boolean }) {
   const { t } = useI18n();
+  const copy = useCopy();
   const tokens = useMemo(() => tokenSummary(rows), [rows]);
   const head = useStickyHead();
   if (!tokens.length && !loading) return <p className="hint">{t('tx.emptyLoaded')}</p>;
@@ -52,7 +54,24 @@ export function TokenTable({ rows, onToken, loading = false }: { rows: TxRow[]; 
                 <span className="who">
                   <Logo src={k.logo} name={k.symbol} size={28} />
                   <span className="act-text">
-                    <span className="act-title">{k.symbol}</span>
+                    {k.tokenId ? (
+                      <button
+                        type="button"
+                        className="act-title copy-name"
+                        title={t('token.copyAddress', { sym: k.symbol })}
+                        aria-label={t('token.copyAddress', { sym: k.symbol })}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          copy(k.tokenId ?? '');
+                        }}
+                      >
+                        {k.symbol}
+                      </button>
+                    ) : (
+                      <span className="act-title" title={t('token.native')}>
+                        {k.symbol}
+                      </span>
+                    )}
                     <span className="act-sub">{k.name ?? k.chain}</span>
                   </span>
                 </span>

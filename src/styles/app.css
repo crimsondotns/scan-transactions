@@ -2655,6 +2655,35 @@ dialog.dlg-wide[open] {
   display: inline-flex;
   gap: var(--space-1);
 }
+/* ชื่อ/สัญลักษณ์ที่กดแล้วคัดลอกที่อยู่โทเคน — ดูเหมือนข้อความเดิมทุกอย่าง
+   รีเซ็ตแค่รูปร่างปุ่ม ไม่ตั้ง font ทั้งก้อน ไม่งั้นจะล้างขนาดตัวอักษรของคลาสข้างๆ (.ev-symbol / .head-name) */
+.copy-name {
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  color: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  cursor: pointer;
+  max-width: 100%;
+}
+.copy-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-style: dotted;
+}
+/* .act-title ไม่ได้ตั้ง font-size เอง (รับจากตาราง) → ปุ่มต้องไม่ตกไปใช้ขนาดของ UA */
+.act-title.copy-name {
+  font-size: var(--size-body);
+}
+.head-name.copy-name,
+.ev-symbol.copy-name {
+  font-size: var(--size-heading-sm);
+}
+
 /* ชื่อโทเคนในตารางที่กดเข้าไปดูหน้าโทเคนได้ */
 .linkish {
   border: 0;

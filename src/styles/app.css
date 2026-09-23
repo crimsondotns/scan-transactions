@@ -2028,6 +2028,67 @@ dialog.dlg::backdrop {
   min-width: 0;
 }
 
+/* ---------- หน้าตั้งค่า: กลุ่ม + แถว (ชื่อ/คำอธิบายซ้าย ตัวควบคุมขวา) ---------- */
+.set-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.set-group-title {
+  font-size: var(--size-caption);
+  font-weight: var(--weight-book);
+  color: var(--color-muted);
+  letter-spacing: 0;
+}
+.set-rows {
+  display: flex;
+  flex-direction: column;
+}
+.set-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 48px;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-line-subtle);
+}
+.set-rows > .set-row:last-child {
+  border-bottom: 0;
+}
+.set-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.set-row-title {
+  font-size: var(--size-input);
+  font-weight: var(--weight-book);
+}
+.set-row-desc {
+  font-size: var(--size-caption);
+  line-height: 1.4;
+  color: var(--color-muted);
+  overflow-wrap: anywhere;
+}
+.set-row-value {
+  flex: none;
+  font-size: var(--size-caption);
+  color: var(--color-muted);
+}
+.set-row .inline {
+  flex: none;
+}
+.set-num {
+  width: 72px;
+  flex: none;
+}
+.set-pass {
+  width: 140px;
+  flex: none;
+}
+
 /* ---------- ลำดับชั้นตัวอักษรในไดอะล็อก (ตามตารางชนิดตัวอักษรของดีไซน์ซิสเต็ม) ----------
  * สร้างลำดับชั้นด้วย ขนาด + น้ำหนัก + ระยะ ไม่ใช่ตัวใหญ่ขึ้นอย่างเดียว
  * ชื่อไดอะล็อก 20/600 · หัวข้อส่วน 17/600 · ป้ายฟิลด์ 14/500 · แถวรายการ 15/500 · คำอธิบาย 13/500 สีจาง

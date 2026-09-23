@@ -15,7 +15,6 @@ import { DetailPanel } from './components/DetailPanel';
 import type { TxRow } from './feed';
 import { useChains } from './chains';
 import { SettingsDialog } from './components/SettingsDialog';
-import { DataDialog } from './components/DataDialog';
 import { VerifyDialog } from './components/VerifyDialog';
 import { parseShare } from './slip';
 import { LangMenu } from './components/LangMenu';
@@ -29,7 +28,6 @@ export function App() {
   const { wallets, settings } = useStore();
   const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [dataOpen, setDataOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   /* หน้า: / = แดชบอร์ด, /<id> = ธุรกรรมของกระเป๋า (v/ สงวนให้ลิงก์ตรวจสลิป) — path จริง (History API) ปุ่มย้อนกลับใช้ได้ */
   const route = useRoute();
@@ -108,7 +106,6 @@ export function App() {
   }, [page, hasEndpoint, epKey, active.length]);
 
   /* chain id ที่พบในข้อมูลจริง — โชว์ใน Settings ให้ผู้ใช้ตั้ง Custom chains ด้วย id ที่ตรง */
-  const seenChains = useMemo(() => [...new Set(rows.map((r) => r.chain))].sort(), [rows]);
   const walletRows = useMemo(() => (pageWallet ? rows.filter((r) => r.walletId === pageWallet) : rows), [rows, pageWallet]);
   const anyLoading = active.some((w) => feeds[w.id]?.loading);
   const activeWalletObj = wallets.find((w) => w.id === pageWallet) ?? null;
@@ -139,9 +136,6 @@ export function App() {
         </span>
         <button type="button" className="btn btn-icon" data-fn="verify" onClick={() => setVerifyOpen(true)} aria-label={t('slip.verify')} title={t('slip.verify')}>
           <Icon name="shield" />
-        </button>
-        <button type="button" className="btn btn-icon" onClick={() => setDataOpen(true)} aria-label={t('nav.account')} title={t('nav.account')}>
-          <Icon name="user" />
         </button>
         <button type="button" className="btn btn-icon" onClick={() => setSettingsOpen(true)} aria-label={t('nav.settings')} title={t('nav.settings')}>
           <Icon name="settings" />
@@ -205,8 +199,7 @@ export function App() {
         </main>
       </div>
 
-      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} seenChains={seenChains} />
-      <DataDialog open={dataOpen} onClose={() => setDataOpen(false)} />
+      <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} />
       <VerifyDialog
         open={verifyOpen}

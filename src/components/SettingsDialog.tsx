@@ -169,8 +169,8 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
                     />
                   </span>
                   <span className="wallet-addr" title={ep.url}>
-                    {ep.apiKey && <Icon name="lock" width={12} height={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />}
-                    {ep.metaUrl && <Icon name="layers" width={12} height={12} style={{ verticalAlign: '-1px', marginRight: 4 }} />}
+                    {ep.apiKey && <Icon name="lock" width={12} height={12} className="meta-flag" />}
+                    {ep.metaUrl && <Icon name="layers" width={12} height={12} className="meta-flag" />}
                     {ep.enabled ? t('settings.priority', { n: settings.endpoints.filter((x) => x.enabled).indexOf(ep) + 1 }) : t('settings.disabled')} · {ep.url}
                   </span>
                   <MetaField id={ep.id} value={ep.metaUrl ?? ''} onSave={(v) => updateEndpoint(ep.id, { metaUrl: v || undefined })} />
@@ -457,7 +457,7 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
             )}
           </div>
         </form>
-        <div className="field" style={{ maxWidth: 120 }}>
+        <div className="field field-narrow">
           <label className="label" htmlFor="set-page">
             {t('settings.pageSize')}
           </label>
@@ -527,7 +527,7 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
             </ul>
           )}
           <div className="inline auth-row">
-            <div className="field" style={{ maxWidth: 140 }}>
+            <div className="field field-narrow">
               <label className="label" htmlFor="ch-id">
                 {t('settings.chainId')}
               </label>

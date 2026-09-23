@@ -214,7 +214,7 @@ select {
   color: var(--color-disabled);
 }
 .btn-sm {
-  min-height: 36px;
+  min-height: 32px;
   padding: 0 var(--space-3);
 }
 .btn-icon {
@@ -245,6 +245,7 @@ select {
 .label {
   font-size: var(--size-label);
   font-weight: var(--weight-medium);
+  line-height: 1.4;
 }
 .input {
   width: 100%;
@@ -301,11 +302,13 @@ input[type='file'].input::file-selector-button {
 .hint {
   font-size: var(--size-caption);
   font-weight: var(--weight-book);
+  line-height: 1.4;
   color: var(--color-muted);
   overflow-wrap: anywhere;
 }
 .error {
   font-size: var(--size-caption);
+  line-height: 1.4;
   color: var(--color-danger);
   overflow-wrap: anywhere;
 }
@@ -518,7 +521,16 @@ input[type='file'].input::file-selector-button {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-1);
+}
+/* ช่องกรอกสั้น (จำนวนต่อหน้า / chain id) — ความกว้างเดียวกันทั้งสองที่ แทน max-width เฉพาะกิจใน TSX */
+.field-narrow {
+  max-width: 140px;
+}
+/* ไอคอนกำกับหน้าแถวข้อมูลแหล่ง (มีกุญแจ / มี metadata) */
+.meta-flag {
+  vertical-align: -1px;
+  margin-right: var(--space-1);
 }
 /* ฟอร์ม Token metadata URL ใต้แต่ละแหล่ง */
 .source-meta {
@@ -536,11 +548,6 @@ input[type='file'].input::file-selector-button {
   padding-top: 0;
   padding-bottom: 0;
   font-size: var(--size-caption);
-}
-.btn-sm {
-  min-height: 32px;
-  padding-top: 0;
-  padding-bottom: 0;
 }
 .source .wallet-label {
   font-weight: var(--weight-medium);
@@ -2039,8 +2046,8 @@ dialog.dlg-wide[open] {
   overflow-y: auto;
 }
 .tab-item svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   flex: none;
 }
 .tab-item {
@@ -2079,7 +2086,7 @@ dialog.dlg-wide[open] {
 .dlg-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-6);
   min-width: 0;
   flex: 1;
   overflow-y: auto;

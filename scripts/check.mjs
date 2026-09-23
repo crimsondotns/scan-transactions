@@ -22,7 +22,8 @@ for (const f of files) {
   const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
   // URL จริง (https://host) นอกจากฟอนต์/ตัวอย่างใน i18n — ไม่ให้ endpoint ใดๆ หลุดเข้าซอร์ส
   for (const m of code.matchAll(/https?:\/\/[a-z0-9.-]+\.[a-z]{2,}/gi)) {
-    if (!/fonts\.g|w3\.org|example\.invalid/.test(m[0])) bad.push(`${f}: hardcoded URL ${m[0]}`);
+    // accounts.google.com = สคริปต์ปุ่มล็อกอินของผู้ให้บริการตัวตน ไม่ใช่แหล่งข้อมูลธุรกรรม จึงยกเว้นให้
+    if (!/fonts\.g|w3\.org|example\.invalid|accounts\.google\.com/.test(m[0])) bad.push(`${f}: hardcoded URL ${m[0]}`);
   }
   if (f.endsWith('.tsx') && /type=["']number["']/.test(code)) bad.push(`${f}: type="number" (use type="text" inputMode="numeric")`);
   if (f.endsWith('.tsx') && /<select\b/.test(code)) bad.push(`${f}: native <select> (use components/Dropdown)`);

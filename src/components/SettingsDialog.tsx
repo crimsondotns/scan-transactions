@@ -6,7 +6,6 @@ import { Dialog } from './Dialog';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { useToast } from './Toast';
-import { usableUrl, wrapperBase } from '../proxy';
 
 const FAMILIES: Family[] = ['evm', 'sol'];
 
@@ -22,7 +21,7 @@ function MetaField({ id, value, onSave }: { id: string; value: string; onSave: (
       onSubmit={(e) => {
         e.preventDefault();
         const v = text.trim();
-        if (v && !usableUrl(v)) return setErr(t('settings.badUrl'));
+        if (v && !/^https:\/\//i.test(v)) return setErr(t('settings.badUrl'));
         setErr(null);
         onSave(v);
       }}
@@ -90,7 +89,7 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
     e.preventDefault();
     const detected = detectEndpoint(url);
     if (!detected) return setErr(t('settings.badUrl'));
-    if (metaUrl.trim() && !usableUrl(metaUrl)) return setMetaErr(t('settings.badUrl'));
+    if (metaUrl.trim() && !/^https:\/\//i.test(metaUrl.trim())) return setMetaErr(t('settings.badUrl'));
     addEndpoint({
       ...detected,
       family: family === 'auto' ? detected.family : family,
@@ -191,7 +190,6 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
           <h3 id="ep-add-h" className="panel-title">
             {t('settings.add')}
           </h3>
-          {wrapperBase() !== '' && <p className="hint">{t('settings.wrapperOn', { url: wrapperBase() })}</p>}
           <div className="field">
             <label className="label" htmlFor="ep-url">
               {t('settings.endpoint')}
@@ -273,7 +271,7 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (!usableUrl(chainUrl)) return setChainErr(t('settings.badUrl'));
+            if (!/^https:\/\//i.test(chainUrl.trim())) return setChainErr(t('settings.badUrl'));
             setChainListUrl(chainUrl);
             setChainErr(null);
             toast(t('settings.chainListSaved'));
@@ -331,7 +329,7 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            if (!usableUrl(priceUrl)) return setPriceErr(t('settings.badUrl'));
+            if (!/^https:\/\//i.test(priceUrl.trim())) return setPriceErr(t('settings.badUrl'));
             setPriceUrl(priceUrl);
             setPriceErr(null);
             toast(t('settings.priceUrlSaved'));

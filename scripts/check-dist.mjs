@@ -34,7 +34,28 @@ const PATTERNS = [
   [/\b(api[_-]?secret|client[_-]?secret)["'\s:=]+[A-Za-z0-9_-]{12,}/i, 'secret literal'],
 ];
 
-const bad = [];
+/**
+ * เสิร์ฟจาก GitHub Pages ใต้ /<repo>/ — asset ทุกตัวต้องขึ้นต้นด้วย base เดียวกับที่ตั้งใน vite.config.ts
+ * และหน้า 404.html (ตัวเด้ง path กลับให้แอป) ต้องรู้จัก base เดียวกัน ไม่งั้นลิงก์ที่แชร์ไปจะพาไปหน้าเปล่า
+ */
+function baseChecks() {
+  const out = [];
+  const base = /base:\s*'([^']+)'/.exec(readFileSync('vite.config.ts', 'utf8'))?.[1];
+  if (!base) return ['vite.config.ts: no base found'];
+  const index = readFileSync(join(DIST, 'index.html'), 'utf8');
+  for (const m of index.matchAll(/(?:src|href)="(\/[^"]*)"/g)) {
+    if (!m[1].startsWith(base)) out.push(`dist/index.html: asset ${m[1]} is outside the base ${base}`);
+  }
+  if (existsSync(join(DIST, '404.html')) && !readFileSync(join(DIST, '404.html'), 'utf8').includes(base)) {
+    out.push(`dist/404.html: does not carry the base ${base}`);
+  }
+  // เตือน (ไม่ล้ม): บน GitHub Pages base ต้องเท่ากับ /<ชื่อ repo>/ ไม่งั้น asset 404 ตอน deploy
+  const repo = /([^/]+?)(?:\.git)?\s*$/.exec(process.env.GITHUB_REPOSITORY ?? '')?.[1];
+  if (repo && base !== `/${repo}/`) console.warn(`warning: base ${base} does not match the repository name /${repo}/ — GitHub Pages will 404 unless a custom domain is used`);
+  return out;
+}
+
+const bad = [...baseChecks()];
 for (const f of files) {
   const src = readFileSync(f, 'utf8');
   for (const [re, what] of PATTERNS) {

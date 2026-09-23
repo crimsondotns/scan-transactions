@@ -4,7 +4,7 @@
  * cache ใน localStorage 24 ชม. ต่อ origin
  */
 import { useEffect, useState } from 'react';
-import { requestUrl, usableUrl } from './proxy';
+import { proxied } from './proxy';
 import { limitedFetch } from './limiter';
 import type { Settings } from './store';
 
@@ -70,7 +70,7 @@ async function fetchList(url: string): Promise<ChainInfo[]> {
   if (!hit?.chains.length && fails[url] && Date.now() - fails[url] < FAIL_TTL) return [];
   let chains: ChainInfo[] = [];
   try {
-    const res = await limitedFetch(requestUrl(url), { headers: { accept: 'application/json' } });
+    const res = await limitedFetch(proxied(url), { headers: { accept: 'application/json' } });
     if (!res.ok) throw new Error(String(res.status));
     chains = normalize(await res.json());
   } catch (e) {
@@ -100,7 +100,7 @@ export type ChainMap = Map<string, ChainInfo>;
 export function useChains(settings: Settings): ChainMap {
   const [map, setMap] = useState<ChainMap>(new Map());
   const urls = [
-    ...(usableUrl(settings.chainListUrl) ? [settings.chainListUrl] : []),
+    ...(/^https:\/\//i.test(settings.chainListUrl) ? [settings.chainListUrl] : []),
     ...new Set(
       settings.endpoints
         // fallback <origin>/v1/chain/list มีเฉพาะแหล่งตระกูล EVM — แหล่ง Solana ไม่มี path นี้ ยิงไปก็โดน CORS/404 ในคอนโซลเปล่าๆ

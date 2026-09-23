@@ -126,18 +126,10 @@ const uid = () => Math.random().toString(36).slice(2, 10);
  * ตระกูลเชน: มีคำว่า sol/solana ใน host หรือ path → Solana, นอกนั้น EVM
  * ชื่อ: host โดยตัด www./api. ข้างหน้า
  */
-export const WRAPPER_PATH_RE = /^[a-z0-9][a-z0-9_-]{0,31}\/[^\s]*$/;
-
 export function detectEndpoint(url: string): { name: string; family: Family } | null {
-  const raw = url.trim();
-  // แม่แบบแบบ "<ชื่อย่อ>/<path>" = เรียกผ่าน API wrapper (URL จริงและกุญแจอยู่ฝั่งเซิร์ฟเวอร์ ดู worker/)
-  if (WRAPPER_PATH_RE.test(raw)) {
-    const alias = raw.split('/')[0]!;
-    return { name: alias, family: /\bsol(ana)?\b|[/._-]sol[/._-]/.test(raw.toLowerCase()) ? 'sol' : 'evm' };
-  }
   let u: URL;
   try {
-    u = new URL(raw);
+    u = new URL(url.trim());
   } catch {
     return null;
   }
@@ -146,6 +138,16 @@ export function detectEndpoint(url: string): { name: string; family: Family } | 
   const family: Family = /\bsol(ana)?\b|solana|[/._-]sol[/._-]/.test(probe) ? 'sol' : 'evm';
   const name = u.hostname.replace(/^(www|api)\./, '') || u.hostname;
   return { name, family };
+}
+
+/** ข้อมูลที่พกข้ามเครื่องได้ (สำรอง/แชร์) — อ่านสถานะปัจจุบันแบบไม่ผูกกับ React */
+export function snapshot(): { wallets: Wallet[]; settings: Settings } {
+  return { wallets: state.wallets, settings: state.settings };
+}
+
+/** เขียนสถานะกลับทั้งก้อน (กู้คืน/รวมข้อมูล) — ผ่าน commit ตัวเดียวกับที่ UI ใช้ จึงบันทึกและแจ้งทุกหน้าจอเอง */
+export function applySnapshot(next: { wallets: Wallet[]; settings: Settings }): void {
+  commit({ v: 2, wallets: next.wallets, settings: next.settings });
 }
 
 export function useStore() {
@@ -210,5 +212,7 @@ export function useStore() {
   const setSlipShow = useCallback((field: SlipField, on: boolean) => commit({ ...state, settings: { ...state.settings, slipShow: { ...state.settings.slipShow, [field]: on } } }), []);
   const setPageSize = useCallback((pageSize: number) => commit({ ...state, settings: { ...state.settings, pageSize } }), []);
 
-  return { wallets: s.wallets, settings: s.settings, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl, setChain, removeChain };
+  const restore = useCallback((next: { wallets: Wallet[]; settings: Settings }) => applySnapshot(next), []);
+
+  return { wallets: s.wallets, settings: s.settings, restore, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl, setChain, removeChain };
 }

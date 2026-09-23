@@ -1987,3 +1987,25 @@ dialog.dlg::backdrop {
 .slip-fields .source[data-off='true'] .wallet-meta {
   opacity: 0.5;
 }
+
+/* บัญชี/ข้อมูล: ปุ่มของ Google อยู่ในกล่องของมันเอง, ช่องเลือกไฟล์ซ่อนไว้หลัง <label class="btn"> */
+.gbtn {
+  min-height: 40px;
+}
+.file-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.avatar {
+  border-radius: 50%;
+  object-fit: cover;
+}
+.stack-tight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}

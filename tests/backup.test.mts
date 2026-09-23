@@ -37,19 +37,51 @@ test('backup file round-trips and files it cannot trust are refused', () => {
 });
 
 test('merge adds what is missing, keeps what exists, and importing twice changes nothing', () => {
-  const current = data({ wallets: [{ id: '0xaaa', label: '', address: '0xAAA', family: 'erc20', enabled: true }] });
+  const current = data({ wallets: [{ id: '0xaaa', label: '', address: '0xAAA', family: 'erc20', enabled: true, tags: ['เดิม'] }] });
   const incoming = data({
     wallets: [
-      { id: '0xaaa', label: 'From file', address: '0xaaa', family: 'erc20', enabled: true },
+      { id: '0xaaa', label: 'From file', address: '0xaaa', family: 'erc20', enabled: true, tags: ['จากไฟล์'] },
       { id: '0xbbb', label: 'Two', address: '0xBBB', family: 'erc20', enabled: true },
     ],
-    settings: settings({ endpoints: [{ id: 'e1', name: 'src', url: 'https://example.invalid/{address}', family: 'erc20', enabled: true }], chains: [{ id: 'sol', name: 'Solana' }] }),
   });
   const first = mergeData(current, incoming);
-  assert.deepEqual(first.added, { wallets: 1, endpoints: 1, chains: 1 });
+  assert.deepEqual(first.added, { wallets: 1 });
   assert.equal(first.data.wallets[0]?.label, 'From file');
+  assert.deepEqual(first.data.wallets[0]?.tags, ['เดิม', 'จากไฟล์'], 'แท็กรวมกันทั้งสองฝั่ง');
   const second = mergeData(first.data, incoming);
-  assert.deepEqual(second.added, { wallets: 0, endpoints: 0, chains: 0 });
+  assert.deepEqual(second.added, { wallets: 0 });
+  assert.deepEqual(second.data.wallets[0]?.tags, ['เดิม', 'จากไฟล์'], 'นำเข้าซ้ำไม่เพิ่มแท็กซ้ำ');
+});
+
+test('ไฟล์สำรองไม่พาแหล่งข้อมูล/เชน/URL รายชื่อเชน ติดไปด้วย และไฟล์รุ่นเก่าที่มีติดมา ก็ถูกทิ้งตอนอ่าน', () => {
+  const withSources = data({
+    settings: settings({
+      endpoints: [{ id: 'e1', name: 'src', url: 'https://example.invalid/{address}', family: 'erc20', enabled: true, authHeader: 'x-api-key', apiKey: 'ความลับ' }],
+      chainListUrl: 'https://example.invalid/chains',
+      chains: [{ id: 'sol', name: 'Solana' }],
+    }),
+  });
+  const file = buildBackup(withSources);
+  const text = JSON.stringify(file);
+  assert.equal(text.includes('example.invalid'), false, 'ไม่มี URL ของแหล่งข้อมูลในไฟล์');
+  assert.equal(text.includes('ความลับ'), false, 'ไม่มีกุญแจในไฟล์');
+  assert.deepEqual(file.data.settings.endpoints, []);
+  assert.deepEqual(file.data.settings.chains, []);
+  assert.equal(file.data.settings.chainListUrl, '');
+  assert.equal(file.data.settings.hideScam, withSources.settings.hideScam, 'ค่าตั้งที่ผู้ใช้ตั้งเองยังอยู่');
+
+  // ไฟล์รุ่นเก่าที่ยังมีแหล่งข้อมูลติดมา
+  const old = { app: 'xcapscan', kind: 'backup', v: 1, createdAt: new Date().toISOString(), by: null, data: withSources };
+  const read = readBackup(JSON.parse(JSON.stringify(old)));
+  assert.deepEqual(read.data.settings.endpoints, []);
+  assert.equal(read.data.settings.chainListUrl, '');
+  assert.deepEqual(read.data.settings.chains, []);
+});
+
+test('แท็กของกระเป๋าติดไปกับไฟล์สำรอง', () => {
+  const file = buildBackup(data({ wallets: [{ id: '0xaaa', label: 'One', address: '0xaaa', family: 'erc20', enabled: true, tags: ['เก็บยาว'] }] }));
+  assert.deepEqual(file.data.wallets[0]?.tags, ['เก็บยาว']);
+  assert.deepEqual(readBackup(JSON.parse(JSON.stringify(file))).data.wallets[0]?.tags, ['เก็บยาว']);
 });
 
 /* ----------------------------- ค่าที่ฝังตอน build ----------------------------- */

@@ -90,12 +90,13 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       }
       const incoming = readBackup(raw);
       if (mode === 'replace') {
-        restore(incoming.data);
+        // แหล่งข้อมูล/เชน ไม่ได้อยู่ในไฟล์สำรอง — เขียนทับด้วยของว่างไม่ได้ ต้องคงของที่มากับตัวเว็บไว้
+        restore({ wallets: incoming.data.wallets, settings: { ...incoming.data.settings, endpoints: settings.endpoints, chainListUrl: settings.chainListUrl, chains: settings.chains } });
         toast(t('account.restored'));
       } else {
         const { data: merged, added } = mergeData(data(), incoming.data);
         restore(merged);
-        toast(t('account.merged', { n: added.wallets + added.endpoints + added.chains }));
+        toast(t('account.merged', { n: added.wallets }));
       }
       setImportPass('');
     } catch (e) {

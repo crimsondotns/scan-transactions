@@ -6,11 +6,17 @@
  *
  * ฟังก์ชันในไฟล์นี้เป็นฟังก์ชันบริสุทธิ์ทั้งหมด (ทดสอบได้โดยไม่ต้องมีเบราว์เซอร์)
  */
-import type { ChainOverride, Endpoint, Settings, Wallet } from './store';
+import { SLIP_SHOW_DEFAULT, type Settings, type Wallet } from './store';
 
 export const BACKUP_VERSION = 1;
 
-/** ส่วนของสถานะที่พกข้ามเครื่องได้ — แคช (ราคา/โลโก้/สลิป) ไม่รวม เพราะสร้างใหม่ได้เอง */
+/**
+ * ส่วนของสถานะที่พกข้ามเครื่องได้ — แคช (ราคา/โลโก้/สลิป) ไม่รวม เพราะสร้างใหม่ได้เอง
+ *
+ * แหล่งข้อมูล · URL รายชื่อเชน · เชนกำหนดเอง **ไม่อยู่ในไฟล์สำรอง** ตั้งแต่รุ่นนี้:
+ * มันมาจากค่าที่ฝังตอน build ไม่ใช่ของที่ผู้ใช้ตั้งเอง เครื่องปลายทางได้ของพวกนี้จากตัวเว็บอยู่แล้ว
+ * และไฟล์สำรองเป็นไฟล์ที่ถูกส่งต่อ/เก็บไว้ในเครื่องได้ — ไม่ควรพา URL หรือกุญแจของแหล่งข้อมูลติดไปด้วย
+ */
 export interface PortableData {
   wallets: Wallet[];
   settings: Settings;
@@ -44,8 +50,18 @@ export function buildBackup(data: PortableData, by: Author | null = null): Backu
 /** เอาเฉพาะฟิลด์ที่รู้จัก — ไฟล์จากรุ่นอื่นจะไม่พาฟิลด์แปลกปลอมเข้ามาในสถานะ */
 export function portable(d: PortableData): PortableData {
   return {
-    wallets: d.wallets.map((w) => ({ id: w.id, label: w.label, address: w.address, family: w.family, enabled: w.enabled })),
-    settings: { ...d.settings, endpoints: d.settings.endpoints.map((e) => ({ ...e })), chains: d.settings.chains.map((c) => ({ ...c })) },
+    wallets: d.wallets.map((w) => ({ id: w.id, label: w.label, address: w.address, family: w.family, enabled: w.enabled, ...(w.tags?.length ? { tags: [...w.tags] } : {}) })),
+    settings: {
+      pageSize: d.settings.pageSize,
+      hideScam: d.settings.hideScam,
+      slipShow: { ...d.settings.slipShow },
+      priceUrl: d.settings.priceUrl,
+      proxyUrl: d.settings.proxyUrl,
+      // ค่าที่มาจากตอน build — เขียนเป็นค่าว่างไว้ให้รูปร่างไฟล์คงเดิม แต่ไม่พาค่าจริงออกไป
+      endpoints: [],
+      chainListUrl: '',
+      chains: [],
+    },
   };
 }
 
@@ -58,13 +74,22 @@ export function readBackup(raw: unknown): BackupFile {
   const data = raw.data;
   if (!isObj(data) || !Array.isArray(data.wallets) || !isObj(data.settings)) throw new BackupError('shape');
   const wallets = (data.wallets as Wallet[]).filter((w) => isObj(w) && typeof w.address === 'string');
+  // ไฟล์รุ่นเก่ามีแหล่งข้อมูล/เชนติดมาด้วย — ทิ้งตั้งแต่ตอนอ่าน ไม่ให้ย้อนกลับเข้าสถานะ
   const s = data.settings as Partial<Settings>;
-  const settings = {
-    ...(s as Settings),
-    endpoints: (Array.isArray(s.endpoints) ? s.endpoints : []).filter((e) => isObj(e) && typeof (e as Endpoint).url === 'string'),
-    chains: (Array.isArray(s.chains) ? s.chains : []).filter((c) => isObj(c) && typeof (c as ChainOverride).id === 'string'),
-  } as Settings;
-  if (!wallets.length && !settings.endpoints.length) throw new BackupError('empty');
+  const settings = portable({
+    wallets,
+    settings: {
+      endpoints: [],
+      chains: [],
+      chainListUrl: '',
+      pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20,
+      hideScam: s.hideScam === true,
+      slipShow: { ...SLIP_SHOW_DEFAULT, ...((isObj(s.slipShow) ? s.slipShow : {}) as Partial<Settings['slipShow']>) },
+      priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '',
+      proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '',
+    },
+  }).settings;
+  if (!wallets.length) throw new BackupError('empty');
   return {
     app: 'xcapscan',
     kind: 'backup',
@@ -77,16 +102,13 @@ export function readBackup(raw: unknown): BackupFile {
 
 export interface MergeReport {
   wallets: number;
-  endpoints: number;
-  chains: number;
 }
 
 /**
  * รวมของใหม่เข้ากับของเดิมโดยไม่ลบอะไรเลย (นำเข้าไฟล์เดิมซ้ำ = ไม่มีอะไรเปลี่ยน)
- *  - กระเป๋า: เทียบด้วยที่อยู่; มีอยู่แล้วคงป้ายเดิมไว้ เว้นแต่ป้ายเดิมว่าง
- *  - แหล่งข้อมูล: เทียบด้วย url + ตระกูล
- *  - เชนที่ตั้งเอง: เทียบด้วย id (ของเดิมชนะ)
+ *  - กระเป๋า: เทียบด้วยที่อยู่; มีอยู่แล้วคงป้ายเดิมไว้ เว้นแต่ป้ายเดิมว่าง ส่วนแท็กรวมกันทั้งสองฝั่ง
  *  - ค่าตั้งอื่น: ของเดิมชนะเสมอ ยกเว้นค่าที่ยังว่างอยู่
+ *  - แหล่งข้อมูล/เชน: ไม่อยู่ในไฟล์สำรองแล้ว (มาจากค่าที่ฝังตอน build) จึงไม่มีอะไรให้รวม
  */
 export function mergeData(current: PortableData, incoming: PortableData): { data: PortableData; added: MergeReport } {
   const wallets = [...current.wallets];
@@ -98,42 +120,24 @@ export function mergeData(current: PortableData, incoming: PortableData): { data
       wallets.push({ ...w });
       byAddress.set(w.address.toLowerCase(), wallets.length - 1);
       addedWallets++;
-    } else if (!wallets[at]!.label.trim() && w.label.trim()) {
-      wallets[at] = { ...wallets[at]!, label: w.label };
+      continue;
     }
-  }
-
-  const endpoints = [...current.settings.endpoints];
-  const epKey = (e: Endpoint) => `${e.family}|${e.url.trim()}`;
-  const haveEp = new Set(endpoints.map(epKey));
-  let addedEndpoints = 0;
-  for (const e of incoming.settings.endpoints) {
-    if (haveEp.has(epKey(e))) continue;
-    haveEp.add(epKey(e));
-    endpoints.push({ ...e, id: `${e.id}-${endpoints.length}` });
-    addedEndpoints++;
-  }
-
-  const chains = [...current.settings.chains];
-  const haveChain = new Set(chains.map((c) => c.id.toLowerCase()));
-  let addedChains = 0;
-  for (const c of incoming.settings.chains) {
-    if (haveChain.has(c.id.toLowerCase())) continue;
-    haveChain.add(c.id.toLowerCase());
-    chains.push({ ...c });
-    addedChains++;
+    const have = wallets[at]!;
+    const tags = [...new Set([...(have.tags ?? []), ...(w.tags ?? [])])];
+    wallets[at] = {
+      ...have,
+      ...(!have.label.trim() && w.label.trim() ? { label: w.label } : {}),
+      ...(tags.length ? { tags } : {}),
+    };
   }
 
   const pick = (a: string, b: string) => (a.trim() ? a : b);
   const settings: Settings = {
     ...current.settings,
-    endpoints,
-    chains,
-    chainListUrl: pick(current.settings.chainListUrl, incoming.settings.chainListUrl ?? ''),
     priceUrl: pick(current.settings.priceUrl, incoming.settings.priceUrl ?? ''),
     proxyUrl: pick(current.settings.proxyUrl, incoming.settings.proxyUrl ?? ''),
   };
-  return { data: { wallets, settings }, added: { wallets: addedWallets, endpoints: addedEndpoints, chains: addedChains } };
+  return { data: { wallets, settings }, added: { wallets: addedWallets } };
 }
 
 /** ชื่อไฟล์ที่เสนอตอนบันทึก — วันที่ในชื่อช่วยให้ผู้ใช้รู้ว่าไฟล์ไหนใหม่กว่า */

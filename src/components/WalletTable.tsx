@@ -63,7 +63,7 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return wallets;
-    return wallets.filter((w) => w.label.toLowerCase().includes(needle) || w.address.toLowerCase().includes(needle) || (w.tag ?? '').toLowerCase().includes(needle));
+    return wallets.filter((w) => w.label.toLowerCase().includes(needle) || w.address.toLowerCase().includes(needle) || (w.tags ?? []).some((x) => x.toLowerCase().includes(needle)));
   }, [wallets, q]);
 
   const sorted = useMemo(() => {
@@ -71,7 +71,7 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
     const val = (w: Wallet): string | number => {
       switch (sort.key) {
         case 'tag':
-          return (w.tag ?? '').toLowerCase();
+          return (w.tags ?? []).join(' ').toLowerCase();
         case 'tx':
           return feeds[w.id]?.rows.length ?? -1;
         case 'net':
@@ -177,7 +177,19 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
                         </span>
                       </span>
                     </td>
-                    <td>{w.tag ? <span className="tag">{w.tag}</span> : <span className="idle">{t('wallets.noTag')}</span>}</td>
+                    <td>
+                      {w.tags?.length ? (
+                        <span className="tag-list">
+                          {w.tags.map((tag) => (
+                            <span key={tag} className="tag">
+                              {tag}
+                            </span>
+                          ))}
+                        </span>
+                      ) : (
+                        <span className="idle">{t('wallets.noTag')}</span>
+                      )}
+                    </td>
                     <td className="num">
                       {state === 'loading' ? (
                         <SkeletonBar width={72} />

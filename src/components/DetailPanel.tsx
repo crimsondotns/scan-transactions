@@ -242,7 +242,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
               <span>
                 {formatUsdExact(swapCost)}
                 {swapPct !== null && ` (${swapPct.toFixed(2)}%)`}
-                <span className="ev-sub">{t('detail.swapCostHint')}</span>
+                <span className="ev-note">{t('detail.swapCostHint')}</span>
               </span>
             </Row>
           )}
@@ -255,7 +255,7 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
             ) : gasUsd !== null ? (
               <span>{formatFeeUsd(gasUsd)}</span>
             ) : (
-              <span className="ev-sub">{t('detail.feePaidBySender')}</span>
+              <span className="ev-note">{t('detail.feePaidBySender')}</span>
             )}
           </Row>
           {totalCost !== null && (

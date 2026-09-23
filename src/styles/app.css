@@ -1255,9 +1255,10 @@ th[aria-sort='descending'] .th-btn {
 .ev-sub {
   display: flex;
   align-items: center;
-  gap: var(--space-3);
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
   color: var(--color-muted);
-  font-size: var(--size-body);
+  font-size: var(--size-label);
 }
 .ev-status {
   display: inline-flex;
@@ -1417,7 +1418,8 @@ th[aria-sort='descending'] .th-btn {
   color: var(--color-muted);
   font-variant-numeric: tabular-nums;
 }
-.ev-sub {
+/* บรรทัดอธิบายเล็กๆ ใต้ค่าในแถว (เคยใช้ชื่อ .ev-sub ซ้ำกับหัวแผง จนระยะของหัวแผงหายไป) */
+.ev-note {
   display: block;
   font-size: var(--size-caption);
   color: var(--color-muted);
@@ -2455,14 +2457,6 @@ dialog.dlg-wide[open] {
 .head-name {
   font-size: var(--size-heading-sm);
 }
-.field-inline {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-2);
-}
-.field-inline .input {
-  width: 140px;
-}
 .stat-row {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -2574,13 +2568,53 @@ dialog.dlg-wide[open] {
   gap: var(--space-3);
   min-width: 0;
 }
+.tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
 .tag {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   font-size: var(--size-caption);
   color: var(--color-muted);
   background: var(--color-soft);
   border-radius: var(--radius-pill);
   padding: 2px var(--space-2);
+}
+/* เม็ดแท็กในไดอะล็อก: ถอดได้ (กากบาทในเม็ด) และเม็ดที่กดเพื่อใส่ */
+.tag-removable {
+  padding-right: var(--space-1);
+}
+.tag-x,
+.tag-pick {
+  border: 0;
+  background: none;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: inherit;
+}
+.tag-x {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius-pill);
+}
+.tag-x:hover {
+  background: var(--color-line-subtle);
+  color: var(--color-ink);
+}
+.tag-x svg {
+  width: 12px;
+  height: 12px;
+}
+.tag-pick:hover {
+  color: var(--color-ink);
+  background: var(--color-line-subtle);
+}
+.tag-pick svg {
+  width: 12px;
+  height: 12px;
 }
 .idle {
   color: var(--color-tertiary);

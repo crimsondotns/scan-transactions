@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { daily, lastTime, netUsd, rowsOfToken, signClassOf, tokenSummary, totals, withinDays } from '../src/flow.ts';
 import { matchesGroup, groupExists, tagsOf, familiesOf, ACTIVE_DAYS } from '../src/groups.ts';
 import type { Move, TxRow } from '../src/feed.ts';
-import type { Wallet } from '../src/store.ts';
+import { cleanTags, type Wallet } from '../src/store.ts';
 
 const NOW = Date.UTC(2026, 0, 31, 12, 0, 0);
 const day = (n: number) => NOW / 1000 - n * 86400;
@@ -99,7 +99,7 @@ test('คลาสสีตามทิศทางเงิน', () => {
 const wallet = (over: Partial<Wallet> = {}): Wallet => ({ id: '0xa', label: 'A', address: '0xa', family: 'erc20', enabled: true, ...over });
 
 test('กลุ่ม: โหลดแล้ว/ยังไม่โหลด/เคลื่อนไหว/แท็ก/ตระกูลเชน', () => {
-  const w = wallet({ tag: 'เก็บยาว' });
+  const w = wallet({ tags: ['เก็บยาว', 'ลูกค้า'] });
   const loadedRecently = { loaded: true, last: day(1) };
   const loadedOld = { loaded: true, last: day(ACTIVE_DAYS + 3) };
   assert.equal(matchesGroup('all', w, { loaded: false, last: null }, NOW), true);
@@ -108,17 +108,24 @@ test('กลุ่ม: โหลดแล้ว/ยังไม่โหลด/�
   assert.equal(matchesGroup('active', w, loadedRecently, NOW), true);
   assert.equal(matchesGroup('active', w, loadedOld, NOW), false);
   assert.equal(matchesGroup('tag:เก็บยาว', w, loadedRecently, NOW), true);
+  assert.equal(matchesGroup('tag:ลูกค้า', w, loadedRecently, NOW), true, 'กระเป๋าใบเดียวอยู่ได้หลายกลุ่มแท็ก');
   assert.equal(matchesGroup('tag:อื่น', w, loadedRecently, NOW), false);
+  assert.equal(matchesGroup('tag:เก็บยาว', wallet(), loadedRecently, NOW), false, 'ไม่มีแท็กเลย = ไม่อยู่กลุ่มแท็กไหน');
   assert.equal(matchesGroup('chain:erc20', w, loadedRecently, NOW), true);
   assert.equal(matchesGroup('chain:sol', w, loadedRecently, NOW), false);
 });
 
 test('รายชื่อแท็ก/ตระกูลเชนมาจากกระเป๋าจริง และกลุ่มที่ไม่มีแล้วถือว่าหายไป', () => {
-  const list = [wallet({ id: '1', tag: 'ข' }), wallet({ id: '2', tag: 'ก' }), wallet({ id: '3' })];
-  assert.deepEqual(tagsOf(list), ['ก', 'ข']);
+  const list = [wallet({ id: '1', tags: ['ข', 'ก'] }), wallet({ id: '2', tags: ['ก'] }), wallet({ id: '3' })];
+  assert.deepEqual(tagsOf(list), ['ก', 'ข'], 'ไม่ซ้ำ เรียงตามตัวอักษร');
   assert.deepEqual(familiesOf(list), ['erc20']);
   assert.equal(groupExists('tag:ก', list), true);
   assert.equal(groupExists('tag:ไม่มี', list), false);
   assert.equal(groupExists('chain:sol', list), false);
   assert.equal(groupExists('all', list), true);
+});
+
+test('แท็กถูกล้างก่อนบันทึก: ตัดช่องว่าง ทิ้งตัวว่าง ไม่เอาซ้ำ คงลำดับเดิม', () => {
+  assert.deepEqual(cleanTags([' เก็บยาว ', 'ลูกค้า', 'เก็บยาว', '', '   ']), ['เก็บยาว', 'ลูกค้า']);
+  assert.deepEqual(cleanTags([]), []);
 });

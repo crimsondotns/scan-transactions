@@ -5,7 +5,7 @@
 import { useMemo, useState } from 'react';
 import type { TxRow } from '../feed';
 import type { ChainMap } from '../chains';
-import { useStore, type Wallet } from '../store';
+import type { Wallet } from '../store';
 import type { GroupId } from '../groups';
 import { signClassOf, tokenSummary, totals, withinDays } from '../flow';
 import { formatUsdExact, shortAddr } from '../format';
@@ -17,12 +17,13 @@ import { TokenTable } from '../components/TokenTable';
 import { TxTable } from '../components/TxTable';
 import { Identicon } from '../components/Identicon';
 import { Icon } from '../components/Icon';
+import { TagDialog } from '../components/TagDialog';
 
 export function WalletPage({ wallet, all, rows, chains, group, range, onRange, onBack, onWallet, onToken, selected, onSelect, loading, hasMore, onMore, onReload }: { wallet: Wallet; all: Wallet[]; rows: TxRow[]; chains: ChainMap; group: GroupId; range: Range; onRange: (r: Range) => void; onBack: () => void; onWallet: (id: string) => void; onToken: (symbol: string) => void; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; hasMore: boolean; onMore: () => void; onReload: () => void }) {
   const { t } = useI18n();
-  const { setWalletTag } = useStore();
   const [tab, setTab] = useState<'tokens' | 'history'>('tokens');
-  const [tag, setTag] = useState(wallet.tag ?? '');
+  const [tagsOpen, setTagsOpen] = useState(false);
+  const tags = wallet.tags ?? [];
   const groupLabel = useGroupLabel(all, group);
   const ranged = useMemo(() => withinDays(rows, range), [rows, range]);
   const sums = useMemo(() => totals(ranged), [ranged]);
@@ -49,25 +50,10 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
             </span>
           </span>
           <span className="top-spacer" />
-          <span className="field-inline">
-            <label className="label" htmlFor="wallet-tag">
-              {t('wallets.col.tag')}
-            </label>
-            <input
-              id="wallet-tag"
-              name="tag"
-              type="text"
-              className="input input-sm"
-              placeholder={t('wallets.noTag')}
-              value={tag}
-              autoComplete="off"
-              onChange={(e) => setTag(e.target.value)}
-              onBlur={() => setWalletTag(wallet.id, tag)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') e.currentTarget.blur();
-              }}
-            />
-          </span>
+          <button type="button" className="btn" onClick={() => setTagsOpen(true)}>
+            <Icon name="tag" />
+            {tags.length === 0 ? t('tags.edit') : tags.length > 2 ? `${tags.slice(0, 2).join(' · ')} +${tags.length - 2}` : tags.join(' · ')}
+          </button>
           <button type="button" className="btn btn-icon" disabled={loading} onClick={onReload} aria-label={t('tx.reload')} title={t('tx.reload')}>
             <Icon name="refresh" />
           </button>
@@ -90,6 +76,7 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
         />
         {tab === 'tokens' ? <TokenTable rows={ranged} onToken={onToken} /> : <TxTable rows={rows} wallets={all} chains={chains} wallet={wallet.id} onWallet={(id) => onWallet(id)} onToken={onToken} selected={selected} onSelect={onSelect} loading={loading} hasMore={hasMore} onMore={onMore} />}
       </section>
+      <TagDialog open={tagsOpen} wallet={wallet} onClose={() => setTagsOpen(false)} />
     </>
   );
 }

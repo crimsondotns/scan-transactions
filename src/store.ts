@@ -15,8 +15,8 @@ export interface Wallet {
   address: string;
   family: Family;
   enabled: boolean;
-  /** แท็กที่ผู้ใช้ตั้งเอง — ใช้จัดกลุ่มในแถบซ้าย (ว่าง/ไม่มี = ไม่อยู่กลุ่มแท็กไหน) */
-  tag?: string;
+  /** แท็กที่ผู้ใช้ตั้งเอง ใส่ได้หลายอัน — ใช้จัดกลุ่มในแถบซ้าย (ไม่มี = ไม่อยู่กลุ่มแท็กไหน) */
+  tags?: string[];
 }
 
 export interface Endpoint {
@@ -84,6 +84,22 @@ export function parseAddress(raw: string): { address: string; family: Family } |
   return null;
 }
 
+/** ล้างรายการแท็ก: ตัดช่องว่าง ทิ้งตัวว่าง ไม่เอาซ้ำ และคงลำดับที่ผู้ใช้ใส่ */
+export function cleanTags(list: readonly string[]): string[] {
+  const out: string[] = [];
+  for (const raw of list) {
+    const v = typeof raw === 'string' ? raw.trim() : '';
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out;
+}
+
+/** อ่านแท็กจากข้อมูลที่บันทึกไว้ — เวอร์ชันเก่าเก็บเป็นสตริงเดี่ยวชื่อ tag */
+function readTags(w: Record<string, unknown>): string[] {
+  if (Array.isArray(w.tags)) return cleanTags(w.tags as string[]);
+  return typeof w.tag === 'string' ? cleanTags([w.tag]) : [];
+}
+
 function load(): State {
   try {
     const raw = localStorage.getItem(KEY);
@@ -101,7 +117,8 @@ function load(): State {
       v: 2,
       wallets: wallets.flatMap((w) => {
         const p = w && typeof w.address === 'string' ? parseAddress(w.address) : null;
-        return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false, ...(typeof w.tag === 'string' && w.tag.trim() ? { tag: w.tag.trim() } : {}) }] : [];
+        const tags = readTags(w as unknown as Record<string, unknown>);
+        return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false, ...(tags.length ? { tags } : {}) }] : [];
       }),
       settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' && s.chainListUrl ? s.chainListUrl : configuredChainListUrl(), priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '', chains: withConfiguredChains(Array.isArray(s.chains) ? (s.chains as ChainOverride[]).filter((c) => c && typeof c.id === 'string') : []) },
     };
@@ -177,10 +194,10 @@ export function useStore() {
 
   const removeWallet = useCallback((id: string) => commit({ ...state, wallets: state.wallets.filter((w) => w.id !== id) }), []);
   const toggleWallet = useCallback((id: string, enabled: boolean) => commit({ ...state, wallets: state.wallets.map((w) => (w.id === id ? { ...w, enabled } : w)) }), []);
-  /* แท็กของกระเป๋า: ว่าง = ถอดแท็กออก (ไม่เก็บสตริงว่างไว้ในข้อมูล) */
-  const setWalletTag = useCallback((id: string, tag: string) => {
-    const v = tag.trim();
-    commit({ ...state, wallets: state.wallets.map((w) => (w.id === id ? { ...w, ...(v ? { tag: v } : { tag: undefined }) } : w)) });
+  /* แท็กของกระเป๋า: รายการว่าง = ถอดแท็กออกหมด (ไม่เก็บช่องว่างไว้ในข้อมูล) */
+  const setWalletTags = useCallback((id: string, tags: readonly string[]) => {
+    const next = cleanTags(tags);
+    commit({ ...state, wallets: state.wallets.map((w) => (w.id === id ? { ...w, tags: next.length ? next : undefined } : w)) });
   }, []);
   const clearWallets = useCallback(() => commit({ ...state, wallets: [] }), []);
   const removeWallets = useCallback((ids: Set<string>) => commit({ ...state, wallets: state.wallets.filter((w) => !ids.has(w.id)) }), []);
@@ -228,5 +245,5 @@ export function useStore() {
 
   const restore = useCallback((next: { wallets: Wallet[]; settings: Settings }) => applySnapshot(next), []);
 
-  return { wallets: s.wallets, settings: s.settings, restore, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, setWalletTag, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl, setChain, removeChain };
+  return { wallets: s.wallets, settings: s.settings, restore, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, setWalletTags, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl, setChain, removeChain };
 }

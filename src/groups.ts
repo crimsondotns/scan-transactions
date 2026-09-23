@@ -27,14 +27,14 @@ export function matchesGroup(group: GroupId, w: Wallet, info: WalletInfo, now = 
   if (group === 'loaded') return info.loaded;
   if (group === 'unloaded') return !info.loaded;
   if (group === 'active') return info.last !== null && now / 1000 - info.last <= ACTIVE_DAYS * 86400;
-  if (group.startsWith('tag:')) return (w.tag ?? '') === group.slice(4);
+  if (group.startsWith('tag:')) return (w.tags ?? []).includes(group.slice(4));
   if (group.startsWith('chain:')) return w.family === group.slice(6);
   return true;
 }
 
 /** แท็กทั้งหมดที่ผู้ใช้ตั้งไว้ เรียงตามตัวอักษร (ไม่มีแท็ก = ไม่นับ) */
 export function tagsOf(wallets: Wallet[]): string[] {
-  return [...new Set(wallets.map((w) => w.tag?.trim()).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b));
+  return [...new Set(wallets.flatMap((w) => w.tags ?? []))].sort((a, b) => a.localeCompare(b));
 }
 
 /** ตระกูลเชนที่มีกระเป๋าอยู่จริง — ไม่โชว์กลุ่มว่าง */

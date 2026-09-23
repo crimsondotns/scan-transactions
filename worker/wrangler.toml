@@ -1,0 +1,20 @@
+# ตั้งค่าของ API wrapper — ไฟล์นี้อยู่ใน git จึงมีได้เฉพาะค่าที่ไม่ลับ
+# ความลับ (URL ปลายทาง + กุญแจ) ตั้งด้วย `wrangler secret put` เท่านั้น ดู README.md
+name = "xcap-api-wrapper"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[vars]
+# origin ของหน้าเว็บที่เรียกได้ คั่นด้วยจุลภาค (ไม่มี wildcard) — ใส่ origin จริงของคุณ
+ALLOWED_ORIGINS = ""
+# คำขอต่อ IP ต่อนาที
+RATE_LIMIT_PER_MIN = "60"
+# ชื่อ header ยืนยันตัวตนของแต่ละปลายทาง (ไม่ลับ) เช่น UPSTREAM_MAIN_AUTH_HEADER = "x-api-key"
+# UPSTREAM_MAIN_AUTH_HEADER = ""
+
+# ตัวจำกัดอัตราของแพลตฟอร์ม (ถ้าบัญชีรองรับ) — เปิดใช้แล้วโค้ดจะใช้ตัวนี้แทนตัวนับในหน่วยความจำ
+# [[unsafe.bindings]]
+# name = "RATE_LIMITER"
+# type = "ratelimit"
+# namespace_id = "1001"
+# simple = { limit = 60, period = 60 }

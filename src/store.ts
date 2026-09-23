@@ -126,10 +126,18 @@ const uid = () => Math.random().toString(36).slice(2, 10);
  * ตระกูลเชน: มีคำว่า sol/solana ใน host หรือ path → Solana, นอกนั้น EVM
  * ชื่อ: host โดยตัด www./api. ข้างหน้า
  */
+export const WRAPPER_PATH_RE = /^[a-z0-9][a-z0-9_-]{0,31}\/[^\s]*$/;
+
 export function detectEndpoint(url: string): { name: string; family: Family } | null {
+  const raw = url.trim();
+  // แม่แบบแบบ "<ชื่อย่อ>/<path>" = เรียกผ่าน API wrapper (URL จริงและกุญแจอยู่ฝั่งเซิร์ฟเวอร์ ดู worker/)
+  if (WRAPPER_PATH_RE.test(raw)) {
+    const alias = raw.split('/')[0]!;
+    return { name: alias, family: /\bsol(ana)?\b|[/._-]sol[/._-]/.test(raw.toLowerCase()) ? 'sol' : 'evm' };
+  }
   let u: URL;
   try {
-    u = new URL(url.trim());
+    u = new URL(raw);
   } catch {
     return null;
   }

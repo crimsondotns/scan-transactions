@@ -6,11 +6,12 @@
   "description": "XCap Scan — multi-wallet transaction list, runs entirely in the browser",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/check-dist.mjs",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "check": "node scripts/check.mjs",
-    "test": "node --import tsx --test tests/*.test.mts"
+    "test": "node --import tsx --test tests/*.test.mts",
+    "check:dist": "node scripts/check-dist.mjs"
   },
   "dependencies": {
     "qrcode": "^1.5.4",

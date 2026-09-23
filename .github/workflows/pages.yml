@@ -28,7 +28,13 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      # ที่อยู่ของ API wrapper เป็นค่าสาธารณะ → เก็บเป็น repository "variable" ไม่ใช่ secret
+      # ห้ามส่ง secret ใดๆ เข้าขั้นตอน build: ทุกค่า VITE_* จะจบอยู่ใน bundle ที่ทุกคนอ่านได้
       - run: pnpm build
+        env:
+          VITE_WRAPPER_URL: ${{ vars.API_WRAPPER_URL }}
+      # ด่านสุดท้าย: สแกน dist/ ว่าไม่มีกุญแจ/โทเคนหลุดเข้าไป
+      - run: pnpm check:dist
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

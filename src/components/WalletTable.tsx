@@ -11,6 +11,8 @@ import { useInfinite } from '../useInfinite';
 import { MoreSentinel } from './MoreSentinel';
 import { SkeletonBar } from './Skeleton';
 import { useStickyHead } from '../useStickyHead';
+import { Logo } from './Logo';
+import { chainOf, type ChainMap } from '../chains';
 import { lastTime, netUsd, signClassOf } from '../flow';
 
 type SortKey = 'label' | 'tag' | 'tx' | 'net' | 'last';
@@ -21,7 +23,7 @@ const PAGE = 20;
  * คลิกแถว = ไปหน้ากระเป๋า; หัวคอลัมน์เรียงได้; แสดงทีละ 20 แถว เลื่อนลงแล้วเพิ่มเอง
  * ไม่มี checkbox; ตา = ซ่อน/แสดงข้อมูลในตารางธุรกรรม; ถังขยะ = ยืนยันก่อนลบ
  */
-export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemove, hasSource }: { wallets: Wallet[]; feeds: Record<string, WalletFeed>; activeId: string | null; onOpen: (id: string) => void; onSwitch: (id: string | null) => void; onRemove: (id: string) => void; hasSource: (w: Wallet) => boolean }) {
+export function WalletTable({ wallets, feeds, chains, activeId, onOpen, onSwitch, onRemove, hasSource }: { wallets: Wallet[]; feeds: Record<string, WalletFeed>; chains: ChainMap; activeId: string | null; onOpen: (id: string) => void; onSwitch: (id: string | null) => void; onRemove: (id: string) => void; hasSource: (w: Wallet) => boolean }) {
   const { t } = useI18n();
   const { wallets: all, removeWallet, toggleWallet, clearWallets } = useStore();
   const [adding, setAdding] = useState(false);
@@ -60,6 +62,8 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
     return f?.loading ? 'loading' : f && Object.keys(f.errors).length ? 'error' : f?.loaded ? 'ok' : 'idle';
   };
   const rowsOf = (w: Wallet) => feeds[w.id]?.rows ?? [];
+  /* เชนที่กระเป๋าใบนี้มีธุรกรรมจริง (จากที่โหลดมาแล้ว) — โลโก้อย่างเดียว ไม่ใส่ชื่อ */
+  const chainsOf = (w: Wallet) => [...new Set(rowsOf(w).map((r) => r.chain))];
   const netOf = (w: Wallet) => rowsOf(w).reduce((s, r) => s + netUsd(r), 0);
 
   const filtered = useMemo(() => {
@@ -138,6 +142,7 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
               <tr>
                 <Th k="label" label={t('wallets.col.label')} />
                 <Th k="tag" label={t('wallets.col.tag')} />
+                <th scope="col">{t('wallets.col.support')}</th>
                 <Th k="tx" label={t('wallets.col.tx')} num />
                 <Th k="net" label={t('wallets.col.net')} num />
                 <Th k="last" label={t('wallets.col.last')} num />
@@ -190,6 +195,23 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
                         </span>
                       ) : (
                         <span className="idle">{t('wallets.noTag')}</span>
+                      )}
+                    </td>
+                    <td>
+                      {state === 'loading' ? (
+                        <SkeletonBar width={64} />
+                      ) : chainsOf(w).length === 0 ? (
+                        <span className="idle">—</span>
+                      ) : (
+                        <span className="chain-marks">
+                          {chainsOf(w)
+                            .slice(0, 5)
+                            .map((c) => {
+                              const info = chainOf(chains, c);
+                              return <Logo key={c} src={info?.logo ?? null} name={info?.name ?? c} size={18} />;
+                            })}
+                          {chainsOf(w).length > 5 && <span className="idle">+{chainsOf(w).length - 5}</span>}
+                        </span>
                       )}
                     </td>
                     <td className="num">

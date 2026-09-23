@@ -2614,6 +2614,13 @@ dialog.dlg-wide[open] {
   border-radius: var(--radius-pill);
   padding: 2px var(--space-2);
 }
+/* โลโก้เชนที่กระเป๋ามีธุรกรรมอยู่ — ซ้อนชิดกันพอให้นับได้ ไม่ต้องมีชื่อกำกับ */
+.chain-marks {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
 /* เม็ดแท็กในไดอะล็อก: ถอดได้ (กากบาทในเม็ด) และเม็ดที่กดเพื่อใส่ */
 .tag-removable {
   padding-right: var(--space-1);

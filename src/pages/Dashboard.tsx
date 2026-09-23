@@ -84,7 +84,7 @@ export function Dashboard({ all, wallets, rows, feeds, chains, group, onGroup, i
           ]}
         />
         {tab === 'wallets' ? (
-          <WalletTable wallets={wallets} feeds={feeds} activeId={null} onOpen={onOpenWallet} onSwitch={onSwitch} onRemove={onRemove} hasSource={hasSource} />
+          <WalletTable wallets={wallets} feeds={feeds} chains={chains} activeId={null} onOpen={onOpenWallet} onSwitch={onSwitch} onRemove={onRemove} hasSource={hasSource} />
         ) : (
           <RecentTable rows={rows} wallets={all} chains={chains} selected={selected} onSelect={onSelect} loading={loading} />
         )}

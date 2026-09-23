@@ -18,6 +18,7 @@ import { TxTable } from '../components/TxTable';
 import { TokenLogo } from '../components/Logo';
 import { Identicon } from '../components/Identicon';
 import { SkeletonRows } from '../components/Skeleton';
+import { Icon } from '../components/Icon';
 import { chainOf } from '../chains';
 import { priceOf } from '../prices';
 import { useStickyHead } from '../useStickyHead';
@@ -75,6 +76,11 @@ export function AssetPage({ symbol, wallet, all, rows, chains, group, range, onR
                 </span>
               )}
               <span className="act-sub">
+                {token?.flagged && (
+                  <span className="flag" title={t('tx.scam')}>
+                    <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} />
+                  </span>
+                )}
                 {[token?.name ?? null, chain?.name ?? token?.chain ?? null, price === null ? null : t('token.perUnit', { price: formatPrice(price) })].filter(Boolean).join(' · ')}
               </span>
             </span>

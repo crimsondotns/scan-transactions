@@ -174,7 +174,26 @@ export async function fetchPage(tpl: string, walletId: string, address: string, 
   } catch {
     throw new FeedError('shape');
   }
-  return normalize(body, walletId, address);
+  const page = normalize(body, walletId, address);
+  return { ...page, rows: markRisk(page.rows) };
+}
+
+/**
+ * เหรียญที่ถูกโยนใส่กระเป๋าโดยไม่มีมูลค่าเลย = สแปมแจกเหรียญ (คนโยนอยากให้ไปเปิดเว็บของเขา)
+ * เงื่อนไขครบทุกข้อเท่านั้น: เป็นขารับล้วน · ทุกก้อนไม่มีราคา/ราคาเป็นศูนย์ · เราไม่ได้จ่ายค่าธรรมเนียม
+ * แถวที่จำนวนยังเป็นหน่วยดิบ (รอ decimals) ยังตัดสินไม่ได้ ปล่อยไว้ก่อน
+ */
+export function worthlessAirdrop(r: TxRow): boolean {
+  if (r.type !== 'receive') return false;
+  if (r.gasUsd !== null && r.gasUsd > 0) return false;
+  const real = r.moves.filter((m) => m.amount !== 0 && !m.approve);
+  if (!real.length || real.some((m) => m.dir === 'out' || m.rawUnits)) return false;
+  return real.every((m) => m.usd === null || m.usd === 0);
+}
+
+/** ติดธงเพิ่มจากสิ่งที่เห็นในแถวเอง — ของเดิมที่แหล่งข้อมูลติดมาแล้วไม่ถูกถอด */
+export function markRisk(rows: TxRow[]): TxRow[] {
+  return rows.map((r) => (worthlessAirdrop(r) && !r.flagged ? { ...r, flagged: true, moves: r.moves.map((m) => ({ ...m, flagged: true })) } : r));
 }
 
 /* ----------------------------- normalizer ----------------------------- */
@@ -591,7 +610,8 @@ export function unknownTokens(rows: TxRow[]): string[] {
 /** เติมชื่อ/สัญลักษณ์/โลโก้ลงแถว (แถวใหม่ ไม่แก้ของเดิม) */
 export function applyTokenMeta(rows: TxRow[], meta: Map<string, TokenMeta>): TxRow[] {
   if (!meta.size) return rows;
-  return rows.map((r) => {
+  // ตัดสินความเสี่ยงอีกรอบหลังรู้ decimals/ราคาแล้ว (ตอนแรกยังเป็นหน่วยดิบ ตัดสินไม่ได้)
+  return markRisk(rows.map((r) => {
     let touched = false;
     const moves = r.moves.map((m) => {
       const t = m.tokenId ? meta.get(m.tokenId) : undefined;
@@ -606,7 +626,7 @@ export function applyTokenMeta(rows: TxRow[], meta: Map<string, TokenMeta>): TxR
       return { ...rest, ...keepRaw, amount, usd, symbol, name: m.name ?? t.name, logo: m.logo ?? t.logo, flagged: m.flagged || lookalike(symbol) };
     });
     return touched ? { ...r, moves, flagged: r.flagged || moves.some((m) => m.flagged) } : r;
-  });
+  }));
 }
 
 /** แปลงคำตอบ metadata ทุกรูปที่พบ: รายการ [{address,…}] หรือ map { address: {…} } หรือห่อใน data/result */

@@ -3,7 +3,7 @@
  * airdrop (ขารับอย่างเดียวจากคนที่ไม่รู้จัก), ไม่มีราคา — ใช้ทั้งแผงขวาและกล่อง "Why this is flagged" บนสลิป
  */
 import type { TxRow } from './feed';
-import { lookalike } from './feed';
+import { lookalike, worthlessAirdrop } from './feed';
 import type { Wallet } from './store';
 import type { MessageKey } from './i18n';
 
@@ -22,6 +22,7 @@ export function riskReasons(row: TxRow, wallets: Wallet[], t: T): string[] {
   if (raw.is_scam === true || row.moves.some((m) => m.flagged && !lookalike(m.symbol))) out.push(t('risk.source'));
   const mine = new Set(wallets.map((w) => w.address.toLowerCase()));
   if (row.type === 'receive' && row.from && !mine.has(row.from.toLowerCase())) out.push(t('risk.airdrop'));
-  if (row.moves.length && row.moves.every((m) => (m.usd === null || m.usd === 0) && (m.price === null || m.price === 0))) out.push(t('risk.noPrice'));
+  if (worthlessAirdrop(row)) out.push(t('risk.worthless'));
+  else if (row.moves.length && row.moves.every((m) => (m.usd === null || m.usd === 0) && (m.price === null || m.price === 0))) out.push(t('risk.noPrice'));
   return out;
 }

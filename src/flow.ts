@@ -94,6 +94,8 @@ export interface TokenRow {
   inAmount: number;
   outAmount: number;
   count: number;
+  /** โทเคนนี้ถูกติดธง (สัญลักษณ์เลียนแบบ ธงจากแหล่งข้อมูล หรือสแปมแจกเหรียญ) */
+  flagged: boolean;
 }
 
 /** สรุปรายโทเคนของชุดแถว — เรียงตามเงินที่เคลื่อนมากไปน้อย */
@@ -102,7 +104,7 @@ export function tokenSummary(rows: TxRow[]): TokenRow[] {
   for (const r of rows) {
     for (const m of r.moves) {
       if (m.amount === 0 || m.approve) continue;
-      const cur = map.get(m.symbol) ?? { symbol: m.symbol, name: m.name, logo: m.logo, tokenId: m.tokenId, chain: r.chain, inUsd: 0, outUsd: 0, inAmount: 0, outAmount: 0, count: 0 };
+      const cur = map.get(m.symbol) ?? { symbol: m.symbol, name: m.name, logo: m.logo, tokenId: m.tokenId, chain: r.chain, inUsd: 0, outUsd: 0, inAmount: 0, outAmount: 0, count: 0, flagged: false };
       if (m.dir === 'in') {
         cur.inUsd += m.usd ?? 0;
         cur.inAmount += m.amount;
@@ -113,6 +115,7 @@ export function tokenSummary(rows: TxRow[]): TokenRow[] {
       cur.name ??= m.name;
       cur.logo ??= m.logo;
       cur.count += 1;
+      cur.flagged = cur.flagged || m.flagged || r.flagged;
       map.set(m.symbol, cur);
     }
   }

@@ -6,6 +6,7 @@ import { formatUsdExact } from '../format';
 import { useI18n } from '../i18n';
 import { useCopy } from '../copy';
 import { Logo } from './Logo';
+import { Icon } from './Icon';
 import { useStickyHead } from '../useStickyHead';
 import { SkeletonRows } from './Skeleton';
 
@@ -72,7 +73,14 @@ export function TokenTable({ rows, onToken, loading = false }: { rows: TxRow[]; 
                         {k.symbol}
                       </span>
                     )}
-                    <span className="act-sub">{k.name ?? k.chain}</span>
+                    <span className="act-sub">
+                      {k.flagged && (
+                        <span className="flag" title={t('tx.scam')}>
+                          <Icon name="alert" width={12} height={12} style={{ verticalAlign: '-1px' }} />
+                        </span>
+                      )}
+                      {k.name ?? k.chain}
+                    </span>
                   </span>
                 </span>
               </td>

@@ -168,3 +168,28 @@ test('เชนที่ผู้ใช้มีเองและไม่ช�
   assert.equal(out.chains.find((c) => c.id === 'sol')?.name, 'Solana', 'id ที่ชนกัน ค่าใหม่จาก build ชนะ');
   assert.equal(out.chains.find((c) => c.id === 'base')?.name, 'ของฉัน');
 });
+
+/* ---- สแปมแจกเหรียญ: รับเข้าอย่างเดียว ไม่มีมูลค่า ไม่ได้จ่ายค่าธรรมเนียม ---- */
+import { markRisk, worthlessAirdrop } from '../src/feed.ts';
+
+test('เหรียญไร้มูลค่าที่ถูกโยนเข้ามา = น่าสงสัย และโทเคนถูกติดธงด้วย', () => {
+  const spam = row({ type: 'receive', gasUsd: null, moves: [move({ amount: 39_550_011, symbol: 'OUTLAW', usd: 0, price: 0.001417 })] });
+  assert.equal(worthlessAirdrop(spam), true);
+  const [marked] = markRisk([spam]);
+  assert.equal(marked?.flagged, true);
+  assert.equal(marked?.moves[0]?.flagged, true, 'โทเคนเองก็ต้องถูกติดธง');
+  assert.equal(tokenSummary([marked!])[0]?.flagged, true);
+});
+
+test('ไม่เหมาเข่ง: มีมูลค่า · จ่ายค่าธรรมเนียมเอง · มีขาออก · หน่วยยังดิบ → ไม่ติดธง', () => {
+  assert.equal(worthlessAirdrop(row({ type: 'receive', gasUsd: null, moves: [move({ usd: 12 })] })), false, 'มีมูลค่า');
+  assert.equal(worthlessAirdrop(row({ type: 'receive', gasUsd: 0.4, moves: [move({ usd: 0 })] })), false, 'เราจ่ายค่าธรรมเนียมเอง = เราเป็นคนทำเอง');
+  assert.equal(worthlessAirdrop(row({ type: 'swap', gasUsd: null, moves: [move({ usd: 0 }), move({ dir: 'out', usd: 0 })] })), false, 'มีขาออก');
+  assert.equal(worthlessAirdrop(row({ type: 'receive', gasUsd: null, moves: [move({ usd: null, rawUnits: true })] })), false, 'ยังไม่รู้ decimals ตัดสินไม่ได้');
+  assert.equal(worthlessAirdrop(row({ type: 'receive', gasUsd: null, moves: [] })), false, 'ไม่มีเหรียญเคลื่อนเลย');
+});
+
+test('markRisk ไม่ถอดธงที่แหล่งข้อมูลติดมาแล้ว', () => {
+  const fromSource = row({ type: 'send', flagged: true, moves: [move({ dir: 'out', usd: 50 })] });
+  assert.equal(markRisk([fromSource])[0]?.flagged, true);
+});

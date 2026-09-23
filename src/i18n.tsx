@@ -318,6 +318,7 @@ const th = {
   'find.token': 'โทเคน',
   'find.tx': 'ธุรกรรม',
   'find.empty': 'ไม่พบ',
+  'risk.worthless': 'ถูกโยนเหรียญที่ไม่มีมูลค่าเข้ามา ไม่ได้จ่ายค่าธรรมเนียมเอง — เข้าข่ายสแปมแจกเหรียญ',
   'token.copyAddress': 'คัดลอกที่อยู่ของ {sym}',
   'token.native': 'เหรียญพื้นเมืองของเชน ไม่มีที่อยู่สัญญา',
   'tags.title': 'แท็กของ {label}',
@@ -351,7 +352,7 @@ const th = {
   'token.scopeAll': 'ทุกกระเป๋า',
   'token.scopeWallet': 'เฉพาะ {label}',
   'token.scopeLabel': 'ขอบเขตข้อมูล',
-  'tx.typeTransfer': 'โอน (ส่ง + รับ)',
+  'tx.typeTransfer': 'โอน',
   'foot.local': 'ข้อมูลทั้งหมดอยู่ในเบราว์เซอร์นี้เท่านั้น',
 } as const;
 
@@ -665,6 +666,7 @@ const en: Record<MessageKey, string> = {
   'find.token': 'Token',
   'find.tx': 'Transaction',
   'find.empty': 'No matches',
+  'risk.worthless': 'Worthless tokens pushed in with no fee paid by you — this is airdrop spam',
   'token.copyAddress': 'Copy {sym} address',
   'token.native': 'Native coin of this chain — it has no contract address',
   'tags.title': 'Tags for {label}',
@@ -698,7 +700,7 @@ const en: Record<MessageKey, string> = {
   'token.scopeAll': 'All wallets',
   'token.scopeWallet': '{label} only',
   'token.scopeLabel': 'Data scope',
-  'tx.typeTransfer': 'Transfer (send + receive)',
+  'tx.typeTransfer': 'Transfer',
   'foot.local': 'Everything stays in this browser',
 };
 

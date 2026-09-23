@@ -2011,11 +2011,17 @@ dialog.dlg::backdrop {
 }
 
 /* ---------- ไดอะล็อกแบบมีแถบหัวข้อ (ตั้งค่า / บัญชี) ---------- */
-dialog.dlg-wide {
+/* [open] สำคัญ: display:flex ลอยๆ จะทับค่า display:none ของ dialog ที่ปิดอยู่ แล้วกล่องเปล่าจะไปทับหน้าเว็บ */
+dialog.dlg-wide[open] {
   width: min(880px, calc(100vw - 2 * var(--space-4)));
   height: min(640px, calc(100dvh - 2 * var(--space-4)));
   display: flex;
   flex-direction: column;
+}
+/* Dialog ห่อเนื้อหาไว้ใน .stack — ต้องยืดเต็มและยอมหดได้ ไม่งั้นพื้นที่เนื้อหาไม่เลื่อนและปุ่มปิดหลุดขอบ */
+.dlg-wide > .stack {
+  flex: 1;
+  min-height: 0;
 }
 .dlg-tabs {
   display: flex;
@@ -2027,10 +2033,15 @@ dialog.dlg-wide {
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  flex: 0 0 180px;
+  flex: 0 0 200px;
   padding-right: var(--space-4);
   border-right: 1px solid var(--color-line-subtle);
   overflow-y: auto;
+}
+.tab-item svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
 }
 .tab-item {
   display: flex;
@@ -2060,6 +2071,7 @@ dialog.dlg-wide {
   outline-offset: 2px;
 }
 .tab-label {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

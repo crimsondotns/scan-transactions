@@ -523,6 +523,12 @@ input[type='file'].input::file-selector-button {
   flex-direction: column;
   gap: var(--space-1);
 }
+/* หัวข้อกับคำอธิบายของหัวข้อ — ชิดกันเป็นคู่ ไม่ใช่ระยะเดียวกับระหว่างกลุ่ม */
+.field-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
 /* ช่องกรอกสั้น (จำนวนต่อหน้า / chain id) — ความกว้างเดียวกันทั้งสองที่ แทน max-width เฉพาะกิจใน TSX */
 .field-narrow {
   max-width: 140px;
@@ -1117,6 +1123,11 @@ th[aria-sort='descending'] .th-btn {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
+  min-width: 0;
+}
+.with-logo > .mono {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 .tx-id {
   display: flex;

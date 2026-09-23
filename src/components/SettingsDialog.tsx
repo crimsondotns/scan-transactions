@@ -496,14 +496,16 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
             toast(t('settings.chainSaved'));
           }}
         >
-          <h3 id="chains-h" className="panel-title">
-            {t('settings.chains')}
-          </h3>
-          {seenChains.length > 0 && (
-            <p className="hint">
-              {t('settings.chainSeen')} <span className="mono">{seenChains.join(' · ')}</span>
-            </p>
-          )}
+          <div className="field-head">
+            <h3 id="chains-h" className="panel-title">
+              {t('settings.chains')}
+            </h3>
+            {seenChains.length > 0 && (
+              <p className="hint">
+                {t('settings.chainSeen')} <span className="mono">{seenChains.join(' · ')}</span>
+              </p>
+            )}
+          </div>
           {settings.chains.length > 0 && (
             <ul className="sources slip-fields" aria-label={t('settings.chains')}>
               {settings.chains.map((c) => (
@@ -607,7 +609,7 @@ export function SettingsDialog({ open, onClose, seenChains = [] }: { open: boole
         {tab === 'slip' && (
           <>
         {/* ป้ายบนสลิป: สวิตช์ต่อรายการ (ไม่มี checkbox) — มีผลกับสลิปที่เปิดครั้งถัดไป */}
-        <section aria-labelledby="slip-h">
+        <section className="field" aria-labelledby="slip-h">
           <h3 id="slip-h" className="panel-title">
             {t('settings.slip')}
           </h3>

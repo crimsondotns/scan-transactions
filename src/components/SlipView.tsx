@@ -6,7 +6,6 @@ import { useI18n } from '../i18n';
 import { useStore } from '../store';
 import { canvasBlob, renderSlip, saveSlip, slipCode, type SlipAction, type SlipData, type SlipImage, type SlipRecord } from '../slip';
 import { Icon } from './Icon';
-import { useToast } from './Toast';
 
 export function useSlipLabels() {
   const { t } = useI18n();
@@ -40,7 +39,7 @@ export function useSlipLabels() {
   });
 }
 
-/** วาดสลิปเป็นภาพ (data URL) — ใช้ทั้งไดอะล็อกสลิปและหน้าตรวจสอบ */
+/** วาดสลิปเป็นภาพ (blob URL — เมนูคลิกขวาของเบราว์เซอร์คัดลอก/เซฟรูปได้จริง ต่างจาก data URL ยาวๆ) */
 export function useSlipImage(rec: SlipRecord | null, action: SlipAction | null = null) {
   const labels = useSlipLabels();
   const { settings } = useStore();
@@ -48,9 +47,17 @@ export function useSlipImage(rec: SlipRecord | null, action: SlipAction | null =
   useEffect(() => {
     if (!rec) return setImg(null);
     let alive = true;
-    void renderSlip(rec, labels(rec.data), action, settings.slipShow).then((r) => alive && setImg({ ...r, url: r.canvas.toDataURL('image/png') }));
+    let url = '';
+    void renderSlip(rec, labels(rec.data), action, settings.slipShow)
+      .then(async (r) => ({ r, blob: await canvasBlob(r.canvas) }))
+      .then(({ r, blob }) => {
+        if (!alive) return;
+        url = URL.createObjectURL(blob);
+        setImg({ ...r, url });
+      });
     return () => {
       alive = false;
+      if (url) URL.revokeObjectURL(url);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rec, action, settings.slipShow]);
@@ -129,30 +136,12 @@ export function SlipLightbox({ data, onClose }: { data: SlipData; onClose: () =>
     return () => document.removeEventListener('keydown', onKey, true);
   }, [onClose]);
   const img = useSlipImage(rec);
-  const { toast } = useToast();
-  // คัดลอกรูปเข้าคลิปบอร์ด — ส่ง Promise ของ blob เข้า ClipboardItem โดยตรง (Safari ต้องสร้างรายการภายในจังหวะที่ผู้ใช้กด)
-  const copyImage = () => {
-    if (!img) return;
-    const write = async () => {
-      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) throw new Error('unsupported');
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': canvasBlob(img.canvas) })]);
-    };
-    void write().then(
-      () => toast(t('slip.did.copy')),
-      () => toast(t('slip.copyFailed'))
-    );
-  };
   return createPortal(
     <div ref={box} className="lightbox" role="dialog" aria-modal="true" aria-label={t('slip.title')}>
       <button type="button" className="lightbox-scrim" aria-label={t('dialog.close')} onClick={onClose} />
-      <div className="lightbox-tools">
-        <button type="button" className="btn btn-icon" onClick={copyImage} disabled={!img} aria-label={t('slip.copyImage')} title={t('slip.copyImage')}>
-          <Icon name="image" />
-        </button>
-        <button type="button" className="btn btn-icon" onClick={onClose} aria-label={t('dialog.close')} autoFocus>
-          <Icon name="x" />
-        </button>
-      </div>
+      <button type="button" className="btn btn-icon lightbox-close" onClick={onClose} aria-label={t('dialog.close')} autoFocus>
+        <Icon name="x" />
+      </button>
       <div className="lightbox-body">
         {img ? <SlipPicture img={img} alt={t('slip.title')} className="lightbox-img" /> : <span className="spinner" aria-hidden="true" />}
       </div>

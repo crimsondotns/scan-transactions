@@ -1883,15 +1883,11 @@ dialog.dlg::backdrop {
   background: var(--color-lightbox);
   cursor: default;
 }
-.lightbox-tools {
+.lightbox-close {
   position: fixed;
   top: var(--space-4);
   right: var(--space-4);
   z-index: 1;
-  display: flex;
-  gap: var(--space-2);
-}
-.lightbox-tools .btn {
   background: var(--color-bg);
 }
 .lightbox-body {
@@ -1924,6 +1920,7 @@ dialog.dlg::backdrop {
   position: absolute;
   top: 0;
   left: 0;
+  pointer-events: none;
   transform-origin: 0 0;
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
@@ -1932,6 +1929,7 @@ dialog.dlg::backdrop {
 .slip-text span {
   position: absolute;
   display: block;
+  pointer-events: auto;
   white-space: nowrap;
   color: transparent;
   user-select: text;

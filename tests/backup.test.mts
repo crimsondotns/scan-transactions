@@ -108,3 +108,15 @@ test('chain list url and chains come through, lowercased, with the user winning'
   assert.deepEqual(merged, [{ id: 'eth', name: 'Mine' }]);
   assert.deepEqual(withConfiguredChains([], chains), chains);
 });
+
+/* ----------------------------- ไฟล์ตัวอย่างสำหรับนำเข้า ----------------------------- */
+
+test('ไฟล์ตัวอย่าง .csv อ่านกลับเข้ามาได้ด้วยตัวอ่านของเราเอง', async () => {
+  const { SAMPLE_CSV, parseCsv } = await import('../src/importWallets.ts');
+  const grid = parseCsv(SAMPLE_CSV);
+  assert.deepEqual(grid[0], ['Label', 'Addresses'], 'หัวตารางตรงกับที่ตัวอ่านมองหา');
+  assert.equal(grid.length, 4);
+  const { parseAddress } = await import('../src/store.ts');
+  for (const row of grid.slice(1)) assert.ok(parseAddress(row[1] ?? ''), `ที่อยู่ตัวอย่างต้องอ่านออก: ${row[1]}`);
+  assert.equal(SAMPLE_CSV.includes('\r\n'), true, 'ขึ้นบรรทัดแบบ CRLF ให้ Excel เปิดได้ตรงๆ');
+});

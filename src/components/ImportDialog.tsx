@@ -1,7 +1,9 @@
 import { useRef, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useStore } from '../store';
-import { ImportError, readWalletFile, type ImportRow } from '../importWallets';
+import { ImportError, readWalletFile, SAMPLE_CSV, type ImportRow } from '../importWallets';
+import { downloadText } from '../download';
+import { Icon } from './Icon';
 import { Dialog } from './Dialog';
 import { useToast } from './Toast';
 
@@ -58,6 +60,11 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
             {t('import.file')}
           </label>
           <input id="import-file" ref={fileRef} name="file" type="file" className="input" accept=".csv,.xlsx,.xlsm,.xls,text/csv" onChange={(e) => void pick(e.target.files?.[0])} />
+          <span className="hint">{t('import.columns')}</span>
+          <button type="button" className="btn-text" onClick={() => downloadText('xcapscan-wallets-sample.csv', SAMPLE_CSV, 'text/csv')}>
+            <Icon name="download" />
+            {t('import.sample')}
+          </button>
           {busy && (
             <span className="hint" aria-live="polite">
               {t('import.reading')}

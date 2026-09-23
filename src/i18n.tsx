@@ -57,6 +57,8 @@ const th = {
 
   'import.title': 'นำเข้ากระเป๋า',
   'import.file': 'ไฟล์ .csv หรือ .xlsx',
+  'import.columns': 'หัวตารางต้องมีคอลัมน์ Label และ Addresses (จะสลับลำดับหรือใช้ชื่อไทยว่า ชื่อ/ที่อยู่ ก็ได้)',
+  'import.sample': 'ดาวน์โหลดไฟล์ตัวอย่าง',
     'import.reading': 'กำลังอ่านไฟล์…',
   'import.noHeader': 'ไฟล์ไม่ถูกต้อง',
   'import.readFail': 'อ่านไฟล์ไม่ได้',
@@ -405,6 +407,8 @@ const en: Record<MessageKey, string> = {
 
   'import.title': 'Import wallets',
   'import.file': '.csv or .xlsx file',
+  'import.columns': 'The header needs a Label and an Addresses column (any order)',
+  'import.sample': 'Download a sample file',
     'import.reading': 'Reading file…',
   'import.noHeader': 'Invalid file',
   'import.readFail': 'Could not read the file',

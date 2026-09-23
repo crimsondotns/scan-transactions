@@ -12,6 +12,7 @@ import { Icon } from './Icon';
 import { useToast } from './Toast';
 import { backupFilename, buildBackup, mergeData, readBackup, BackupError, type PortableData } from '../backup';
 import { decryptJson, encryptJson, keyFromPassphrase, randomSalt } from '../crypto';
+import { downloadText } from '../download';
 
 type Tab = 'general' | 'data';
 type Mode = 'merge' | 'replace';
@@ -44,15 +45,6 @@ function Group({ title, note, children }: { title: string; note?: string; childr
   );
 }
 
-function download(name: string, text: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = name;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
-}
-
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
@@ -67,14 +59,14 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const data = (): PortableData => snapshot();
 
   function exportPlain() {
-    download(backupFilename(), JSON.stringify(buildBackup(data()), null, 2));
+    downloadText(backupFilename(), JSON.stringify(buildBackup(data()), null, 2));
     toast(t('account.exported'));
   }
 
   async function exportEncrypted() {
     const salt = randomSalt();
     const payload = await encryptJson(await keyFromPassphrase(passphrase, salt), buildBackup(data()));
-    download(backupFilename(new Date(), true), JSON.stringify({ app: 'xcapscan', kind: 'backup-encrypted', v: 1, salt, payload }, null, 2));
+    downloadText(backupFilename(new Date(), true), JSON.stringify({ app: 'xcapscan', kind: 'backup-encrypted', v: 1, salt, payload }, null, 2));
     setPassphrase('');
     toast(t('account.exported'));
   }

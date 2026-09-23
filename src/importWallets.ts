@@ -13,6 +13,12 @@ export interface ImportRow {
 const LABEL_KEYS = ['label', 'name', 'ชื่อ', 'ป้ายชื่อ'];
 const ADDRESS_KEYS = ['addresses', 'address', 'wallet', 'wallets', 'ที่อยู่', 'กระเป๋า'];
 
+/**
+ * ไฟล์ตัวอย่างให้ผู้ใช้โหลดไปกรอก — หัวตารางตรงกับที่ตัวอ่านรับ และที่อยู่ในตัวอย่างเป็นของสมมติ
+ * (รูปแบบถูกต้องเพื่อให้เห็นว่าหน้าตาควรเป็นยังไง แต่ไม่ใช่กระเป๋าของใคร)
+ */
+export const SAMPLE_CSV = ['Label,Addresses', 'Wallet 1,0x0000000000000000000000000000000000000001', 'Wallet 2,0x0000000000000000000000000000000000000002', 'Solana wallet,So11111111111111111111111111111111111111112'].join('\r\n');
+
 export class ImportError extends Error {
   constructor(public kind: 'noHeader' | 'readFail') {
     super(kind);

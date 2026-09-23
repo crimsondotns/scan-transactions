@@ -31,6 +31,16 @@ GitHub Pages (static)            Cloudflare Worker                 External API
 | กันยิงรัว | `RATE_LIMIT_PER_MIN` ต่อ IP (หรือ binding `RATE_LIMITER` ถ้าเปิด) |
 | ไม่ log และไม่ส่งกุญแจกลับ | log แค่ `{alias,status}` และส่งกลับเฉพาะ `content-type` |
 
+## จะ deploy จากที่ไหนก็ได้
+
+- **จาก CI (ไม่ต้องลงอะไรในเครื่อง)** — workflow `.github/workflows/worker.yml` ทำให้ ต้องมี repository secret
+  `CLOUDFLARE_API_TOKEN` (สิทธิ์ Edit Cloudflare Workers) กับ `CLOUDFLARE_ACCOUNT_ID` แล้วสั่ง Run workflow
+- **จากหน้าเว็บ Cloudflare** — สร้าง Worker แล้ววางโค้ดจาก `worker/src/` ตั้ง vars/secrets ในหน้า Settings ของ Worker
+- **จากเครื่องตัวเอง** — ตามขั้นตอนข้างล่าง
+
+worker รันบนเครือข่ายของ Cloudflare ไม่ได้รันบนเครื่องคุณ — ปิดเครื่องแล้วเว็บยังทำงานให้ทุกคนตามปกติ
+แพ็กเกจฟรีให้ 100,000 คำขอต่อวัน ไม่ต้องผูกบัตร
+
 ## ตั้งค่า
 
 1) deploy wrapper

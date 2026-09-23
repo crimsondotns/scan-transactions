@@ -6,11 +6,11 @@ Static, browser-only transaction list for many wallets. No server, no account, n
 
 ```bash
 pnpm install
-pnpm dev          # http://localhost:5174/scan-transactions/
+pnpm dev          # http://localhost:5174/transactions/
 pnpm typecheck
 pnpm check
 pnpm test
 pnpm build        # dist/
 ```
 
-Deployed to GitHub Pages from the `block-scanner` branch by `.github/workflows/pages.yml`.
+Deployed to GitHub Pages from the `xcap-scan` branch by `.github/workflows/pages.yml`.

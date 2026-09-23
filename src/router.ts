@@ -1,5 +1,5 @@
 /**
- * เส้นทางแบบ path จริง (ไม่มี #): <base>/ = แดชบอร์ด, <base>/w/<id> = กระเป๋า, <base>/v/<code>[.<data>] = ตรวจสลิป
+ * เส้นทางแบบ path จริง (ไม่มี #): <base>/ = แดชบอร์ด, <base>/<id> = กระเป๋า, <base>/v/<code>[.<data>] = ตรวจสลิป
  * ใช้ History API; static host ที่ไม่รู้จัก path จะเสิร์ฟ public/404.html ซึ่งเด้งกลับมาที่ <base>/?p=<path> แล้วตรงนี้คืน path ให้
  */
 import { useEffect, useState } from 'react';

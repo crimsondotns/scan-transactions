@@ -29,9 +29,9 @@ export function App() {
   const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importing, setImporting] = useState(false);
-  /* หน้า: / = แดชบอร์ด, /w/<id> = ธุรกรรมของกระเป๋า — path จริง (History API) ปุ่มย้อนกลับใช้ได้ */
+  /* หน้า: / = แดชบอร์ด, /<id> = ธุรกรรมของกระเป๋า (v/ สงวนให้ลิงก์ตรวจสลิป) — path จริง (History API) ปุ่มย้อนกลับใช้ได้ */
   const route = useRoute();
-  const pageWallet = route.startsWith('w/') ? decodeURIComponent(route.slice(2)) : null;
+  const pageWallet = route && !route.startsWith('v/') ? decodeURIComponent(route) : null;
   /* /v/<code>[.<data>] = ลิงก์ตรวจสลิป → เปิดไดอะล็อกตรวจทับแดชบอร์ด */
   const share = useMemo(() => (route.startsWith('v/') ? parseShare(decodeURIComponent(route.slice(2))) : null), [route]);
   const [verifyOpen, setVerifyOpen] = useState(false);
@@ -73,14 +73,14 @@ export function App() {
   const openWallet = useCallback(
     (id: string | null) => {
       selectWallet(id);
-      navigate(id ? `w/${encodeURIComponent(id)}` : '');
+      navigate(id ? encodeURIComponent(id) : '');
     },
     [selectWallet]
   );
   const goDashboard = useCallback(() => {
     navigate('');
   }, []);
-  /* เปิดด้วย URL ที่มี #/w/<id> → เลือกกระเป๋านั้นให้ (ถ้ายังมีอยู่) */
+  /* เปิดด้วย URL ที่ชี้กระเป๋า → เลือกกระเป๋านั้นให้ (ถ้ายังมีอยู่) */
   useEffect(() => {
     if (!pageWallet) return;
     if (!wallets.some((w) => w.id === pageWallet)) return goDashboard();

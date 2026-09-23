@@ -11,7 +11,7 @@
  *  - ไม่ log กุญแจ ไม่ส่งกุญแจกลับ ไม่ส่ง header ของปลายทางกลับนอกจาก content-type
  *  - จำกัดอัตราคำขอต่อ IP (best effort ในหน่วยความจำ หรือผ่าน binding RATE_LIMITER ถ้าผูกไว้)
  */
-import { allowedOrigin, carriesClientAuth, parseRoute, safeQuery, upstreamUrl } from './validate';
+import { allowedOrigin, carriesClientAuth, mapRoute, parseRoute, safeQuery, upstreamUrl } from './validate';
 
 export interface Env {
   /** รายการ origin ที่เรียกได้ คั่นด้วยจุลภาค เช่น https://<user>.github.io */
@@ -20,7 +20,7 @@ export interface Env {
   RATE_LIMIT_PER_MIN?: string;
   /** ตัวจำกัดอัตราของ Cloudflare ถ้าผูกไว้ */
   RATE_LIMITER?: { limit(o: { key: string }): Promise<{ success: boolean }> };
-  /** ต่อ alias: UPSTREAM_<ALIAS>_BASE (secret), _AUTH_HEADER (var), _KEY (secret) */
+  /** ต่อ alias: UPSTREAM_<ALIAS>_BASE (secret), _AUTH_HEADER (var), _KEY (secret), _ROUTES (secret, ไม่บังคับ) */
   [k: string]: unknown;
 }
 
@@ -88,7 +88,10 @@ export default {
 
     const up = envStr(env, `UPSTREAM_${route.alias.toUpperCase()}_BASE`);
     if (!up) return fail(404, 'route', origin);
-    const target = upstreamUrl(up, route.path, query);
+    // ชื่อเส้นทางที่ไคลเอนต์ใช้เป็นตัวอักษรกลางๆ แล้วมาแปลงเป็น path จริงที่นี่ (ถ้า alias นั้นตั้งตารางไว้)
+    const path = mapRoute(route.path, envStr(env, `UPSTREAM_${route.alias.toUpperCase()}_ROUTES`));
+    if (path === null) return fail(404, 'route', origin);
+    const target = upstreamUrl(up, path, query);
     if (!target) return fail(400, 'route', origin);
 
     // กุญแจถูกเติมที่นี่ — ไม่เคยผ่านเบราว์เซอร์และไม่ถูก log

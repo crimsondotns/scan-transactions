@@ -67,6 +67,28 @@ export function carriesClientAuth(h: Headers): boolean {
   return CLIENT_AUTH_HEADERS.some((k) => h.has(k));
 }
 
+/**
+ * แปลง path ที่ไคลเอนต์ส่งมาให้เป็น path จริงของปลายทาง เมื่อ alias นั้นประกาศตารางเส้นทางไว้
+ * ตาราง (secret): {"t":"v1/transfers","p":"v1/pnl-activity"} → "/s/a/t/<addr>" กลายเป็น "v1/transfers/<addr>"
+ * ผลคือชื่อเส้นทางที่เห็นในเบราว์เซอร์เป็นตัวอักษรกลางๆ ไม่บอกว่าปลายทางเป็นเจ้าไหน
+ * ไม่มีตาราง = ส่ง path ผ่านตามเดิม; มีตารางแต่คีย์ไม่ตรง = null (404)
+ */
+export function mapRoute(path: string, routesJson: string | undefined): string | null {
+  if (!routesJson) return path;
+  let table: unknown;
+  try {
+    table = JSON.parse(routesJson);
+  } catch {
+    return null;
+  }
+  if (typeof table !== 'object' || table === null) return null;
+  const [key, ...rest] = path.split('/');
+  const mapped = (table as Record<string, unknown>)[key ?? ''];
+  if (typeof mapped !== 'string' || mapped === '') return null;
+  const tail = rest.filter(Boolean).join('/');
+  return tail ? `${mapped.replace(/\/+$/, '')}/${tail}` : mapped;
+}
+
 /** ต่อ URL ปลายทาง — base มาจาก secret ฝั่งเซิร์ฟเวอร์เท่านั้น */
 export function upstreamUrl(base: string, path: string, query: URLSearchParams): string | null {
   let u: URL;

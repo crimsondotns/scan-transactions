@@ -7,6 +7,9 @@ RATE_LIMIT_PER_MIN=60
 # UPSTREAM_<ALIAS>_BASE       = URL ฐานของ API ภายนอก (ถือเป็นความลับ: ไม่อยู่ในหน้าเว็บ)
 # UPSTREAM_<ALIAS>_AUTH_HEADER= ชื่อ header ที่ปลายทางต้องการ (ไม่ลับ)
 # UPSTREAM_<ALIAS>_KEY        = กุญแจ (ความลับ)
-UPSTREAM_MAIN_BASE=https://example.invalid/v1
-UPSTREAM_MAIN_AUTH_HEADER=x-api-key
-UPSTREAM_MAIN_KEY=replace-with-your-own-key
+UPSTREAM_A_BASE=https://example.invalid
+UPSTREAM_A_AUTH_HEADER=x-api-key
+UPSTREAM_A_KEY=replace-with-your-own-key
+# ตารางเส้นทาง (ไม่บังคับ): ชื่อสั้นกลางๆ ที่ไคลเอนต์ใช้ → path จริงของปลายทาง
+# ตั้งไว้แล้ว path อื่นนอกตารางจะถูกปฏิเสธ (404) และเบราว์เซอร์ไม่เห็นชื่อ path จริงเลย
+UPSTREAM_A_ROUTES={"t":"v1/transfers","p":"v1/pnl-activity","m":"v1/assets/search"}

@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { allowedOrigin, carriesClientAuth, parseRoute, safeQuery, upstreamUrl } from '../worker/src/validate.ts';
+import { allowedOrigin, carriesClientAuth, mapRoute, parseRoute, safeQuery, upstreamUrl } from '../worker/src/validate.ts';
 import { resolveUrl, setWrapper, usableUrl, viaWrapper } from '../src/proxy.ts';
 
 const WRAP = 'https://wrapper.example.invalid';
@@ -49,4 +49,17 @@ test('หน้าเว็บ: แม่แบบแบบชื่อย่อ
   setWrapper('');
   assert.equal(usableUrl('main/v1'), false);
   assert.equal(usableUrl('https://api.example.invalid/x'), true);
+});
+
+test('ชื่อเส้นทางกลางๆ ถูกแปลงเป็น path จริงที่ฝั่งเซิร์ฟเวอร์ คีย์ที่ไม่รู้จักถูกปฏิเสธ', () => {
+  const routes = JSON.stringify({ t: 'v1/transfers', p: 'v1/pnl-activity', m: 'v1/assets/search' });
+  assert.equal(mapRoute('t/9xQe', routes), 'v1/transfers/9xQe');
+  assert.equal(mapRoute('p', routes), 'v1/pnl-activity');
+  assert.equal(mapRoute('m', routes), 'v1/assets/search');
+  // คีย์ที่ไม่ได้ประกาศ = เปิดทางไปที่อื่นในปลายทางไม่ได้
+  assert.equal(mapRoute('v1/transfers/9xQe', routes), null);
+  assert.equal(mapRoute('x', routes), null);
+  // ไม่ได้ตั้งตาราง = ส่ง path ผ่านตามเดิม (ใช้กับ alias ที่ไม่ต้องปิดชื่อเส้นทาง)
+  assert.equal(mapRoute('v1/transfers/9xQe', undefined), 'v1/transfers/9xQe');
+  assert.equal(mapRoute('t', 'not json'), null);
 });

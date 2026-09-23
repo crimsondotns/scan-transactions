@@ -23,6 +23,7 @@ GitHub Pages (static)            Cloudflare Worker                 External API
 |---|---|
 | ไม่มีโหมดส่งต่อ URL อิสระ (`?url=`) → ไม่เป็น open proxy | `parseRoute()` รับเฉพาะ `/s/<alias>/<path>` |
 | ปลายทางมาจากฝั่งเซิร์ฟเวอร์ | `UPSTREAM_<ALIAS>_BASE` (secret) |
+| ชื่อเส้นทางที่เห็นในเบราว์เซอร์ไม่บอกว่าปลายทางเป็นเจ้าไหน | `UPSTREAM_<ALIAS>_ROUTES` (secret) แปลง `t` → `v1/transfers` |
 | กุญแจเติมฝั่งเซิร์ฟเวอร์ | `UPSTREAM_<ALIAS>_AUTH_HEADER` + `UPSTREAM_<ALIAS>_KEY` |
 | ไคลเอนต์ห้ามส่งกุญแจเอง | มี `authorization`/`x-api-key`/`cookie` → 400 |
 | CORS เฉพาะ origin ที่ตั้งไว้ | `ALLOWED_ORIGINS` (ไม่มี wildcard) |
@@ -66,8 +67,11 @@ npx wrangler secret put UPSTREAM_MAIN_KEY      # กุญแจ
 5) เขียนแหล่งข้อมูลใน secret `SOURCES` เป็นชื่อย่อแทน URL เต็ม
 
 ```json
-[{ "name": "transfers", "family": "sol", "url": "main/v1/transfers/{address}?limit={count}&offset={offset}" }]
+[{ "name": "transfers", "family": "sol", "url": "a/t/{address}?limit={count}&offset={offset}" }]
 ```
+
+`a` = ชื่อย่อ, `t` = ชื่อเส้นทาง ทั้งคู่ตั้งเองได้ตามใจ ตราบใดที่ตรงกับ secret ของ worker
+เลือกให้เป็นตัวอักษรกลางๆ จะได้ไม่บอกใบ้ว่าปลายทางเป็นใคร (ถ้าไม่ตั้ง `_ROUTES` path จะถูกส่งผ่านตามที่เขียนไว้)
 
 - `url` ที่ไม่ขึ้นต้นด้วย `https://` = "<ชื่อย่อ>/<path>" → แอปต่อเป็น `<wrapper>/s/<ชื่อย่อ>/<path>`
 - เบราว์เซอร์จึงเห็นแค่ที่อยู่ wrapper ใน DevTools ส่วน host จริงของแหล่งข้อมูลอยู่ใน secret ของ worker

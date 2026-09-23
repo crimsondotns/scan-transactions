@@ -46,7 +46,7 @@ export function Dashboard({ all, wallets, rows, feeds, chains, group, onGroup, i
           <span className="top-spacer" />
           <RangeChips value={range} onChange={onRange} />
         </div>
-        <FlowChart rows={ranged} days={range} height={170} />
+        <FlowChart rows={ranged} days={range} height={240} />
         <div className="stat-row">
           <Stat label={t('flow.in')} value={formatUsdExact(sums.inUsd)} tone="is-pos" />
           <Stat label={t('flow.out')} value={formatUsdExact(sums.outUsd)} tone="is-neg" />

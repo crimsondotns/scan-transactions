@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cumulative, lastTime, netUsd, rowsOfToken, signClassOf, tokenSummary, totals, withinDays } from '../src/flow.ts';
+import { daily, lastTime, netUsd, rowsOfToken, signClassOf, tokenSummary, totals, withinDays } from '../src/flow.ts';
 import { matchesGroup, groupExists, tagsOf, familiesOf, ACTIVE_DAYS } from '../src/groups.ts';
 import type { Move, TxRow } from '../src/feed.ts';
 import type { Wallet } from '../src/store.ts';
@@ -48,14 +48,24 @@ test('ยอดรวมแยกเข้า/ออก/ค่าเครือ
   assert.deepEqual(s, { net: 75, inUsd: 100, outUsd: -25, fee: 3, flagged: 1, count: 2 });
 });
 
-test('เส้นสะสมยาวเท่าจำนวนวันเสมอ และสะสมต่อเนื่อง', () => {
-  const rows = [row({ time: day(0), moves: [move({ usd: 10 })] }), row({ time: day(2), moves: [move({ usd: 5 })] }), row({ time: day(99), moves: [move({ usd: 1000 })] })];
-  const c = cumulative(rows, 7, NOW);
-  assert.equal(c.length, 7);
-  assert.equal(c.at(-1), 15, 'แถวที่เก่ากว่าช่วงที่ขอ ไม่ถูกนับ');
-  assert.deepEqual(c.slice(0, 4), [0, 0, 0, 0]);
-  assert.equal(c[4], 5);
-  assert.equal(c[5], 5, 'วันที่ไม่มีธุรกรรม เส้นราบ ไม่ตกลงศูนย์');
+test('ยอดรายวันยาวเท่าจำนวนวันเสมอ แยกเข้า/ออก และตัดวันที่เก่ากว่าช่วงทิ้ง', () => {
+  const rows = [
+    row({ time: day(0), moves: [move({ usd: 10 })] }),
+    row({ time: day(2), moves: [move({ usd: 5 }), move({ dir: 'out', usd: 3 })] }),
+    row({ time: day(99), moves: [move({ usd: 1000 })] }),
+  ];
+  const d = daily(rows, 7, NOW);
+  assert.equal(d.length, 7);
+  assert.equal(d.at(-1)?.inUsd, 10, 'ช่องสุดท้ายคือวันนี้');
+  assert.equal(d[4]?.inUsd, 5);
+  assert.equal(d[4]?.outUsd, 3, 'ขาออกเก็บเป็นขนาด (บวก)');
+  assert.equal(d[5]?.inUsd, 0, 'วันที่ไม่มีธุรกรรมเป็นศูนย์');
+  assert.equal(
+    d.reduce((s, p) => s + p.inUsd, 0),
+    15,
+    'แถวที่เก่ากว่าช่วงที่ขอ ไม่ถูกนับ'
+  );
+  assert.equal(new Date(d.at(-1)?.at ?? 0).getHours(), 0, 'แต่ละช่องคือเที่ยงคืนของวันนั้น');
 });
 
 test('กรองตามช่วงวันและหาเวลาล่าสุด', () => {

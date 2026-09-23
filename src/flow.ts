@@ -48,20 +48,39 @@ export function withinDays(rows: TxRow[], days: number, now = Date.now()): TxRow
   return rows.filter((r) => r.time >= from);
 }
 
+export interface DayPoint {
+  /** เที่ยงคืนของวันนั้นตามเวลาเครื่อง (ms) */
+  at: number;
+  /** เงินเข้าของวันนั้น (บวกเสมอ) */
+  inUsd: number;
+  /** เงินออกของวันนั้น เก็บเป็นขนาด (บวกเสมอ) — ทิศทางบอกด้วยชื่อช่อง ไม่ใช่เครื่องหมาย */
+  outUsd: number;
+}
+
+const startOfDay = (ms: number): number => {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+};
+
 /**
- * เส้นสะสมรายวัน: ช่อง i = สุทธิสะสมตั้งแต่ต้นช่วงจนจบวันนั้น (ช่องสุดท้าย = วันนี้)
- * วันไหนไม่มีธุรกรรม เส้นก็ราบ — ยาว days ช่องเสมอ ให้กราฟกว้างเท่ากันทุกช่วงเวลา
+ * ยอดเข้า/ออกรายวัน ยาว days ช่องเสมอ (ช่องสุดท้าย = วันนี้) วันไหนไม่มีธุรกรรมก็เป็นศูนย์
+ * แบ่งตามวันปฏิทินของเครื่อง ไม่ใช่ทุก 24 ชม. — แกนวันที่ของกราฟจึงตรงกับวันที่จริง
  */
-export function cumulative(rows: TxRow[], days: number, now = Date.now()): number[] {
-  const buckets = new Array<number>(days).fill(0);
+export function daily(rows: TxRow[], days: number, now = Date.now()): DayPoint[] {
+  const today = startOfDay(now);
+  const out: DayPoint[] = Array.from({ length: days }, (_, i) => ({ at: today - (days - 1 - i) * 86400000, inUsd: 0, outUsd: 0 }));
   for (const r of rows) {
-    const age = Math.floor((now / 1000 - r.time) / 86400);
-    if (age < 0 || age >= days) continue;
-    const i = days - 1 - age;
-    buckets[i] = (buckets[i] ?? 0) + netUsd(r);
+    const age = Math.round((today - startOfDay(r.time * 1000)) / 86400000);
+    const slot = out[days - 1 - age];
+    if (age < 0 || age >= days || !slot) continue;
+    for (const m of r.moves) {
+      if (m.usd === null || m.amount === 0 || m.approve) continue;
+      if (m.dir === 'in') slot.inUsd += m.usd;
+      else slot.outUsd += m.usd;
+    }
   }
-  let acc = 0;
-  return buckets.map((v) => (acc += v));
+  return out;
 }
 
 export interface TokenRow {

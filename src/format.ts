@@ -25,6 +25,19 @@ export function formatUsdExact(v: number): string {
   });
 }
 
+/** ยอดแบบสั้นสำหรับกราฟ/ป้ายบอกค่า: $12.4K · $1.2M (ศูนย์เป็น $0) */
+export function formatUsdCompact(v: number): string {
+  if (!Number.isFinite(v)) return '—';
+  const abs = Math.abs(v);
+  if (abs >= 1000) return `${v < 0 ? '-' : ''}$${abs.toLocaleString(locale, { notation: 'compact', maximumFractionDigits: 1 })}`;
+  return `${v < 0 ? '-' : ''}$${abs.toLocaleString(locale, { maximumFractionDigits: abs > 0 && abs < 1 ? 4 : 2 })}`;
+}
+
+/** วันที่แบบสั้นของแกนกราฟ: 21 ก.ย. · Sep 21 */
+export function formatDayShort(ms: number): string {
+  return new Date(ms).toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+}
+
 export function formatAmount(v: number): string {
   if (!Number.isFinite(v)) return '—';
   const abs = Math.abs(v);

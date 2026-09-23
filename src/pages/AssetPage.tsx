@@ -84,7 +84,7 @@ export function AssetPage({ symbol, wallet, all, rows, chains, group, range, onR
           <Stat label={t('token.net')} value={formatUsdExact((token?.inUsd ?? 0) - (token?.outUsd ?? 0))} tone={signClassOf((token?.inUsd ?? 0) - (token?.outUsd ?? 0))} sub={`${formatAmount((token?.inAmount ?? 0) - (token?.outAmount ?? 0))} ${symbol}`} />
           <Stat label={t('token.holders')} value={String(holders.length)} sub={t('flow.net', { n: range, tx: sums.count })} />
         </div>
-        <FlowChart rows={ranged} days={range} height={150} />
+        <FlowChart rows={ranged} days={range} height={200} />
         <PageTabs
           value={tab}
           onChange={setTab}

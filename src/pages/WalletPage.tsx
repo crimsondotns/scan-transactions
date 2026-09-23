@@ -79,7 +79,7 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
           <Stat label={t('flow.feeTotal')} value={formatUsdExact(sums.fee)} />
           <Stat label={t('token.active')} value={String(tokens.length)} />
         </div>
-        <FlowChart rows={ranged} days={range} height={150} />
+        <FlowChart rows={ranged} days={range} height={200} />
         <PageTabs
           value={tab}
           onChange={setTab}

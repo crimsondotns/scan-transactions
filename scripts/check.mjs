@@ -38,6 +38,17 @@ for (const f of files) {
     if (/#[0-9a-f]{3,8}\b/i.test(code) && !f.endsWith('tokens.css')) bad.push(`${f}: raw colour outside tokens.css`);
   }
 }
+// ฟอนต์: @font-face และ preload ต้องชี้ใต้ base เดียวกับ vite ไม่งั้นโหลดไม่ขึ้นและตกไปใช้ฟอนต์ระบบเงียบๆ
+{
+  const base = /base:\s*'([^']+)'/.exec(readFileSync('vite.config.ts', 'utf8'))?.[1] ?? '/';
+  for (const f of ['src/styles/fonts.css', 'index.html']) {
+    const src = readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/["'(](\/[^"')]*assets\/fonts\/[^"')]+)/g)) {
+      if (!m[1].startsWith(base)) bad.push(`${f}: font path ${m[1]} is outside the vite base ${base}`);
+    }
+  }
+}
+
 if (bad.length) {
   console.error(bad.join('\n'));
   process.exit(1);

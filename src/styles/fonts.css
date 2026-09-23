@@ -1,25 +1,25 @@
 /*
  * Suisse Int'l เท่านั้น — ข้อความอังกฤษและตัวเลขทุกจุด (ไม่มี monospace)
- * น้ำหนัก: Regular 400 / Book 500 / Medium 600  ไฟล์ที่ public/assets/fonts/ (ไม่ commit)
+ * น้ำหนัก: Regular 400 / Book 500 / Medium 600  ไฟล์ที่ public/assets/fonts/ (ไม่ commit) — พาธต้องขึ้นต้นด้วย base ของ vite เสมอ (scripts/check.mjs คุมไว้)
  * อักษรไทยไม่มีในฟอนต์ เบราว์เซอร์จึงหยิบฟอนต์ระบบให้เฉพาะตัวนั้นเอง
  */
 @font-face {
   font-family: 'Suisse Intl';
-  src: url('/scan-transactions/assets/fonts/SuisseIntl-Regular.woff2') format('woff2');
+  src: url('/xcapscan/assets/fonts/SuisseIntl-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Suisse Intl';
-  src: url('/scan-transactions/assets/fonts/SuisseIntl-Book.woff2') format('woff2');
+  src: url('/xcapscan/assets/fonts/SuisseIntl-Book.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: 'Suisse Intl';
-  src: url('/scan-transactions/assets/fonts/SuisseIntl-Medium.woff2') format('woff2');
+  src: url('/xcapscan/assets/fonts/SuisseIntl-Medium.woff2') format('woff2');
   font-weight: 600;
   font-style: normal;
   font-display: swap;

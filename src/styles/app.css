@@ -2028,6 +2028,30 @@ dialog.dlg::backdrop {
   min-width: 0;
 }
 
+/* ---------- ลำดับชั้นตัวอักษรในไดอะล็อก (ตามตารางชนิดตัวอักษรของดีไซน์ซิสเต็ม) ----------
+ * สร้างลำดับชั้นด้วย ขนาด + น้ำหนัก + ระยะ ไม่ใช่ตัวใหญ่ขึ้นอย่างเดียว
+ * ชื่อไดอะล็อก 20/600 · หัวข้อส่วน 17/600 · ป้ายฟิลด์ 14/500 · แถวรายการ 15/500 · คำอธิบาย 13/500 สีจาง
+ */
+.dlg h2 {
+  font-size: var(--size-heading-sm);
+  line-height: 1.25;
+}
+.dlg-panel .panel-title {
+  font-size: var(--size-body-lg);
+  line-height: 1.3;
+}
+.dlg .label {
+  font-weight: var(--weight-book);
+}
+.dlg .source .wallet-label {
+  font-size: var(--size-input);
+  font-weight: var(--weight-book);
+}
+/* แถวรายการกระชับขึ้น (แถวปกติ 60px → 48px) โดยระยะยังอยู่บนสเกล 4px */
+.dlg .source {
+  min-height: 48px;
+}
+
 /* ---------- ไดอะล็อกแบบมีแถบหัวข้อ (ตั้งค่า / บัญชี) ---------- */
 /* [open] สำคัญ: display:flex ลอยๆ จะทับค่า display:none ของ dialog ที่ปิดอยู่ แล้วกล่องเปล่าจะไปทับหน้าเว็บ */
 dialog.dlg-wide[open] {
@@ -2071,7 +2095,9 @@ dialog.dlg-wide[open] {
   background: none;
   color: var(--color-muted);
   font: inherit;
-  font-size: var(--size-body);
+  font-size: var(--size-label);
+  font-weight: var(--weight-regular);
+  line-height: 1.4;
   text-align: left;
   cursor: pointer;
 }

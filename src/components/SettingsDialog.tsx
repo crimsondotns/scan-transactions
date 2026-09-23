@@ -203,18 +203,6 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
               </Row>
             </Group>
             {importErr && <span className="error">{importErr}</span>}
-
-            <Group title={t('settings.list')} note={t('settings.sourcesBuild')}>
-              {settings.endpoints.length === 0 ? (
-                <p className="hint">{t('settings.none')}</p>
-              ) : (
-                settings.endpoints.map((ep) => (
-                  <Row key={ep.id} title={ep.name} desc={ep.url}>
-                    <span className="set-row-value">{t(`family.${ep.family}`)}</span>
-                  </Row>
-                ))
-              )}
-            </Group>
           </>
         )}
       </DialogTabs>

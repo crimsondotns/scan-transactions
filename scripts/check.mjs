@@ -38,6 +38,18 @@ for (const f of files) {
     if (/#[0-9a-f]{3,8}\b/i.test(code) && !f.endsWith('tokens.css')) bad.push(`${f}: raw colour outside tokens.css`);
   }
 }
+// โทเคนที่ถูกอ้างต้องมีจริงใน tokens.css — var(--x) ที่ไม่มีและไม่มีค่าสำรอง ทำให้ทั้งบรรทัดไม่มีผลแบบเงียบๆ
+{
+  const tokensFile = readFileSync('src/styles/tokens.css', 'utf8');
+  const defined = new Set([...tokensFile.matchAll(/(--[a-z0-9-]+)\s*:/gi)].map((m) => m[1]));
+  for (const f of files.filter((x) => x.endsWith('.css'))) {
+    const src = readFileSync(f, 'utf8');
+    for (const [, name] of src.matchAll(/var\((--[a-z0-9-]+)\s*\)/gi)) {
+      if (!defined.has(name) && !src.includes(`${name}:`)) bad.push(`${f}: var(${name}) is not defined in tokens.css`);
+    }
+  }
+}
+
 // ฟอนต์: @font-face และ preload ต้องชี้ใต้ base เดียวกับ vite ไม่งั้นโหลดไม่ขึ้นและตกไปใช้ฟอนต์ระบบเงียบๆ
 {
   const base = /base:\s*'([^']+)'/.exec(readFileSync('vite.config.ts', 'utf8'))?.[1] ?? '/';

@@ -2128,7 +2128,7 @@ dialog.dlg-wide[open] {
 }
 .dlg-tabs {
   display: flex;
-  gap: var(--space-5);
+  gap: var(--space-6);
   min-height: 0;
   flex: 1;
 }

@@ -4,8 +4,9 @@ import { useModalLayer } from '../modal';
 import { createPortal } from 'react-dom';
 import { useI18n } from '../i18n';
 import { useStore } from '../store';
-import { renderSlip, saveSlip, slipCode, type SlipAction, type SlipData, type SlipImage, type SlipRecord } from '../slip';
+import { canvasBlob, renderSlip, saveSlip, slipCode, type SlipAction, type SlipData, type SlipImage, type SlipRecord } from '../slip';
 import { Icon } from './Icon';
+import { useToast } from './Toast';
 
 export function useSlipLabels() {
   const { t } = useI18n();
@@ -78,7 +79,8 @@ export function SlipPicture({ img, alt, className }: { img: SlipImage & { url: s
         aria-hidden="true"
         /* คลิกขวา (ไม่มีข้อความถูกเลือกอยู่) → ปล่อยให้เมนูของเบราว์เซอร์ตกที่รูปข้างล่าง (Copy Image / Save Image) */
         onPointerDown={(e) => {
-          if (e.button !== 2) return;
+          // ctrl+คลิก = คลิกขวาบน macOS
+          if (e.button !== 2 && !(e.button === 0 && e.ctrlKey)) return;
           const sel = window.getSelection();
           if (sel && !sel.isCollapsed && e.currentTarget.contains(sel.anchorNode)) return;
           const el = e.currentTarget;
@@ -127,12 +129,30 @@ export function SlipLightbox({ data, onClose }: { data: SlipData; onClose: () =>
     return () => document.removeEventListener('keydown', onKey, true);
   }, [onClose]);
   const img = useSlipImage(rec);
+  const { toast } = useToast();
+  // คัดลอกรูปเข้าคลิปบอร์ด — ส่ง Promise ของ blob เข้า ClipboardItem โดยตรง (Safari ต้องสร้างรายการภายในจังหวะที่ผู้ใช้กด)
+  const copyImage = () => {
+    if (!img) return;
+    const write = async () => {
+      if (typeof ClipboardItem === 'undefined' || !navigator.clipboard?.write) throw new Error('unsupported');
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': canvasBlob(img.canvas) })]);
+    };
+    void write().then(
+      () => toast(t('slip.did.copy')),
+      () => toast(t('slip.copyFailed'))
+    );
+  };
   return createPortal(
     <div ref={box} className="lightbox" role="dialog" aria-modal="true" aria-label={t('slip.title')}>
       <button type="button" className="lightbox-scrim" aria-label={t('dialog.close')} onClick={onClose} />
-      <button type="button" className="btn btn-icon lightbox-close" onClick={onClose} aria-label={t('dialog.close')} autoFocus>
-        <Icon name="x" />
-      </button>
+      <div className="lightbox-tools">
+        <button type="button" className="btn btn-icon" onClick={copyImage} disabled={!img} aria-label={t('slip.copyImage')} title={t('slip.copyImage')}>
+          <Icon name="image" />
+        </button>
+        <button type="button" className="btn btn-icon" onClick={onClose} aria-label={t('dialog.close')} autoFocus>
+          <Icon name="x" />
+        </button>
+      </div>
       <div className="lightbox-body">
         {img ? <SlipPicture img={img} alt={t('slip.title')} className="lightbox-img" /> : <span className="spinner" aria-hidden="true" />}
       </div>

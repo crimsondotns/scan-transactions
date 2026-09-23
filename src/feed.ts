@@ -1,5 +1,5 @@
 import { rememberPrice } from './prices';
-import { proxied } from './proxy';
+import { requestUrl, viaWrapper } from './proxy';
 import { limitedFetch } from './limiter';
 /**
  * ดึงประวัติจาก URL แม่แบบที่ผู้ใช้ใส่เอง แล้วแปลงเป็นแถวกลางของแอป
@@ -160,9 +160,10 @@ export interface FetchOpts {
 export async function fetchPage(tpl: string, walletId: string, address: string, cur: Cursor | null, count: number, opts: FetchOpts = {}): Promise<Page> {
   let res: Response;
   const headers: Record<string, string> = { accept: 'application/json' };
-  if (opts.authHeader && opts.apiKey) headers[opts.authHeader] = opts.apiKey;
+  // ผ่าน API wrapper → ฝั่งเซิร์ฟเวอร์เป็นคนใส่กุญแจ เบราว์เซอร์ต้องไม่ส่งไปเอง
+  if (!viaWrapper(tpl) && opts.authHeader && opts.apiKey) headers[opts.authHeader] = opts.apiKey;
   try {
-    res = await limitedFetch(proxied(buildUrl(tpl, address, cur, count, opts.family)), { headers });
+    res = await limitedFetch(requestUrl(buildUrl(tpl, address, cur, count, opts.family)), { headers });
   } catch {
     throw new FeedError('net');
   }

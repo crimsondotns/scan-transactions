@@ -37,6 +37,8 @@ jobs:
           VITE_SOURCES: ${{ secrets.SOURCES }}
           VITE_CHAIN_LIST_URL: ${{ secrets.CHAIN_LIST_URL }}
           VITE_CHAINS: ${{ secrets.CHAINS }}
+          # ที่อยู่ของ API wrapper — สาธารณะ (เห็นใน DevTools อยู่แล้ว) จึงเก็บเป็น variable ไม่ใช่ secret
+          VITE_WRAPPER_URL: ${{ vars.API_WRAPPER_URL }}
           # ค่าที่ตั้งใจฝังลง bundle อาจหน้าตาเหมือนกุญแจ → ให้ด่านสแกนเตือนแทนล้ม
           ALLOW_EMBEDDED_KEYS: '1'
       # ด่านสุดท้าย: สแกน dist/ ว่าไม่มีกุญแจ/โทเคนหลุดเข้าไป (หน้าเว็บ static = ทุกไบต์สาธารณะ)

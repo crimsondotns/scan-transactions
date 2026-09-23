@@ -3,7 +3,7 @@
  * จำลง localStorage 7 วัน; ที่อยู่ที่แหล่งไม่รู้จักก็จำไว้ (ว่าง) จะได้ไม่ขอซ้ำทุกครั้ง
  */
 import { parseTokenMeta, type TokenMeta } from './feed';
-import { proxied } from './proxy';
+import { requestUrl, viaWrapper } from './proxy';
 import { limitedFetch } from './limiter';
 import type { Endpoint } from './store';
 
@@ -71,14 +71,15 @@ export async function ensureTokenMeta(ep: Endpoint, addresses: string[]): Promis
   }
   if (!missing.length) return out;
   const headers: Record<string, string> = { accept: 'application/json' };
-  if (ep.authHeader && ep.apiKey) headers[ep.authHeader] = ep.apiKey;
+  // ผ่าน API wrapper → กุญแจอยู่ฝั่งเซิร์ฟเวอร์ ไม่ส่งจากเบราว์เซอร์
+  if (!viaWrapper(ep.metaUrl ?? '') && ep.authHeader && ep.apiKey) headers[ep.authHeader] = ep.apiKey;
   const batches: string[][] = [];
   for (let i = 0; i < missing.length; i += BATCH) batches.push(missing.slice(i, i + BATCH));
   const run = async () => {
     for (let i = 0; i < batches.length; i++) {
       const batch = batches[i]!;
       try {
-        const res = await limitedFetch(proxied(metaUrl(ep.metaUrl!, batch)), { headers });
+        const res = await limitedFetch(requestUrl(metaUrl(ep.metaUrl!, batch)), { headers });
         if (res.status === 429) return;
         if (!res.ok) continue;
         const meta = parseTokenMeta(await res.json());

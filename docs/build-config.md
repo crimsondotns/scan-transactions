@@ -36,7 +36,7 @@ workflow ส่งเข้า build เป็น `VITE_SOURCES`, `VITE_CHAIN_LI
 ]
 ```
 
-`family` เป็น `evm` หรือ `sol` (ค่าเริ่มต้น `evm`) · `authHeader`/`apiKey`/`metaUrl` ใส่หรือไม่ใส่ก็ได้
+`family` เป็น `erc20` หรือ `sol` (ค่าเริ่มต้น `erc20`) · `authHeader`/`apiKey`/`metaUrl` ใส่หรือไม่ใส่ก็ได้
 placeholder ที่ใช้ได้: `{address} {start} {count} {cursor} {offset} {next}` — ไม่ใส่เลยก็ได้ แอปจะประกอบ query ให้ตามตระกูลเชน
 
 ### รูปแบบ `CHAINS`

@@ -84,7 +84,7 @@ function toRows(grid: string[][], existing: Set<string>): ImportRow[] {
   const rows: ImportRow[] = [];
   for (const r of grid.slice(1)) {
     const label = (r[li] ?? '').trim();
-    // ช่องที่อยู่ใส่ได้หลายค่า (EVM หรือ Solana ปนกันได้) คั่นด้วยจุลภาค / ช่องว่าง / ขึ้นบรรทัดใหม่
+    // ช่องที่อยู่ใส่ได้หลายค่า (ERC-20 หรือ Solana ปนกันได้) คั่นด้วยจุลภาค / ช่องว่าง / ขึ้นบรรทัดใหม่
     const parts = (r[ai] ?? '').split(/[\s,;]+/).filter(Boolean);
     if (!parts.length && !label) continue;
     parts.forEach((p, i) => {

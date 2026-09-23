@@ -95,7 +95,7 @@ export function hasPlaceholder(tpl: string): boolean {
  */
 /**
  * URL ที่ไม่มี placeholder → ประกอบให้ตามตระกูล:
- *  evm: ?id={address}&start_time={start}&page_count={count}
+ *  erc20: ?id={address}&start_time={start}&page_count={count}
  *  sol: ?ownerAddress={address}&limit={count}&offset={offset}  (หน้าแรกไม่ส่ง offset)
  * แหล่งที่ใช้ชื่อพารามิเตอร์/รูปแบบอื่น → วาง URL ที่มี {address} {count} {cursor} {start} {offset} {next} เองได้
  */
@@ -105,8 +105,8 @@ function fillEmptyParam(url: string, name: string, value: string): string | null
   return re.test(url) ? url.replace(re, `$1=${value}`) : null;
 }
 
-const PARAMS: Record<'evm' | 'sol', Array<[string, string]>> = {
-  evm: [
+const PARAMS: Record<'erc20' | 'sol', Array<[string, string]>> = {
+  erc20: [
     ['id', '{address}'],
     ['start_time', '{start}'],
     ['page_count', '{count}'],
@@ -118,7 +118,7 @@ const PARAMS: Record<'evm' | 'sol', Array<[string, string]>> = {
   ],
 };
 
-export function toTemplate(url: string, family: 'evm' | 'sol' = 'evm'): string {
+export function toTemplate(url: string, family: 'erc20' | 'sol' = 'erc20'): string {
   let u = url.trim();
   if (hasPlaceholder(u)) return u;
   // 1) พารามิเตอร์ว่างที่มีอยู่แล้ว → เติม placeholder ตรงนั้น (คงพารามิเตอร์อื่นของผู้ใช้ไว้ เช่น flag เพิ่มเติม)
@@ -136,7 +136,7 @@ export function toTemplate(url: string, family: 'evm' | 'sol' = 'evm'): string {
   return u;
 }
 
-export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number, family: 'evm' | 'sol' = 'evm'): string {
+export function buildUrl(tpl: string, address: string, cur: Cursor | null, count: number, family: 'erc20' | 'sol' = 'erc20'): string {
   let t = toTemplate(tpl, family);
   // หน้าแรก (ไม่มี cursor) → ตัดพารามิเตอร์ที่ถือ {cursor}/{offset} ทิ้งทั้งคู่ (ไม่ส่ง before= ว่าง / offset=0)
   if (!cur) t = t.replace(/[?&][^&=]+=\{(cursor|offset|next)\}/g, (m) => (m.startsWith('?') ? '?' : '')).replace(/\?&/, '?').replace(/[?&]$/, '');
@@ -151,7 +151,7 @@ export function buildUrl(tpl: string, address: string, cur: Cursor | null, count
 }
 
 export interface FetchOpts {
-  family?: 'evm' | 'sol';
+  family?: 'erc20' | 'sol';
   /** header ยืนยันตัวตนที่ผู้ใช้ตั้งเอง (ชื่อ + ค่า) — เก็บในเครื่องเท่านั้น */
   authHeader?: string;
   apiKey?: string;

@@ -103,8 +103,8 @@ export function useChains(settings: Settings): ChainMap {
     ...(usableUrl(settings.chainListUrl) ? [settings.chainListUrl] : []),
     ...new Set(
       settings.endpoints
-        // fallback <origin>/v1/chain/list มีเฉพาะแหล่งตระกูล EVM — แหล่ง Solana ไม่มี path นี้ ยิงไปก็โดน CORS/404 ในคอนโซลเปล่าๆ
-        .filter((e) => e.enabled && e.family === 'evm')
+        // fallback <origin>/v1/chain/list มีเฉพาะแหล่งตระกูล ERC-20 — แหล่ง Solana ไม่มี path นี้ ยิงไปก็โดน CORS/404 ในคอนโซลเปล่าๆ
+        .filter((e) => e.enabled && e.family === 'erc20')
         .flatMap((e) => {
           try {
             return [new URL(e.url).origin + PATH];

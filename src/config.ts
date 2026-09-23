@@ -7,7 +7,7 @@
  *
  * ค่าที่รองรับ (ทั้งหมดไม่บังคับ):
  *   VITE_WRAPPER_URL     ที่อยู่ของ API wrapper (ดู worker/) — url ของแหล่งข้อมูลเขียนเป็น "<ชื่อย่อ>/<path>" ได้
- *   VITE_SOURCES         JSON: [{ "name": "...", "url": "...{address}...", "family": "evm"|"sol",
+ *   VITE_SOURCES         JSON: [{ "name": "...", "url": "...{address}...", "family": "erc20"|"sol",
  *                                 "authHeader": "...", "apiKey": "...", "metaUrl": "..." }]
  *   VITE_CHAIN_LIST_URL  URL รายชื่อเชน
  *   VITE_CHAINS          JSON: [{ "id": "eth", "name": "Ethereum", "logo": "https://…", "explorer": "https://…" }]
@@ -37,7 +37,8 @@ export function configuredEndpoints(raw = env.VITE_SOURCES): Endpoint[] {
     if (!isObj(item)) return [];
     const url = str(item.url);
     if (!url) return [];
-    const family: Family = item.family === 'sol' ? 'sol' : 'evm';
+    // รับคำเก่า "evm" ได้ด้วย เพื่อไม่ให้ค่าที่ตั้งไว้แล้วพัง
+    const family: Family = item.family === 'sol' ? 'sol' : 'erc20';
     return [
       {
         id: `cfg${i}`,

@@ -6,7 +6,7 @@ import { configuredChainListUrl, configuredChains, configuredEndpoints, withConf
 import { SLIP_SHOW_DEFAULT, type Settings } from '../src/store.ts';
 
 const settings = (over: Partial<Settings> = {}): Settings => ({ endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', hideScam: false, slipShow: SLIP_SHOW_DEFAULT, proxyUrl: '', chains: [], ...over });
-const data = (over: Partial<PortableData> = {}): PortableData => ({ wallets: [{ id: '0xaaa', label: 'One', address: '0xAAA', family: 'evm', enabled: true }], settings: settings(), ...over });
+const data = (over: Partial<PortableData> = {}): PortableData => ({ wallets: [{ id: '0xaaa', label: 'One', address: '0xAAA', family: 'erc20', enabled: true }], settings: settings(), ...over });
 
 test('encrypt/decrypt round-trip; wrong key and tampering both fail', async () => {
   const key = await randomKey();
@@ -37,13 +37,13 @@ test('backup file round-trips and files it cannot trust are refused', () => {
 });
 
 test('merge adds what is missing, keeps what exists, and importing twice changes nothing', () => {
-  const current = data({ wallets: [{ id: '0xaaa', label: '', address: '0xAAA', family: 'evm', enabled: true }] });
+  const current = data({ wallets: [{ id: '0xaaa', label: '', address: '0xAAA', family: 'erc20', enabled: true }] });
   const incoming = data({
     wallets: [
-      { id: '0xaaa', label: 'From file', address: '0xaaa', family: 'evm', enabled: true },
-      { id: '0xbbb', label: 'Two', address: '0xBBB', family: 'evm', enabled: true },
+      { id: '0xaaa', label: 'From file', address: '0xaaa', family: 'erc20', enabled: true },
+      { id: '0xbbb', label: 'Two', address: '0xBBB', family: 'erc20', enabled: true },
     ],
-    settings: settings({ endpoints: [{ id: 'e1', name: 'src', url: 'https://example.invalid/{address}', family: 'evm', enabled: true }], chains: [{ id: 'sol', name: 'Solana' }] }),
+    settings: settings({ endpoints: [{ id: 'e1', name: 'src', url: 'https://example.invalid/{address}', family: 'erc20', enabled: true }], chains: [{ id: 'sol', name: 'Solana' }] }),
   });
   const first = mergeData(current, incoming);
   assert.deepEqual(first.added, { wallets: 1, endpoints: 1, chains: 1 });

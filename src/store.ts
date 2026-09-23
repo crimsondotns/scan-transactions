@@ -5,7 +5,9 @@
 import { useCallback, useSyncExternalStore } from 'react';
 import { configuredChainListUrl, configuredEndpoints, withConfiguredChains } from './config';
 
-export type Family = 'evm' | 'sol';
+export type Family = 'erc20' | 'sol';
+/** ค่าที่บันทึกไว้เดิมใช้คำว่า evm — แปลงตอนอ่านเพื่อไม่ให้ข้อมูลเก่าพัง */
+export const toFamily = (v: unknown): Family => (v === 'sol' ? 'sol' : 'erc20');
 
 export interface Wallet {
   id: string;
@@ -69,13 +71,13 @@ interface State {
 const KEY = 'xcap.scan.v1';
 const DEFAULT: State = { v: 2, wallets: [], settings: { endpoints: [], pageSize: 20, chainListUrl: '', priceUrl: '', hideScam: false, slipShow: SLIP_SHOW_DEFAULT, proxyUrl: '', chains: [] } };
 
-export const EVM_RE = /^0x[0-9a-fA-F]{40}$/;
+export const ERC20_RE = /^0x[0-9a-fA-F]{40}$/;
 export const SOL_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 
-/** ตรวจว่าเป็นที่อยู่แบบไหน — EVM ปรับเป็นตัวพิมพ์เล็ก, Solana ต้องคงตัวพิมพ์เดิม (base58 แยกตัวพิมพ์) */
+/** ตรวจว่าเป็นที่อยู่แบบไหน — ERC-20 ปรับเป็นตัวพิมพ์เล็ก, Solana ต้องคงตัวพิมพ์เดิม (base58 แยกตัวพิมพ์) */
 export function parseAddress(raw: string): { address: string; family: Family } | null {
   const a = raw.trim();
-  if (EVM_RE.test(a)) return { address: a.toLowerCase(), family: 'evm' };
+  if (ERC20_RE.test(a)) return { address: a.toLowerCase(), family: 'erc20' };
   if (SOL_RE.test(a)) return { address: a, family: 'sol' };
   return null;
 }
@@ -88,11 +90,11 @@ function load(): State {
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const wallets = Array.isArray(parsed.wallets) ? (parsed.wallets as Wallet[]) : [];
     const s = (parsed.settings ?? {}) as Partial<Settings> & { endpoint?: string };
-    // v1 เก็บแหล่งข้อมูลเดียวเป็นสตริง → กลายเป็นรายการหนึ่งรายการ (EVM)
-    const saved: Endpoint[] = Array.isArray(s.endpoints) ? s.endpoints : s.endpoint ? [{ id: 'ep1', name: 'EVM', url: s.endpoint, family: 'evm', enabled: true }] : [];
+    // v1 เก็บแหล่งข้อมูลเดียวเป็นสตริง → กลายเป็นรายการหนึ่งรายการ (ERC-20)
+    const saved: Endpoint[] = Array.isArray(s.endpoints) ? s.endpoints : s.endpoint ? [{ id: 'ep1', name: 'ERC-20', url: s.endpoint, family: 'erc20', enabled: true }] : [];
     // เคยเปิดเว็บไว้ตอนยังไม่ได้ตั้งค่า (เบราว์เซอร์จึงมีสถานะที่ไม่มีแหล่งข้อมูลค้างอยู่)
     // → เติมจากค่าที่ฝังตอน build ให้ ไม่งั้นต้องล้างข้อมูลเบราว์เซอร์เองถึงจะเห็น
-    const endpoints: Endpoint[] = saved.length ? saved : configuredEndpoints();
+    const endpoints: Endpoint[] = (saved.length ? saved : configuredEndpoints()).map((e) => ({ ...e, family: toFamily(e.family) }));
     return {
       v: 2,
       wallets: wallets.flatMap((w) => {
@@ -128,7 +130,7 @@ const uid = () => Math.random().toString(36).slice(2, 10);
 
 /**
  * ตรวจแหล่งข้อมูลจาก URL ที่ผู้ใช้วาง — ไม่มีการตั้งค่ามือ
- * ตระกูลเชน: มีคำว่า sol/solana ใน host หรือ path → Solana, นอกนั้น EVM
+ * ตระกูลเชน: มีคำว่า sol/solana ใน host หรือ path → Solana, นอกนั้น ERC-20
  * ชื่อ: host โดยตัด www./api. ข้างหน้า
  */
 export function detectEndpoint(url: string): { name: string; family: Family } | null {
@@ -140,7 +142,7 @@ export function detectEndpoint(url: string): { name: string; family: Family } | 
   }
   if (u.protocol !== 'https:' || !u.hostname.includes('.')) return null;
   const probe = `${u.hostname}${u.pathname}`.toLowerCase();
-  const family: Family = /\bsol(ana)?\b|solana|[/._-]sol[/._-]/.test(probe) ? 'sol' : 'evm';
+  const family: Family = /\bsol(ana)?\b|solana|[/._-]sol[/._-]/.test(probe) ? 'sol' : 'erc20';
   const name = u.hostname.replace(/^(www|api)\./, '') || u.hostname;
   return { name, family };
 }

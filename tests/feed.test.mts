@@ -86,15 +86,15 @@ test('signature-list shape (Solana family)', async () => {
   assert.deepEqual(page.next, { start: 1700000400, cursor: 'sigB', offset: 2 });
 });
 
-test('parseAddress: EVM lowercased, Solana kept as-is, junk rejected', () => {
-  assert.deepEqual(parseAddress(' 0xABCDEFabcdef0123456789ABCDEFabcdef012345 '), { address: '0xabcdefabcdef0123456789abcdefabcdef012345', family: 'evm' });
+test('parseAddress: ERC-20 lowercased, Solana kept as-is, junk rejected', () => {
+  assert.deepEqual(parseAddress(' 0xABCDEFabcdef0123456789ABCDEFabcdef012345 '), { address: '0xabcdefabcdef0123456789abcdefabcdef012345', family: 'erc20' });
   assert.deepEqual(parseAddress(SOL), { address: SOL, family: 'sol' });
   assert.equal(parseAddress('0x123'), null);
   assert.equal(parseAddress('0OIl' + 'a'.repeat(30)), null);
 });
 
 test('detectEndpoint: family and name from the URL alone', () => {
-  assert.deepEqual(detectEndpoint('https://api.example.com/v1/history?id={address}'), { name: 'example.com', family: 'evm' });
+  assert.deepEqual(detectEndpoint('https://api.example.com/v1/history?id={address}'), { name: 'example.com', family: 'erc20' });
   assert.deepEqual(detectEndpoint('https://solana.example.org/{address}'), { name: 'solana.example.org', family: 'sol' });
   assert.deepEqual(detectEndpoint('https://example.net/sol/txs?a={address}'), { name: 'example.net', family: 'sol' });
   assert.equal(detectEndpoint('http://example.com/{address}'), null);

@@ -89,7 +89,10 @@ function load(): State {
     const wallets = Array.isArray(parsed.wallets) ? (parsed.wallets as Wallet[]) : [];
     const s = (parsed.settings ?? {}) as Partial<Settings> & { endpoint?: string };
     // v1 เก็บแหล่งข้อมูลเดียวเป็นสตริง → กลายเป็นรายการหนึ่งรายการ (EVM)
-    const endpoints: Endpoint[] = Array.isArray(s.endpoints) ? s.endpoints : s.endpoint ? [{ id: 'ep1', name: 'EVM', url: s.endpoint, family: 'evm', enabled: true }] : [];
+    const saved: Endpoint[] = Array.isArray(s.endpoints) ? s.endpoints : s.endpoint ? [{ id: 'ep1', name: 'EVM', url: s.endpoint, family: 'evm', enabled: true }] : [];
+    // เคยเปิดเว็บไว้ตอนยังไม่ได้ตั้งค่า (เบราว์เซอร์จึงมีสถานะที่ไม่มีแหล่งข้อมูลค้างอยู่)
+    // → เติมจากค่าที่ฝังตอน build ให้ ไม่งั้นต้องล้างข้อมูลเบราว์เซอร์เองถึงจะเห็น
+    const endpoints: Endpoint[] = saved.length ? saved : configuredEndpoints();
     return {
       v: 2,
       wallets: wallets.flatMap((w) => {

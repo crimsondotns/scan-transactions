@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useI18n } from '../i18n';
 import { useStore, type Wallet } from '../store';
 import type { WalletFeed } from '../useFeed';
-import { shortAddr } from '../format';
+import { formatRelative, formatUsdExact, shortAddr } from '../format';
 import { Icon } from './Icon';
 import { AddWalletDialog } from './AddWalletDialog';
 import { Identicon } from './Identicon';
@@ -10,19 +10,21 @@ import { ConfirmDialog, type ConfirmState } from './ConfirmDialog';
 import { useInfinite } from '../useInfinite';
 import { MoreSentinel } from './MoreSentinel';
 import { SkeletonBar } from './Skeleton';
+import { lastTime, netUsd, signClassOf } from '../flow';
 
-type SortKey = 'label' | 'address' | 'tx';
-const PAGE = 10;
+type SortKey = 'label' | 'tag' | 'tx' | 'net' | 'last';
+const PAGE = 20;
 
 /**
- * หน้า 1 ตารางที่ 1: รายชื่อกระเป๋า — Label · Address · Transactions · การกระทำ
- * คลิกแถว = ไปหน้า 2 (ธุรกรรมของกระเป๋านั้น); หัวคอลัมน์เรียงได้; แสดง 10 แถวแรก เลื่อนลงแล้วเพิ่มทีละ 10 (cursor = แถวสุดท้ายที่แสดง)
+ * ตารางกระเป๋าของกลุ่มที่เลือก — กระเป๋า · แท็ก · ธุรกรรม · สุทธิ · ล่าสุด
+ * คลิกแถว = ไปหน้ากระเป๋า; หัวคอลัมน์เรียงได้; แสดงทีละ 20 แถว เลื่อนลงแล้วเพิ่มเอง
  * ไม่มี checkbox; ตา = ซ่อน/แสดงข้อมูลในตารางธุรกรรม; ถังขยะ = ยืนยันก่อนลบ
  */
-export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSource }: { feeds: Record<string, WalletFeed>; activeId: string | null; onOpen: (id: string) => void; onSwitch: (id: string | null) => void; onRemove: (id: string) => void; hasSource: (w: Wallet) => boolean }) {
+export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemove, hasSource }: { wallets: Wallet[]; feeds: Record<string, WalletFeed>; activeId: string | null; onOpen: (id: string) => void; onSwitch: (id: string | null) => void; onRemove: (id: string) => void; hasSource: (w: Wallet) => boolean }) {
   const { t } = useI18n();
-  const { wallets, removeWallet, toggleWallet, clearWallets } = useStore();
+  const { wallets: all, removeWallet, toggleWallet, clearWallets } = useStore();
   const [adding, setAdding] = useState(false);
+  const [q, setQ] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<ConfirmState | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'label', dir: 'asc' });
 
@@ -30,8 +32,8 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
     setConfirmDialog({ type: 'deleteWallet', title: t('confirm.deleteTitle'), message: t('confirm.deleteMsg', { label: w.label }), walletId: w.id });
   }
   function clear() {
-    if (!wallets.length) return;
-    setConfirmDialog({ type: 'clearAll', title: t('confirm.clearTitle'), message: t('wallets.clearConfirm', { n: wallets.length }), walletId: null });
+    if (!all.length) return;
+    setConfirmDialog({ type: 'clearAll', title: t('confirm.clearTitle'), message: t('wallets.clearConfirm', { n: all.length }), walletId: null });
   }
   /* ผู้ใช้กดยืนยัน → ทำจริง; ไม่มี dialog ค้าง → ไม่ทำอะไร */
   function confirmAction() {
@@ -44,7 +46,7 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
       if (activeId === c.walletId) onSwitch(null);
     } else if (c.type === 'clearAll') {
       clearWallets();
-      wallets.forEach((w) => onRemove(w.id));
+      all.forEach((w) => onRemove(w.id));
       onSwitch(null);
     }
     return c.type;
@@ -55,22 +57,43 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
     if (!f && !hasSource(w)) return 'nosource';
     return f?.loading ? 'loading' : f && Object.keys(f.errors).length ? 'error' : f?.loaded ? 'ok' : 'idle';
   };
+  const rowsOf = (w: Wallet) => feeds[w.id]?.rows ?? [];
+  const netOf = (w: Wallet) => rowsOf(w).reduce((s, r) => s + netUsd(r), 0);
+
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return wallets;
+    return wallets.filter((w) => w.label.toLowerCase().includes(needle) || w.address.toLowerCase().includes(needle) || (w.tag ?? '').toLowerCase().includes(needle));
+  }, [wallets, q]);
 
   const sorted = useMemo(() => {
     const dir = sort.dir === 'asc' ? 1 : -1;
-    const val = (w: Wallet) => (sort.key === 'label' ? w.label.toLowerCase() : sort.key === 'address' ? w.address.toLowerCase() : (feeds[w.id]?.rows.length ?? -1));
-    return [...wallets].sort((a, b) => {
+    const val = (w: Wallet): string | number => {
+      switch (sort.key) {
+        case 'tag':
+          return (w.tag ?? '').toLowerCase();
+        case 'tx':
+          return feeds[w.id]?.rows.length ?? -1;
+        case 'net':
+          return feeds[w.id] ? netOf(w) : Number.NEGATIVE_INFINITY;
+        case 'last':
+          return lastTime(rowsOf(w)) ?? Number.NEGATIVE_INFINITY;
+        default:
+          return w.label.toLowerCase();
+      }
+    };
+    return [...filtered].sort((a, b) => {
       const x = val(a);
       const y = val(b);
       return (x > y ? 1 : x < y ? -1 : 0) * dir;
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wallets, feeds, sort]);
-  const inf = useInfinite({ total: sorted.length, page: PAGE, hasMore: false, loading: false, resetKey: `${sort.key}${sort.dir}` });
+  }, [filtered, feeds, sort]);
+  const inf = useInfinite({ total: sorted.length, page: PAGE, hasMore: false, loading: false, resetKey: `${sort.key}${sort.dir}${q}` });
   const visible = sorted.slice(0, inf.visible);
 
   function toggleSort(key: SortKey) {
-    setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'tx' ? 'desc' : 'asc' }));
+    setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'label' || key === 'tag' ? 'asc' : 'desc' }));
   }
   const Th = ({ k, label, num }: { k: SortKey; label: string; num?: boolean }) => (
     <th scope="col" className={num ? 'num' : undefined} aria-sort={sort.key === k ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
@@ -82,107 +105,114 @@ export function WalletTable({ feeds, activeId, onOpen, onSwitch, onRemove, hasSo
   );
 
   return (
-    <section className="panel wallets-panel" aria-labelledby="wallets-h">
-      <div className="panel-head">
-        <h2 id="wallets-h" className="panel-title">
+    <>
+      <div className="toolbar" role="search">
+        <label className="sr-only" htmlFor="wallet-q">
           {t('wallets.title')}
-        </h2>
-        <span className="hint">{t('wallets.count', { n: wallets.length })}</span>
-        <span className="top-spacer" />
+        </label>
+        <input id="wallet-q" name="wq" type="search" className="input search mono" placeholder={t('tx.search')} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" spellCheck={false} />
         <div className="row-actions">
           <button type="button" className="btn" onClick={() => setAdding(true)}>
             <Icon name="plus" />
             {t('wallets.add')}
           </button>
-          {wallets.length > 0 && (
+          {all.length > 0 && (
             <button type="button" className="btn btn-icon" onClick={clear} aria-label={t('wallets.clear')} title={t('wallets.clear')}>
               <Icon name="trash" />
             </button>
           )}
         </div>
+        <span className="count" aria-live="polite">
+          {t('wallets.count', { n: sorted.length })}
+        </span>
       </div>
 
-      <div>
-        {wallets.length === 0 ? (
-          <p className="hint">{t('wallets.empty')}</p>
-        ) : (
-          <div className="table-wrap wtab-wrap">
-            <table className="tx wtab">
-              <thead>
-                <tr>
-                  <Th k="label" label={t('wallets.col.label')} />
-                  <Th k="address" label={t('wallets.col.address')} />
-                  <Th k="tx" label={t('wallets.col.tx')} num />
-                  <th scope="col" className="num">
-                    <span className="sr-only">{t('wallets.title')}</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((w) => {
-                  const f = feeds[w.id];
-                  const hidden = !w.enabled;
-                  const active = activeId === w.id;
-                  const state = stateOf(w);
-                  const stateText = state === 'ok' ? t('wallets.state.ok', { n: f?.rows.length ?? 0 }) : t(`wallets.state.${state}`);
-                  return (
-                    <tr
-                      key={w.id}
-                      className="tx-row wt-row"
-                      aria-selected={active}
-                      data-hidden={hidden}
-                      tabIndex={0}
-                      onClick={() => onOpen(w.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          onOpen(w.id);
-                        }
-                      }}
-                    >
-                      <td>
-                        <span className="wt-cell">
-                          <Identicon value={w.address} size={36} />
-                          <span className="wt-label">{w.label}</span>
+      {sorted.length === 0 ? (
+        <p className="hint">{t('wallets.empty')}</p>
+      ) : (
+        <div className="table-wrap wtab-wrap">
+          <table className="tx wtab">
+            <thead>
+              <tr>
+                <Th k="label" label={t('wallets.col.label')} />
+                <Th k="tag" label={t('wallets.col.tag')} />
+                <Th k="tx" label={t('wallets.col.tx')} num />
+                <Th k="net" label={t('wallets.col.net')} num />
+                <Th k="last" label={t('wallets.col.last')} num />
+                <th scope="col" className="num">
+                  <span className="sr-only">{t('wallets.title')}</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((w) => {
+                const f = feeds[w.id];
+                const hidden = !w.enabled;
+                const active = activeId === w.id;
+                const state = stateOf(w);
+                const rows = rowsOf(w);
+                const net = netOf(w);
+                const last = lastTime(rows);
+                return (
+                  <tr
+                    key={w.id}
+                    className="tx-row wt-row"
+                    aria-selected={active}
+                    data-hidden={hidden}
+                    tabIndex={0}
+                    onClick={() => onOpen(w.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onOpen(w.id);
+                      }
+                    }}
+                  >
+                    <td>
+                      <span className="wt-cell">
+                        <Identicon value={w.address} size={36} />
+                        <span className="act-text">
+                          <span className="act-title wt-label">{w.label}</span>
+                          <span className="act-sub mono">{shortAddr(w.address)}</span>
                         </span>
-                      </td>
-                      <td>
-                        <span className="wt-addr mono" title={w.address}>
-                          {shortAddr(w.address)}
+                      </span>
+                    </td>
+                    <td>{w.tag ? <span className="tag">{w.tag}</span> : <span className="idle">{t('wallets.noTag')}</span>}</td>
+                    <td className="num">
+                      {state === 'loading' ? (
+                        <SkeletonBar width={72} />
+                      ) : state === 'ok' || state === 'error' ? (
+                        <span className="wallet-state" data-state={state} aria-live="polite">
+                          <span className="wallet-dot" aria-hidden="true" />
+                          {state === 'ok' ? rows.length : t('wallets.state.error')}
                         </span>
-                      </td>
-                      <td className="num">
-                        {state === 'loading' ? (
-                          <SkeletonBar width={72} />
-                        ) : (
-                          <span className="wallet-state" data-state={state} aria-live="polite">
-                            <span className="wallet-dot" aria-hidden="true" />
-                            {stateText}
-                          </span>
-                        )}
-                      </td>
-                      <td className="num">
-                        <span className="wallet-actions" onClick={(e) => e.stopPropagation()}>
-                          <button type="button" className="btn btn-icon" onClick={() => toggleWallet(w.id, hidden)} aria-label={t(hidden ? 'wallets.show' : 'wallets.hide', { label: w.label })} title={t(hidden ? 'wallets.show' : 'wallets.hide', { label: w.label })}>
-                            <Icon name={hidden ? 'eyeOff' : 'eye'} />
-                          </button>
-                          <button type="button" className="btn btn-icon" onClick={() => remove(w)} aria-label={t('wallets.remove', { label: w.label })} title={t('wallets.remove', { label: w.label })}>
-                            <Icon name="trash" />
-                          </button>
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            <MoreSentinel sentinel={inf.sentinel} loading={false} exhausted={inf.exhausted} page={PAGE} count={sorted.length} />
-          </div>
-        )}
-      </div>
+                      ) : (
+                        <span className="idle">{t(`wallets.state.${state === 'nosource' ? 'nosource' : 'idle'}`)}</span>
+                      )}
+                    </td>
+                    <td className="num">{f?.loaded ? <span className={signClassOf(net)}>{formatUsdExact(net)}</span> : <span className="idle">—</span>}</td>
+                    <td className="num cell-time">{last === null ? <span className="idle">—</span> : formatRelative(last, t)}</td>
+                    <td className="num">
+                      <span className="wallet-actions" onClick={(e) => e.stopPropagation()}>
+                        <button type="button" className="btn btn-icon" onClick={() => toggleWallet(w.id, hidden)} aria-label={t(hidden ? 'wallets.show' : 'wallets.hide', { label: w.label })} title={t(hidden ? 'wallets.show' : 'wallets.hide', { label: w.label })}>
+                          <Icon name={hidden ? 'eyeOff' : 'eye'} />
+                        </button>
+                        <button type="button" className="btn btn-icon" onClick={() => remove(w)} aria-label={t('wallets.remove', { label: w.label })} title={t('wallets.remove', { label: w.label })}>
+                          <Icon name="trash" />
+                        </button>
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          <MoreSentinel sentinel={inf.sentinel} loading={false} exhausted={inf.exhausted} page={PAGE} count={sorted.length} />
+        </div>
+      )}
 
       <AddWalletDialog open={adding} onClose={() => setAdding(false)} />
       <ConfirmDialog state={confirmDialog} onConfirm={confirmAction} onCancel={() => setConfirmDialog(null)} />
-    </section>
+    </>
   );
 }

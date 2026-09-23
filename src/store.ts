@@ -15,6 +15,8 @@ export interface Wallet {
   address: string;
   family: Family;
   enabled: boolean;
+  /** แท็กที่ผู้ใช้ตั้งเอง — ใช้จัดกลุ่มในแถบซ้าย (ว่าง/ไม่มี = ไม่อยู่กลุ่มแท็กไหน) */
+  tag?: string;
 }
 
 export interface Endpoint {
@@ -99,7 +101,7 @@ function load(): State {
       v: 2,
       wallets: wallets.flatMap((w) => {
         const p = w && typeof w.address === 'string' ? parseAddress(w.address) : null;
-        return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false }] : [];
+        return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false, ...(typeof w.tag === 'string' && w.tag.trim() ? { tag: w.tag.trim() } : {}) }] : [];
       }),
       settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' && s.chainListUrl ? s.chainListUrl : configuredChainListUrl(), priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '', chains: withConfiguredChains(Array.isArray(s.chains) ? (s.chains as ChainOverride[]).filter((c) => c && typeof c.id === 'string') : []) },
     };
@@ -175,6 +177,11 @@ export function useStore() {
 
   const removeWallet = useCallback((id: string) => commit({ ...state, wallets: state.wallets.filter((w) => w.id !== id) }), []);
   const toggleWallet = useCallback((id: string, enabled: boolean) => commit({ ...state, wallets: state.wallets.map((w) => (w.id === id ? { ...w, enabled } : w)) }), []);
+  /* แท็กของกระเป๋า: ว่าง = ถอดแท็กออก (ไม่เก็บสตริงว่างไว้ในข้อมูล) */
+  const setWalletTag = useCallback((id: string, tag: string) => {
+    const v = tag.trim();
+    commit({ ...state, wallets: state.wallets.map((w) => (w.id === id ? { ...w, ...(v ? { tag: v } : { tag: undefined }) } : w)) });
+  }, []);
   const clearWallets = useCallback(() => commit({ ...state, wallets: [] }), []);
   const removeWallets = useCallback((ids: Set<string>) => commit({ ...state, wallets: state.wallets.filter((w) => !ids.has(w.id)) }), []);
   /* ลากเรียงลำดับ: ย้ายรายการจาก index หนึ่งไปอีก index */
@@ -221,5 +228,5 @@ export function useStore() {
 
   const restore = useCallback((next: { wallets: Wallet[]; settings: Settings }) => applySnapshot(next), []);
 
-  return { wallets: s.wallets, settings: s.settings, restore, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl, setChain, removeChain };
+  return { wallets: s.wallets, settings: s.settings, restore, addWallets, removeWallet, removeWallets, reorderWallets, toggleWallet, setWalletTag, clearWallets, addEndpoint, updateEndpoint, reorderEndpoints, removeEndpoint, setPageSize, setChainListUrl, setPriceUrl, setHideScam, setSlipShow, setProxyUrl, setChain, removeChain };
 }

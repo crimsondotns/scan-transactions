@@ -2,6 +2,18 @@
 
 Static, browser-only transaction list for many wallets. No server, no account, no keys. Wallet list and settings stay in this browser's `localStorage`.
 
+## Pages
+
+| Path | Page |
+|---|---|
+| `/` | Dashboard — wallet groups in the left rail, net flow of the selected group, then Wallets / Recent transactions as tabs |
+| `/<address>` | One wallet — net flow, then Tokens / Transactions as tabs; the wallet's tag is edited here |
+| `/t/<symbol>` | One token across every loaded wallet |
+| `/<address>/t/<symbol>` | One token inside one wallet |
+| `/v/<code>` | Slip verification (opens over the dashboard) |
+
+Every figure comes from transactions already loaded in this browser, and only from moves the source priced — no estimates, no invented history.
+
 ## Develop
 
 ```bash

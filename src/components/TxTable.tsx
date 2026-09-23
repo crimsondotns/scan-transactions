@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useInfinite } from '../useInfinite';
 import { MoreSentinel } from './MoreSentinel';
 import { SkeletonRows } from './Skeleton';
@@ -13,6 +13,9 @@ import { Logo } from './Logo';
 import { chainOf, type ChainMap } from '../chains';
 
 const TYPES: TxType[] = ['swap', 'send', 'receive', 'approve', 'contract'];
+/** ตัวกรองชนิด: 'transfer' = โอน นับทั้งส่งและรับในอันเดียว ('' = ทุกประเภท) */
+type TypeFilter = '' | 'transfer' | TxType;
+const matchesType = (r: TxRow, f: TypeFilter): boolean => (f === '' ? true : f === 'transfer' ? r.type === 'send' || r.type === 'receive' : r.type === f);
 type SortKey = 'type' | 'date' | 'amount' | 'fee';
 
 /**
@@ -48,17 +51,20 @@ function mainMove(r: TxRow) {
   return real.find((m) => m.usd !== null) ?? real[0] ?? r.moves[0] ?? null;
 }
 
-export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, selected, onSelect, loading = false, hasMore = false, onMore }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; wallet: string; onWallet: (id: string) => void; selected: string | null; onSelect: (r: TxRow) => void; loading?: boolean; hasMore?: boolean; onMore?: () => void }) {
+export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, onToken, selected, onSelect, loading = false, hasMore = false, onMore }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; wallet: string; onWallet: (id: string) => void; onToken?: (symbol: string) => void; selected: string | null; onSelect: (r: TxRow) => void; loading?: boolean; hasMore?: boolean; onMore?: () => void }) {
   const { t } = useI18n();
   const { settings, setHideScam } = useStore();
   const hideScam = settings.hideScam;
   const [q, setQ] = useState('');
   const [chain, setChain] = useState('');
-  const [type, setType] = useState('');
+  const [type, setType] = useState<TypeFilter>('');
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'date', dir: 'desc' });
 
   const labels = useMemo(() => new Map(wallets.map((w) => [w.id, w.label])), [wallets]);
   const chains = useMemo(() => [...new Set(rows.map((r) => r.chain))].sort(), [rows]);
+  /* จำนวนของแต่ละตัวเลือกในแผง — นับจากแถวทั้งหมดของหน้านี้ ไม่ใช่หลังกรอง (ไม่งั้นทุกตัวเลือกอื่นเป็น 0) */
+  const scope = useMemo(() => (wallet ? rows.filter((r) => r.walletId === wallet) : rows), [rows, wallet]);
+  const countType = (f: TypeFilter) => scope.filter((r) => matchesType(r, f)).length;
 
   const PAGE = 25;
   /* หัวตารางติดใต้หัวเว็บ (64px) แล้วหรือยัง — ใส่เงาเฉพาะตอนติด */
@@ -85,7 +91,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
     const list = rows.filter((r) => {
       if (wallet && r.walletId !== wallet) return false;
       if (chain && r.chain !== chain) return false;
-      if (type && r.type !== type) return false;
+      if (!matchesType(r, type)) return false;
       if (hideScam && r.flagged) return false;
       if (!needle) return true;
       return r.hash.toLowerCase().includes(needle) || (r.counterparty ?? '').toLowerCase().includes(needle) || (r.counterpartyName ?? '').toLowerCase().includes(needle) || r.name.toLowerCase().includes(needle) || r.moves.some((m) => m.symbol.toLowerCase().includes(needle));
@@ -136,12 +142,41 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
         </label>
         <input id="tx-q" name="q" type="search" className="input search mono" placeholder={t('tx.search')} value={q} onChange={(e) => setQ(e.target.value)} autoComplete="off" spellCheck={false} />
         <Dropdown value={wallet} onChange={onWallet} label={t('tx.col.wallet')} options={[{ value: '', label: t('tx.allWallets') }, ...wallets.map((w) => ({ value: w.id, label: w.label }))]} />
-        <Dropdown value={chain} onChange={setChain} label={t('tx.col.chain')} options={[{ value: '', label: t('tx.allChains') }, ...chains.map((c) => ({ value: c, label: chainOf(chainInfo, c)?.name ?? c }))]} />
-        <Dropdown value={type} onChange={setType} label={t('tx.col.type')} options={[{ value: '', label: t('tx.allTypes') }, ...TYPES.map((k) => ({ value: k, label: t(`tx.type.${k}`) }))]} />
-        <button type="button" className="btn toggle" aria-pressed={hideScam} onClick={() => setHideScam(!hideScam)}>
-          <Icon name="eyeOff" />
-          {t('tx.hideScam')}
-        </button>
+        <Dropdown
+          value={chain}
+          onChange={setChain}
+          label={t('tx.col.chain')}
+          options={[
+            { value: '', label: t('tx.allChains'), meta: scope.length },
+            ...chains.map((c) => {
+              const info = chainOf(chainInfo, c);
+              return {
+                value: c,
+                label: (
+                  <span className="opt">
+                    <Logo src={info?.logo ?? null} name={info?.name ?? c} size={18} />
+                    {info?.name ?? c}
+                  </span>
+                ),
+                meta: scope.filter((r) => r.chain === c).length,
+              };
+            }),
+          ]}
+        />
+        <Dropdown value={type} onChange={setType} label={t('tx.col.type')} options={[{ value: '' as TypeFilter, label: t('tx.allTypes'), meta: scope.length }, { value: 'transfer' as TypeFilter, label: t('tx.typeTransfer'), meta: countType('transfer') }, ...TYPES.map((k) => ({ value: k as TypeFilter, label: t(`tx.type.${k}`), meta: countType(k) }))]} />
+        {/* ป้ายกดแล้วสลับได้เหมือนกัน — label ที่ผูกกับปุ่ม (ไม่ใช่ input) ไม่ส่งคลิกต่อเอง จึงต้องสลับให้ตรงนี้ */}
+        <span className="switch-field">
+          <button type="button" className="switch" role="switch" aria-checked={hideScam} id="tx-hide-scam" aria-label={t('tx.hideScam')} onClick={() => setHideScam(!hideScam)} />
+          <label
+            htmlFor="tx-hide-scam"
+            onClick={(e) => {
+              e.preventDefault();
+              setHideScam(!hideScam);
+            }}
+          >
+            {t('tx.hideScam')}
+          </label>
+        </span>
         <span className="count" aria-live="polite">
           {t('tx.count', { n: filtered.length })}
         </span>
@@ -180,6 +215,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
                 const proto = r.counterpartyName ? (kind ? `${t(`kind.${kind}`)} · ${r.counterpartyName}` : r.counterpartyName) : '';
                 const subtitle = proto && base !== r.counterpartyName ? (base ? `${base} · ${proto}` : proto) : base;
                 const native = r.nativeSymbol ?? chainOf(chainInfo, r.chain)?.symbol ?? r.chain.toUpperCase();
+                const symbols = [...new Set(real.map((m) => m.symbol))];
                 const isSel = r.key === selected;
                 return (
                   <tr
@@ -220,7 +256,28 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, se
                             )}
                           </span>
                           <span className="act-sub" title={labels.get(r.walletId)}>
-                            {subtitle}
+                            {onToken && symbols.length > 0 ? (
+                              <>
+                                {symbols.map((sym, i) => (
+                                  <Fragment key={sym}>
+                                    {i > 0 && ' · '}
+                                    <button
+                                      type="button"
+                                      className="linkish"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToken(sym);
+                                      }}
+                                    >
+                                      {sym}
+                                    </button>
+                                  </Fragment>
+                                ))}
+                                {proto && ` · ${proto}`}
+                              </>
+                            ) : (
+                              subtitle
+                            )}
                           </span>
                         </span>
                       </span>

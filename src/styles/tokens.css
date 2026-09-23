@@ -86,6 +86,8 @@
   --motion-slow: 280ms;
   --easing-standard: cubic-bezier(0.2, 0, 0, 1);
 
+  /* ความสูงของแถบบน — หัวตารางและแถบกลุ่มทางซ้ายยึดใต้เส้นนี้ตอนเลื่อนหน้า */
+  --top-h: 64px;
   --layout-max: 1440px;
   --layout-gutter: clamp(20px, 3vw, 48px);
 

@@ -13,7 +13,8 @@ import { SkeletonRows } from './Skeleton';
 const LIMIT = 10;
 
 /**
- * หน้า 1 ตารางที่ 2: ธุรกรรมล่าสุด (พรีวิว) จากทุกกระเป๋าที่โหลดแล้ว — Type · From · To · Submitted · Amount · Network fee
+ * ธุรกรรมล่าสุด (พรีวิว) — เป็นแท็บหนึ่งในการ์ดของหน้าแรก จึงไม่มีกรอบ/หัวข้อของตัวเอง
+ * เดิม: หน้า 1 ตารางที่ 2: ธุรกรรมล่าสุด (พรีวิว) จากทุกกระเป๋าที่โหลดแล้ว — Type · From · To · Submitted · Amount · Network fee
  * ขนาดคงที่ 10 แถว ไม่มีเลื่อนโหลดเพิ่ม (กัน rate limit) — ดูทั้งหมดของกระเป๋าได้ที่หน้า 2; คลิกแถว = เปิดแผงรายละเอียดขวา (แผงเดิม)
  */
 export function RecentTable({ rows, wallets, chains, selected, onSelect, loading, progress, onLoadAll, onCancel }: { rows: TxRow[]; wallets: Wallet[]; chains: ChainMap; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; progress: Progress; onLoadAll: () => void; onCancel: () => void }) {
@@ -37,11 +38,8 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
   };
 
   return (
-    <section className="panel wallets-panel" aria-labelledby="recent-h">
-      <div className="panel-head">
-        <h2 id="recent-h" className="panel-title">
-          {t('recent.title')}
-        </h2>
+    <>
+      <div className="toolbar">
         <span className="hint" aria-live="polite">
           {progress.running ? (
             <>
@@ -192,6 +190,6 @@ export function RecentTable({ rows, wallets, chains, selected, onSelect, loading
           </table>
         </div>
       )}
-    </section>
+    </>
   );
 }

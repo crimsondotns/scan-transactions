@@ -5,12 +5,7 @@ import { useStore } from './store';
 import { endpointsFor, hasOlder, useFeed } from './useFeed';
 import { XCapMark } from './components/XCapMark';
 import { Icon } from './components/Icon';
-import { Identicon } from './components/Identicon';
-import { shortAddr } from './format';
-import { WalletTable } from './components/WalletTable';
-import { RecentTable } from './components/RecentTable';
 import { ImportDialog } from './components/ImportDialog';
-import { TxTable } from './components/TxTable';
 import { DetailPanel } from './components/DetailPanel';
 import type { TxRow } from './feed';
 import { useChains } from './chains';
@@ -22,6 +17,26 @@ import { ThemeToggle } from './components/ThemeToggle';
 import { useModalLayer } from './modal';
 import { setProxy } from './proxy';
 import { navigate, useRoute } from './router';
+import { lastTime } from './flow';
+import { groupExists, matchesGroup, type GroupId } from './groups';
+import { GroupMenubar } from './components/GroupNav';
+import { Finder } from './components/Finder';
+import { Dashboard } from './pages/Dashboard';
+import { WalletPage } from './pages/WalletPage';
+import { AssetPage } from './pages/AssetPage';
+import type { Range } from './components/FlowChart';
+
+/** เส้นทาง: '' = แดชบอร์ด · '<id>' = กระเป๋า · 't/<sym>' = โทเคน (ทุกกระเป๋า) · '<id>/t/<sym>' = โทเคนในกระเป๋านั้น · 'v/<code>' = ตรวจสลิป */
+function parseRoute(route: string): { wallet: string | null; token: string | null; share: string | null } {
+  const seg = route.split('/').filter(Boolean).map(decodeURIComponent);
+  if (seg[0] === 'v') return { wallet: null, token: null, share: seg.slice(1).join('/') };
+  if (seg[0] === 't') return { wallet: null, token: seg[1] ?? null, share: null };
+  if (!seg[0]) return { wallet: null, token: null, share: null };
+  return { wallet: seg[0], token: seg[1] === 't' ? (seg[2] ?? null) : null, share: null };
+}
+
+const walletPath = (id: string) => encodeURIComponent(id);
+const tokenPath = (symbol: string, walletId: string | null) => (walletId ? `${encodeURIComponent(walletId)}/t/${encodeURIComponent(symbol)}` : `t/${encodeURIComponent(symbol)}`);
 
 export function App() {
   const { t } = useI18n();
@@ -29,18 +44,22 @@ export function App() {
   const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importing, setImporting] = useState(false);
-  /* หน้า: / = แดชบอร์ด, /<id> = ธุรกรรมของกระเป๋า (v/ สงวนให้ลิงก์ตรวจสลิป) — path จริง (History API) ปุ่มย้อนกลับใช้ได้ */
   const route = useRoute();
-  const pageWallet = route && !route.startsWith('v/') ? decodeURIComponent(route) : null;
+  const parsed = useMemo(() => parseRoute(route), [route]);
+  const pageWallet = parsed.wallet;
+  const pageToken = parsed.token;
   /* /v/<code>[.<data>] = ลิงก์ตรวจสลิป → เปิดไดอะล็อกตรวจทับแดชบอร์ด */
-  const share = useMemo(() => (route.startsWith('v/') ? parseShare(decodeURIComponent(route.slice(2))) : null), [route]);
+  const share = useMemo(() => (parsed.share === null ? null : parseShare(parsed.share)), [parsed.share]);
   const [verifyOpen, setVerifyOpen] = useState(false);
   useEffect(() => {
     if (share) setVerifyOpen(true);
   }, [share]);
-  const page: 'dashboard' | 'wallet' = pageWallet ? 'wallet' : 'dashboard';
+  const page: 'dashboard' | 'wallet' | 'asset' = pageToken ? 'asset' : pageWallet ? 'wallet' : 'dashboard';
   const [selected, setSelected] = useState<TxRow | null>(null);
-  /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) — สลับจากแผงซ้ายหรือ dropdown ในตาราง */
+  /* กลุ่มกระเป๋าที่เลือกอยู่ (แถบซ้าย/เมนูบนหัว) และช่วงเวลาของกราฟ — เป็นมุมมอง ไม่ใช่ข้อมูล จึงไม่อยู่ใน URL */
+  const [group, setGroup] = useState<GroupId>('all');
+  const [range, setRange] = useState<Range>(30);
+  /* กระเป๋าที่กำลังดู (null = ทุกกระเป๋า) */
   const [activeWallet, setActiveWallet] = useState<string | null>(null);
   const closeDetail = useCallback(() => setSelected(null), []);
 
@@ -69,11 +88,17 @@ export function App() {
     },
     [wallets, hasEndpoint, settings, ensure]
   );
-  /* ไปหน้า 2 ของกระเป๋า (จาก sidebar หรือแถวในตารางกระเป๋า) */
   const openWallet = useCallback(
     (id: string | null) => {
       selectWallet(id);
-      navigate(id ? encodeURIComponent(id) : '');
+      navigate(id ? walletPath(id) : '');
+    },
+    [selectWallet]
+  );
+  const openToken = useCallback(
+    (symbol: string, walletId: string | null) => {
+      if (walletId) selectWallet(walletId);
+      navigate(tokenPath(symbol, walletId));
     },
     [selectWallet]
   );
@@ -87,14 +112,23 @@ export function App() {
     if (activeWallet !== pageWallet) selectWallet(pageWallet);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pageWallet, wallets]);
+  /* ลบแท็ก/กระเป๋าสุดท้ายของกลุ่มที่เลือกอยู่ → กลุ่มนั้นหายไป กลับไปที่ "ทุกกระเป๋า" */
+  useEffect(() => {
+    if (!groupExists(group, wallets)) setGroup('all');
+  }, [group, wallets]);
 
-  const rows = useMemo(
-    () =>
-      active
-        .flatMap((w) => feeds[w.id]?.rows ?? [])
-        .sort((a, b) => b.time - a.time),
-    [active, feeds]
+  const infoOf = useCallback(
+    (w: { id: string }) => ({ loaded: feeds[w.id]?.loaded === true, last: lastTime(feeds[w.id]?.rows ?? []) }),
+    [feeds]
   );
+  /* กระเป๋าของกลุ่มที่เลือก (ทั้งที่ซ่อนอยู่ด้วย — ตารางยังต้องเห็นเพื่อเปิดกลับ) */
+  const groupWallets = useMemo(() => wallets.filter((w) => matchesGroup(group, w, infoOf(w))), [wallets, group, infoOf]);
+  const rows = useMemo(() => active.flatMap((w) => feeds[w.id]?.rows ?? []).sort((a, b) => b.time - a.time), [active, feeds]);
+  const groupRows = useMemo(() => {
+    const ids = new Set(groupWallets.filter((w) => w.enabled).map((w) => w.id));
+    return rows.filter((r) => ids.has(r.walletId));
+  }, [rows, groupWallets]);
+
   /* เปิดแดชบอร์ด → โหลดกระเป๋าที่ยังไม่มีข้อมูลแบบเว้นจังหวะ (5 ต่อชุด เว้น 2 วิ) เริ่มครั้งเดียวต่อชุดแหล่งข้อมูล */
   const startedFor = useRef<string | null>(null);
   useEffect(() => {
@@ -105,16 +139,29 @@ export function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, hasEndpoint, epKey, active.length]);
 
-  /* chain id ที่พบในข้อมูลจริง — โชว์ใน Settings ให้ผู้ใช้ตั้ง Custom chains ด้วย id ที่ตรง */
   const walletRows = useMemo(() => (pageWallet ? rows.filter((r) => r.walletId === pageWallet) : rows), [rows, pageWallet]);
   const anyLoading = active.some((w) => feeds[w.id]?.loading);
   const activeWalletObj = wallets.find((w) => w.id === pageWallet) ?? null;
   const errors = active.flatMap((w) => Object.entries(feeds[w.id]?.errors ?? {}).map(([epId, e]) => ({ w, ep: settings.endpoints.find((x) => x.id === epId), e })));
+  const loadGroup = useCallback(() => {
+    void loadStaggered(groupWallets.filter((w) => w.enabled && !feeds[w.id]?.loaded));
+  }, [groupWallets, feeds, loadStaggered]);
 
   function errMsg({ w, ep, e }: (typeof errors)[number]): string {
     const msg = e.kind === 'http' && e.status === 429 ? t('tx.errorRate') : e.kind === 'http' ? t('tx.errorHttp', { status: e.status }) : e.kind === 'shape' ? t('tx.errorShape') : t('tx.errorNet');
     return `${w.label} · ${ep?.name ?? '?'}: ${t('tx.error', { msg })}`;
   }
+
+  const errorList =
+    errors.length > 0 ? (
+      <div className="field" aria-live="polite">
+        {errors.map((x) => (
+          <span key={`${x.w.id}:${x.ep?.id}`} className="error">
+            {errMsg(x)}
+          </span>
+        ))}
+      </div>
+    ) : null;
 
   return (
     <>
@@ -122,10 +169,11 @@ export function App() {
         {t('nav.skip')}
       </a>
       <header className="top">
-        <span className="brand">
+        <button type="button" className="brand" onClick={goDashboard} aria-label={t('nav.dashboard')}>
           <XCapMark />
           {t('app.name')} <span className="brand-sub">{t('app.sub')}</span>
-        </span>
+        </button>
+        {page !== 'dashboard' && <GroupMenubar wallets={wallets} infoOf={infoOf} group={group} onChange={(g) => { setGroup(g); goDashboard(); }} chains={chains} />}
         <span className="top-spacer" />
         <button type="button" className="btn btn-primary" onClick={() => setImporting(true)}>
           <Icon name="upload" />
@@ -142,6 +190,7 @@ export function App() {
         </button>
         <ThemeToggle />
         <LangMenu />
+        <Finder wallets={wallets} rows={rows} onWallet={(id) => openWallet(id)} onToken={openToken} />
       </header>
 
       <div className="layout">
@@ -155,47 +204,74 @@ export function App() {
             </div>
           ) : page === 'dashboard' ? (
             <div className="stack-lg">
-              <WalletTable feeds={feeds} activeId={pageWallet} onOpen={openWallet} onSwitch={selectWallet} onRemove={forget} hasSource={(w) => endpointsFor(w, settings).length > 0} />
-              {errors.length > 0 && (
-                <div className="field" aria-live="polite">
-                  {errors.map((x) => (
-                    <span key={`${x.w.id}:${x.ep?.id}`} className="error">
-                      {errMsg(x)}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <RecentTable rows={rows} wallets={wallets} chains={chains} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} progress={progress} onLoadAll={() => void loadStaggered(active.filter((w) => !feeds[w.id]?.loaded))} onCancel={cancelStaggered} />
+              {errorList}
+              <Dashboard
+                all={wallets}
+                wallets={groupWallets}
+                rows={groupRows}
+                feeds={feeds}
+                chains={chains}
+                group={group}
+                onGroup={setGroup}
+                infoOf={infoOf}
+                range={range}
+                onRange={setRange}
+                onOpenWallet={openWallet}
+                onSwitch={selectWallet}
+                onRemove={forget}
+                hasSource={(w) => endpointsFor(w, settings).length > 0}
+                onLoadGroup={loadGroup}
+                loading={anyLoading}
+                progress={progress}
+                onCancel={cancelStaggered}
+                selected={selected?.key ?? null}
+                onSelect={setSelected}
+              />
             </div>
-          ) : (
-            <>
-              <div className="toolbar">
-                <button type="button" className="btn btn-icon" onClick={goDashboard} aria-label={t('nav.back')} title={t('nav.back')}>
-                  <Icon name="chevronLeft" />
-                </button>
-                <h1 className="panel-title with-logo">
-                  {activeWalletObj ? <Identicon value={activeWalletObj.address} size={28} /> : null}
-                  {activeWalletObj?.label ?? t('tx.title')}
-                </h1>
-                {activeWalletObj && <span className="hint mono">{shortAddr(activeWalletObj.address)}</span>}
-                <span className="top-spacer" />
-                <button type="button" className="btn" disabled={anyLoading || !activeWalletObj} onClick={() => activeWalletObj && void loadMany([activeWalletObj], 'reset')}>
-                  <Icon name="refresh" />
-                  {anyLoading ? t('wallets.loading') : t('tx.reload')}
-                </button>
-              </div>
-              {errors.length > 0 && (
-                <div className="field" style={{ marginBottom: 'var(--space-4)' }} aria-live="polite">
-                  {errors.map((x) => (
-                    <span key={`${x.w.id}:${x.ep?.id}`} className="error">
-                      {errMsg(x)}
-                    </span>
-                  ))}
-                </div>
-              )}
-              <TxTable rows={walletRows} wallets={active} chains={chains} wallet={pageWallet ?? ''} onWallet={(id) => openWallet(id || null)} selected={selected?.key ?? null} onSelect={setSelected} loading={anyLoading} hasMore={!!activeWalletObj && hasOlder(feeds[activeWalletObj.id])} onMore={() => activeWalletObj && void loadMany([activeWalletObj], 'older')} />
-            </>
-          )}
+          ) : page === 'asset' && pageToken ? (
+            <div className="stack-lg">
+              {errorList}
+              <AssetPage
+                symbol={pageToken}
+                wallet={activeWalletObj}
+                all={wallets}
+                rows={pageWallet ? walletRows : groupRows}
+                chains={chains}
+                group={group}
+                range={range}
+                onRange={setRange}
+                onBack={goDashboard}
+                onBackWallet={() => pageWallet && openWallet(pageWallet)}
+                onWallet={(id) => openToken(pageToken, id)}
+                onScopeAll={() => openToken(pageToken, null)}
+                selected={selected?.key ?? null}
+                onSelect={setSelected}
+                loading={anyLoading}
+              />
+            </div>
+          ) : activeWalletObj ? (
+            <div className="stack-lg">
+              {errorList}
+              <WalletPage
+                wallet={activeWalletObj}
+                all={wallets}
+                rows={walletRows}
+                chains={chains}
+                group={group}
+                range={range}
+                onRange={setRange}
+                onBack={goDashboard}
+                onWallet={(id) => openWallet(id || null)}
+                onToken={(sym) => openToken(sym, activeWalletObj.id)}
+                selected={selected?.key ?? null}
+                onSelect={setSelected}
+                loading={anyLoading}
+                hasMore={hasOlder(feeds[activeWalletObj.id])}
+                onMore={() => void loadMany([activeWalletObj], 'older')}
+                onReload={() => void loadMany([activeWalletObj], 'reset')}
+              />
+            </div>
+          ) : null}
         </main>
       </div>
 

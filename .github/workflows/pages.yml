@@ -10,9 +10,11 @@ permissions:
   pages: write
   id-token: write
 
+# ยกเลิกงานที่ค้างไม่ได้ช่วยอะไรกับ Pages: ตัว deployment ที่ถูกสร้างไปแล้วยังค้างอยู่ฝั่ง GitHub
+# แล้วรันถัดไปจะเจอ "in progress deployment" — จึงให้รอคิวแทนการยกเลิก
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:

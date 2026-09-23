@@ -9,6 +9,7 @@ import { areaPath, bandPath, nearestIndex, niceMax, smoothPath, tickIndexes, typ
 import type { TxRow } from '../feed';
 import { useI18n } from '../i18n';
 import { formatDayShort, formatUsdCompact, formatUsdExact } from '../format';
+import { SkeletonBar, SkeletonBlock } from './Skeleton';
 
 export const RANGES = [7, 30, 90] as const;
 export type Range = (typeof RANGES)[number];
@@ -29,7 +30,7 @@ export function RangeChips({ value, onChange }: { value: Range; onChange: (r: Ra
 const PAD = { top: 10, right: 8, bottom: 26, left: 8 };
 const GRID = 4;
 
-export function FlowChart({ rows, days, height = 250 }: { rows: TxRow[]; days: number; height?: number }) {
+export function FlowChart({ rows, days, height = 250, loading = false }: { rows: TxRow[]; days: number; height?: number; loading?: boolean }) {
   const { t } = useI18n();
   const wrap = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(720);
@@ -50,6 +51,8 @@ export function FlowChart({ rows, days, height = 250 }: { rows: TxRow[]; days: n
   }, []);
 
   const points = useMemo(() => daily(rows, days), [rows, days]);
+  /* ยังไม่มีข้อมูลเลยและกำลังโหลดอยู่ → โครงร่างสูงเท่ากราฟจริง หน้าจึงไม่กระตุกตอนข้อมูลมา */
+  const pending = loading && rows.length === 0;
   const plot = { left: PAD.left, right: Math.max(PAD.left + 1, width - PAD.right), top: PAD.top, bottom: height - PAD.bottom };
   const max = useMemo(() => niceMax(Math.max(...points.map((p) => p.inUsd + p.outUsd), 0)), [points]);
   const x = (i: number) => plot.left + (i * (plot.right - plot.left)) / Math.max(1, days - 1);
@@ -65,6 +68,13 @@ export function FlowChart({ rows, days, height = 250 }: { rows: TxRow[]; days: n
     setHover(nearestIndex(e.clientX - box.left + plot.left, plot.left, plot.right, days));
   }
 
+  if (pending) {
+    return (
+      <figure className="chart" ref={wrap}>
+        <SkeletonBlock height={height} />
+      </figure>
+    );
+  }
   return (
     <figure className="chart" ref={wrap}>
       <div className="chart-plot">
@@ -126,12 +136,18 @@ export function FlowChart({ rows, days, height = 250 }: { rows: TxRow[]; days: n
 }
 
 /** ช่องสรุปสี่ช่องใต้กราฟ — ค่าที่สองบรรทัดล่างเป็นบริบท ไม่ใช่ตัวเลขหลัก */
-export function Stat({ label, value, tone, sub }: { label: string; value: string; tone?: string; sub?: string }) {
+export function Stat({ label, value, tone, sub, loading = false }: { label: string; value: string; tone?: string; sub?: string; loading?: boolean }) {
   return (
     <div className="stat">
       <span className="hint">{label}</span>
-      <b className={tone}>{value}</b>
-      {sub !== undefined && <span className="hint">{sub}</span>}
+      {loading ? (
+        <b>
+          <SkeletonBar width={96} height={18} />
+        </b>
+      ) : (
+        <b className={tone}>{value}</b>
+      )}
+      {sub !== undefined && <span className="hint">{loading ? <SkeletonBar width={64} /> : sub}</span>}
     </div>
   );
 }

@@ -28,6 +28,7 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
   const ranged = useMemo(() => withinDays(rows, range), [rows, range]);
   const sums = useMemo(() => totals(ranged), [ranged]);
   const tokens = useMemo(() => tokenSummary(ranged), [ranged]);
+  const pending = loading && rows.length === 0;
 
   return (
     <>
@@ -44,8 +45,13 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
             <Identicon value={wallet.address} size={40} />
             <span className="act-text">
               <span className="act-title head-name">{wallet.label}</span>
-              <span className="act-sub mono">
-                {shortAddr(wallet.address)} · {t(`family.${wallet.family}`)}
+              <span className="act-sub sub-row">
+                <span className="mono">
+                  {shortAddr(wallet.address)} · {t(`family.${wallet.family}`)}
+                </span>
+                <button type="button" className="btn btn-icon btn-inline" disabled={loading} onClick={onReload} aria-label={t('tx.reload')} title={t('tx.reload')}>
+                  <Icon name="refresh" />
+                </button>
               </span>
             </span>
           </span>
@@ -54,18 +60,15 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
             <Icon name="tag" />
             {tags.length === 0 ? t('tags.edit') : tags.length > 2 ? `${tags.slice(0, 2).join(' · ')} +${tags.length - 2}` : tags.join(' · ')}
           </button>
-          <button type="button" className="btn btn-icon" disabled={loading} onClick={onReload} aria-label={t('tx.reload')} title={t('tx.reload')}>
-            <Icon name="refresh" />
-          </button>
           <RangeChips value={range} onChange={onRange} />
         </div>
         <div className="stat-row">
-          <Stat label={t('flow.netShort', { n: range })} value={formatUsdExact(sums.net)} tone={signClassOf(sums.net)} />
-          <Stat label={t('wallets.col.tx')} value={String(sums.count)} />
-          <Stat label={t('flow.feeTotal')} value={formatUsdExact(sums.fee)} />
-          <Stat label={t('token.active')} value={String(tokens.length)} />
+          <Stat label={t('flow.netShort', { n: range })} value={formatUsdExact(sums.net)} tone={signClassOf(sums.net)} loading={pending} />
+          <Stat label={t('wallets.col.tx')} value={String(sums.count)} loading={pending} />
+          <Stat label={t('flow.feeTotal')} value={formatUsdExact(sums.fee)} loading={pending} />
+          <Stat label={t('token.active')} value={String(tokens.length)} loading={pending} />
         </div>
-        <FlowChart rows={ranged} days={range} height={200} />
+        <FlowChart rows={ranged} days={range} height={200} loading={pending} />
         <PageTabs
           value={tab}
           onChange={setTab}
@@ -74,7 +77,7 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
             { value: 'history', label: t('tab.history'), count: rows.length },
           ]}
         />
-        {tab === 'tokens' ? <TokenTable rows={ranged} onToken={onToken} /> : <TxTable rows={rows} wallets={all} chains={chains} wallet={wallet.id} onWallet={(id) => onWallet(id)} onToken={onToken} selected={selected} onSelect={onSelect} loading={loading} hasMore={hasMore} onMore={onMore} />}
+        {tab === 'tokens' ? <TokenTable rows={ranged} onToken={onToken} loading={loading} /> : <TxTable rows={rows} wallets={all} chains={chains} wallet={wallet.id} onWallet={(id) => onWallet(id)} onToken={onToken} selected={selected} onSelect={onSelect} loading={loading} hasMore={hasMore} onMore={onMore} />}
       </section>
       <TagDialog open={tagsOpen} wallet={wallet} onClose={() => setTagsOpen(false)} />
     </>

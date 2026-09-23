@@ -5,15 +5,18 @@ import { tokenSummary, signClassOf } from '../flow';
 import { formatUsdExact } from '../format';
 import { useI18n } from '../i18n';
 import { Logo } from './Logo';
+import { useStickyHead } from '../useStickyHead';
+import { SkeletonRows } from './Skeleton';
 
-export function TokenTable({ rows, onToken }: { rows: TxRow[]; onToken: (symbol: string) => void }) {
+export function TokenTable({ rows, onToken, loading = false }: { rows: TxRow[]; onToken: (symbol: string) => void; loading?: boolean }) {
   const { t } = useI18n();
   const tokens = useMemo(() => tokenSummary(rows), [rows]);
-  if (!tokens.length) return <p className="hint">{t('tx.emptyLoaded')}</p>;
+  const head = useStickyHead();
+  if (!tokens.length && !loading) return <p className="hint">{t('tx.emptyLoaded')}</p>;
   return (
     <div className="table-wrap">
       <table className="tx">
-        <thead>
+        <thead ref={head.ref} data-stuck={head.stuck}>
           <tr>
             <th scope="col">{t('tab.tokens')}</th>
             <th scope="col" className="num">
@@ -31,6 +34,7 @@ export function TokenTable({ rows, onToken }: { rows: TxRow[]; onToken: (symbol:
           </tr>
         </thead>
         <tbody>
+          {tokens.length === 0 && loading && <SkeletonRows rows={5} cols={[150, 90, 90, 90, 50]} />}
           {tokens.map((k) => (
             <tr
               key={k.symbol}

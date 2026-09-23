@@ -10,6 +10,7 @@ import { ConfirmDialog, type ConfirmState } from './ConfirmDialog';
 import { useInfinite } from '../useInfinite';
 import { MoreSentinel } from './MoreSentinel';
 import { SkeletonBar } from './Skeleton';
+import { useStickyHead } from '../useStickyHead';
 import { lastTime, netUsd, signClassOf } from '../flow';
 
 type SortKey = 'label' | 'tag' | 'tx' | 'net' | 'last';
@@ -27,6 +28,7 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
   const [q, setQ] = useState('');
   const [confirmDialog, setConfirmDialog] = useState<ConfirmState | null>(null);
   const [sort, setSort] = useState<{ key: SortKey; dir: 'asc' | 'desc' }>({ key: 'label', dir: 'asc' });
+  const head = useStickyHead();
 
   function remove(w: Wallet) {
     setConfirmDialog({ type: 'deleteWallet', title: t('confirm.deleteTitle'), message: t('confirm.deleteMsg', { label: w.label }), walletId: w.id });
@@ -132,7 +134,7 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
       ) : (
         <div className="table-wrap wtab-wrap">
           <table className="tx wtab">
-            <thead>
+            <thead ref={head.ref} data-stuck={head.stuck}>
               <tr>
                 <Th k="label" label={t('wallets.col.label')} />
                 <Th k="tag" label={t('wallets.col.tag')} />
@@ -202,8 +204,8 @@ export function WalletTable({ wallets, feeds, activeId, onOpen, onSwitch, onRemo
                         <span className="idle">{t(`wallets.state.${state === 'nosource' ? 'nosource' : 'idle'}`)}</span>
                       )}
                     </td>
-                    <td className="num">{f?.loaded ? <span className={signClassOf(net)}>{formatUsdExact(net)}</span> : <span className="idle">—</span>}</td>
-                    <td className="num cell-time">{last === null ? <span className="idle">—</span> : formatRelative(last, t)}</td>
+                    <td className="num">{state === 'loading' ? <SkeletonBar width={84} /> : f?.loaded ? <span className={signClassOf(net)}>{formatUsdExact(net)}</span> : <span className="idle">—</span>}</td>
+                    <td className="num cell-time">{state === 'loading' ? <SkeletonBar width={64} /> : last === null ? <span className="idle">—</span> : formatRelative(last, t)}</td>
                     <td className="num">
                       <span className="wallet-actions" onClick={(e) => e.stopPropagation()}>
                         <button type="button" className="btn btn-icon" onClick={() => toggleWallet(w.id, hidden)} aria-label={t(hidden ? 'wallets.show' : 'wallets.hide', { label: w.label })} title={t(hidden ? 'wallets.show' : 'wallets.hide', { label: w.label })}>

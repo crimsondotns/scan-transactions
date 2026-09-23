@@ -21,6 +21,11 @@ export function SkeletonRows({ rows = 5, cols, icon = true }: { rows?: number; c
   );
 }
 
-export function SkeletonBar({ width = 60 }: { width?: number | string }) {
-  return <span className="sk sk-bar" style={{ width: typeof width === 'number' ? `${width}px` : width }} aria-hidden="true" />;
+export function SkeletonBar({ width = 60, height }: { width?: number | string; height?: number }) {
+  return <span className="sk sk-bar" style={{ width: typeof width === 'number' ? `${width}px` : width, ...(height === undefined ? {} : { height }) }} aria-hidden="true" />;
+}
+
+/** พื้นที่ใหญ่ที่ยังไม่มีข้อมูล (กราฟ) — สูงเท่าของจริงเพื่อไม่ให้หน้ากระตุกตอนข้อมูลมา */
+export function SkeletonBlock({ height }: { height: number }) {
+  return <span className="sk sk-block" style={{ height }} aria-hidden="true" />;
 }

@@ -16,17 +16,21 @@ import { PageTabs } from '../components/PageTabs';
 import { TxTable } from '../components/TxTable';
 import { TokenLogo } from '../components/Logo';
 import { Identicon } from '../components/Identicon';
+import { SkeletonRows } from '../components/Skeleton';
 import { chainOf } from '../chains';
 import { priceOf } from '../prices';
+import { useStickyHead } from '../useStickyHead';
 
 export function AssetPage({ symbol, wallet, all, rows, chains, group, range, onRange, onBack, onBackWallet, onWallet, onScopeAll, selected, onSelect, loading }: { symbol: string; wallet: Wallet | null; all: Wallet[]; rows: TxRow[]; chains: ChainMap; group: GroupId; range: Range; onRange: (r: Range) => void; onBack: () => void; onBackWallet: () => void; onWallet: (id: string) => void; onScopeAll: () => void; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean }) {
   const { t } = useI18n();
   const [tab, setTab] = useState<'history' | 'holders'>('history');
+  const holdersHead = useStickyHead();
   const groupLabel = useGroupLabel(all, group);
   const list = useMemo(() => rowsOfToken(rows, symbol), [rows, symbol]);
   const ranged = useMemo(() => withinDays(list, range), [list, range]);
   const token = useMemo(() => tokenSummary(ranged).find((k) => k.symbol === symbol) ?? tokenSummary(list).find((k) => k.symbol === symbol) ?? null, [ranged, list, symbol]);
   const sums = useMemo(() => totals(ranged), [ranged]);
+  const pending = loading && rows.length === 0;
   const chain = token ? chainOf(chains, token.chain) : undefined;
   const price = token ? priceOf(token.chain, token.tokenId, token.symbol) : null;
   const holders = useMemo(() => {
@@ -79,12 +83,12 @@ export function AssetPage({ symbol, wallet, all, rows, chains, group, range, onR
           <RangeChips value={range} onChange={onRange} />
         </div>
         <div className="stat-row">
-          <Stat label={t('token.received')} value={`${formatAmount(token?.inAmount ?? 0)} ${symbol}`} tone="is-pos" sub={formatUsdExact(token?.inUsd ?? 0)} />
-          <Stat label={t('token.sent')} value={`${formatAmount(token?.outAmount ?? 0)} ${symbol}`} tone="is-neg" sub={formatUsdExact(token?.outUsd ?? 0)} />
-          <Stat label={t('token.net')} value={formatUsdExact((token?.inUsd ?? 0) - (token?.outUsd ?? 0))} tone={signClassOf((token?.inUsd ?? 0) - (token?.outUsd ?? 0))} sub={`${formatAmount((token?.inAmount ?? 0) - (token?.outAmount ?? 0))} ${symbol}`} />
-          <Stat label={t('token.holders')} value={String(holders.length)} sub={t('flow.net', { n: range, tx: sums.count })} />
+          <Stat label={t('token.received')} value={`${formatAmount(token?.inAmount ?? 0)} ${symbol}`} tone="is-pos" sub={formatUsdExact(token?.inUsd ?? 0)} loading={pending} />
+          <Stat label={t('token.sent')} value={`${formatAmount(token?.outAmount ?? 0)} ${symbol}`} tone="is-neg" sub={formatUsdExact(token?.outUsd ?? 0)} loading={pending} />
+          <Stat label={t('token.net')} value={formatUsdExact((token?.inUsd ?? 0) - (token?.outUsd ?? 0))} tone={signClassOf((token?.inUsd ?? 0) - (token?.outUsd ?? 0))} sub={`${formatAmount((token?.inAmount ?? 0) - (token?.outAmount ?? 0))} ${symbol}`} loading={pending} />
+          <Stat label={t('token.holders')} value={String(holders.length)} sub={t('flow.net', { n: range, tx: sums.count })} loading={pending} />
         </div>
-        <FlowChart rows={ranged} days={range} height={200} />
+        <FlowChart rows={ranged} days={range} height={200} loading={pending} />
         <PageTabs
           value={tab}
           onChange={setTab}
@@ -98,7 +102,7 @@ export function AssetPage({ symbol, wallet, all, rows, chains, group, range, onR
         ) : (
           <div className="table-wrap">
             <table className="tx">
-              <thead>
+              <thead ref={holdersHead.ref} data-stuck={holdersHead.stuck}>
                 <tr>
                   <th scope="col">{t('tx.col.wallet')}</th>
                   <th scope="col" className="num">
@@ -113,6 +117,7 @@ export function AssetPage({ symbol, wallet, all, rows, chains, group, range, onR
                 </tr>
               </thead>
               <tbody>
+                {holders.length === 0 && loading && <SkeletonRows rows={4} cols={[160, 60, 90, 90]} />}
                 {holders.map((h) => (
                   <tr
                     key={h.id}

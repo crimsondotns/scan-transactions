@@ -17,6 +17,7 @@ import { PageTabs } from '../components/PageTabs';
 import { WalletTable } from '../components/WalletTable';
 import { RecentTable } from '../components/RecentTable';
 import { Icon } from '../components/Icon';
+import { SkeletonBar } from '../components/Skeleton';
 
 export function Dashboard({ all, wallets, rows, feeds, chains, group, onGroup, infoOf, range, onRange, onOpenWallet, onSwitch, onRemove, hasSource, onLoadGroup, loading, progress, onCancel, selected, onSelect }: { all: Wallet[]; wallets: Wallet[]; rows: TxRow[]; feeds: Record<string, WalletFeed>; chains: ChainMap; group: GroupId; onGroup: (g: GroupId) => void; infoOf: (w: Wallet) => WalletInfo; range: Range; onRange: (r: Range) => void; onOpenWallet: (id: string) => void; onSwitch: (id: string | null) => void; onRemove: (id: string) => void; hasSource: (w: Wallet) => boolean; onLoadGroup: () => void; loading: boolean; progress: Progress; onCancel: () => void; selected: string | null; onSelect: (r: TxRow) => void }) {
   const { t } = useI18n();
@@ -25,6 +26,8 @@ export function Dashboard({ all, wallets, rows, feeds, chains, group, onGroup, i
   const ranged = useMemo(() => withinDays(rows, range), [rows, range]);
   const sums = useMemo(() => totals(ranged), [ranged]);
   const loadedCount = wallets.filter((w) => feeds[w.id]?.loaded).length;
+  /* กำลังโหลดชุดแรกของกลุ่มนี้ (ยังไม่มีธุรกรรมสักแถว) → ทุกตัวเลขบนหัวการ์ดเป็นโครงร่าง */
+  const pending = loading && rows.length === 0;
 
   return (
     <div className="cols">
@@ -36,22 +39,41 @@ export function Dashboard({ all, wallets, rows, feeds, chains, group, onGroup, i
               {t('group.summary', { group: label, n: wallets.length, loaded: loadedCount })}
             </span>
             <div className="big-row">
-              <div className={`big ${signClassOf(sums.net)}`}>{formatUsdExact(sums.net)}</div>
-              <button type="button" className="btn btn-icon" onClick={onLoadGroup} disabled={loading} aria-label={t('group.load')} title={t('group.load')}>
-                <Icon name="refresh" />
-              </button>
+              {pending ? <SkeletonBar width={200} height={30} /> : <div className={`big ${signClassOf(sums.net)}`}>{formatUsdExact(sums.net)}</div>}
+              {progress.running ? (
+                <button type="button" className="btn btn-sm" onClick={onCancel}>
+                  {t('recent.cancel')}
+                </button>
+              ) : (
+                <button type="button" className="btn btn-icon" onClick={onLoadGroup} disabled={loading} aria-label={t('group.load')} title={t('group.load')}>
+                  <Icon name="refresh" />
+                </button>
+              )}
+              <span className="hint" aria-live="polite">
+                {progress.running ? (
+                  <>
+                    <span className="spinner" aria-hidden="true" /> {t('recent.progress', { done: progress.done, total: progress.total })}
+                  </>
+                ) : progress.stopped === 'rate' ? (
+                  <span className="error">{t('recent.rateLimited')}</span>
+                ) : progress.stopped === 'cancel' ? (
+                  t('recent.cancelled')
+                ) : (
+                  ''
+                )}
+              </span>
             </div>
             <span className="hint">{t('flow.net', { n: range, tx: sums.count })}</span>
           </span>
           <span className="top-spacer" />
           <RangeChips value={range} onChange={onRange} />
         </div>
-        <FlowChart rows={ranged} days={range} height={240} />
+        <FlowChart rows={ranged} days={range} height={240} loading={pending} />
         <div className="stat-row">
-          <Stat label={t('flow.in')} value={formatUsdExact(sums.inUsd)} tone="is-pos" />
-          <Stat label={t('flow.out')} value={formatUsdExact(sums.outUsd)} tone="is-neg" />
-          <Stat label={t('flow.fee')} value={formatUsdExact(sums.fee)} />
-          <Stat label={t('flow.flagged')} value={String(sums.flagged)} />
+          <Stat label={t('flow.in')} value={formatUsdExact(sums.inUsd)} tone="is-pos" loading={pending} />
+          <Stat label={t('flow.out')} value={formatUsdExact(sums.outUsd)} tone="is-neg" loading={pending} />
+          <Stat label={t('flow.fee')} value={formatUsdExact(sums.fee)} loading={pending} />
+          <Stat label={t('flow.flagged')} value={String(sums.flagged)} loading={pending} />
         </div>
         <PageTabs
           value={tab}
@@ -64,7 +86,7 @@ export function Dashboard({ all, wallets, rows, feeds, chains, group, onGroup, i
         {tab === 'wallets' ? (
           <WalletTable wallets={wallets} feeds={feeds} activeId={null} onOpen={onOpenWallet} onSwitch={onSwitch} onRemove={onRemove} hasSource={hasSource} />
         ) : (
-          <RecentTable rows={rows} wallets={all} chains={chains} selected={selected} onSelect={onSelect} loading={loading} progress={progress} onLoadAll={onLoadGroup} onCancel={onCancel} />
+          <RecentTable rows={rows} wallets={all} chains={chains} selected={selected} onSelect={onSelect} loading={loading} />
         )}
       </section>
     </div>

@@ -1,5 +1,6 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useMemo, useState } from 'react';
 import { useInfinite } from '../useInfinite';
+import { useStickyHead } from '../useStickyHead';
 import { MoreSentinel } from './MoreSentinel';
 import { SkeletonRows } from './Skeleton';
 import { useI18n } from '../i18n';
@@ -67,25 +68,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, on
   const countType = (f: TypeFilter) => scope.filter((r) => matchesType(r, f)).length;
 
   const PAGE = 25;
-  /* หัวตารางติดใต้หัวเว็บ (64px) แล้วหรือยัง — ใส่เงาเฉพาะตอนติด */
-  const theadRef = useRef<HTMLTableSectionElement>(null);
-  const [stuck, setStuck] = useState(false);
-  useEffect(() => {
-    const on = () => {
-      const el = theadRef.current;
-      if (!el) return;
-      const top = el.getBoundingClientRect().top;
-      const table = el.parentElement?.getBoundingClientRect();
-      setStuck(top <= 65 && !!table && table.bottom > top + el.offsetHeight);
-    };
-    on();
-    window.addEventListener('scroll', on, { passive: true });
-    window.addEventListener('resize', on);
-    return () => {
-      window.removeEventListener('scroll', on);
-      window.removeEventListener('resize', on);
-    };
-  }, []);
+  const head = useStickyHead();
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     const list = rows.filter((r) => {
@@ -189,7 +172,7 @@ export function TxTable({ rows, wallets, chains: chainInfo, wallet, onWallet, on
       ) : (
         <div className="table-wrap">
           <table className="tx">
-            <thead ref={theadRef} data-stuck={stuck}>
+            <thead ref={head.ref} data-stuck={head.stuck}>
               <tr>
                 <Head k="type" label={t('tx.col.type')} />
                 <Head k="date" label={t('tx.col.submitted')} num />

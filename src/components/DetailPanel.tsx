@@ -293,9 +293,8 @@ export function DetailPanel({ row, wallets, chains, settings, onClose }: { row: 
             {t('detail.viewOn', { name: explorerName })}
           </a>
         ) : (
-          <button type="button" className="btn btn-primary" disabled title={t('detail.noExplorer')}>
-            {t('detail.noExplorer')}
-          </button>
+          /* ไม่มี explorer ของเชนนี้ → บอกเป็นข้อความ ไม่ใช่ปุ่มหลักที่กดไม่ได้ (ปุ่มที่กดไม่ได้ไม่บอกว่าต้องทำอะไรต่อ) */
+          <span className="hint foot-note">{t('detail.noExplorerHint')}</span>
         )}
       </div>
       {slip && <SlipLightbox data={slip} onClose={() => setSlip(null)} />}

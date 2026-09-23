@@ -11,12 +11,17 @@ export interface Progress {
   total: number;
   running: boolean;
   stopped: 'rate' | 'cancel' | null;
+  /** โดนจำกัดคำขอ → อีกกี่วินาทีถึงลองใหม่ได้ (ตามที่คิวคำขอกำลังพักอยู่) */
+  retryIn: number;
 }
 
-const BATCH = 5;
-const BATCH_GAP_MS = 2000;
+/* โหลดทีละ 3 กระเป๋าต่อชุด เว้น 3 วิระหว่างชุด — คิวคำขอ (limiter) เป็นคนคุมความถี่จริง
+   ตรงนี้แค่ไม่ปล่อยงานเข้าคิวทีเดียวเป็นร้อย เพื่อให้กดยกเลิกแล้วหยุดได้จริง */
+const BATCH = 3;
+const BATCH_GAP_MS = 3000;
 import { FeedError, applyTokenMeta, fetchPage, unknownTokens, type Cursor, type TokenMeta, type TxRow } from './feed';
 import { ensureTokenMeta } from './tokens';
+import { pausedFor } from './limiter';
 import type { Endpoint, Settings, Wallet } from './store';
 
 export interface WalletFeed {
@@ -141,14 +146,14 @@ export function useFeed(settings: Settings) {
 
   /* โหลดแบบเว้นจังหวะ: ทีละ 5 กระเป๋าพร้อมกัน เว้น 2 วิ แล้วชุดถัดไป — เหมือนคนกดทีละอัน กัน rate limit
      หยุดเองเมื่อเจอ 429 และผู้ใช้ยกเลิกได้ */
-  const [progress, setProgress] = useState<Progress>({ done: 0, total: 0, running: false, stopped: null });
+  const [progress, setProgress] = useState<Progress>({ done: 0, total: 0, running: false, stopped: null, retryIn: 0 });
   const cancelRef = useRef(false);
   const loadStaggered = useCallback(
     async (ws: Wallet[]) => {
       const todo = ws.filter((w) => !latest.current[w.id]?.loaded && endpointsFor(w, settings).length);
       if (!todo.length) return;
       cancelRef.current = false;
-      setProgress({ done: 0, total: todo.length, running: true, stopped: null });
+      setProgress({ done: 0, total: todo.length, running: true, stopped: null, retryIn: 0 });
       for (let i = 0; i < todo.length; i += BATCH) {
         if (cancelRef.current) {
           setProgress((p) => ({ ...p, running: false, stopped: 'cancel' }));
@@ -159,10 +164,14 @@ export function useFeed(settings: Settings) {
         setProgress((p) => ({ ...p, done: Math.min(todo.length, i + batch.length) }));
         const limited = batch.some((w) => Object.values(latest.current[w.id]?.errors ?? {}).some((e) => e.kind === 'http' && e.status === 429));
         if (limited) {
-          setProgress((p) => ({ ...p, running: false, stopped: 'rate' }));
+          // แหล่งข้อมูลกันไว้แล้ว — ยิงต่อมีแต่จะต่ออายุแบน หยุดตรงนี้และบอกผู้ใช้ว่าอีกนานแค่ไหนถึงลองใหม่ได้
+          setProgress((p) => ({ ...p, running: false, stopped: 'rate', retryIn: Math.ceil(pausedFor() / 1000) }));
           return;
         }
-        if (i + BATCH < todo.length) await new Promise((r) => setTimeout(r, BATCH_GAP_MS));
+        if (i + BATCH < todo.length) {
+          // คิวถูกพักอยู่ (เพิ่งเจอ 429 ระหว่างทาง) → รอให้ครบก่อนค่อยส่งชุดถัดไป
+          await new Promise((r) => setTimeout(r, Math.max(BATCH_GAP_MS, pausedFor())));
+        }
       }
       setProgress((p) => ({ ...p, running: false }));
     },

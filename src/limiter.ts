@@ -1,35 +1,65 @@
 import { fallbackProxy } from './proxy';
 /**
- * คิวคำขอกันโดน rate limit (429): ทั้งแอปยิงพร้อมกันไม่เกิน 2 คำขอ เว้นอย่างน้อย 500ms ระหว่างคำขอ
- * โดน 429 → หยุดทั้งคิว (ตาม Retry-After ถ้ามี ไม่มีก็ 5s แล้วเพิ่มเป็น 2 เท่า สูงสุด 60s) แล้วลองคำขอนั้นใหม่ให้เอง สูงสุด 4 ครั้ง
- * จึงไม่ต้องให้ผู้ใช้เห็น "HTTP 429" ยกเว้นแหล่งบล็อกยาวจริงๆ
+ * คิวคำขอกันโดน rate limit (429)
+ *
+ * - ยิงพร้อมกันไม่เกิน 2 คำขอ เว้นอย่างน้อย 500ms ระหว่างคำขอ
+ * - คำขอ URL เดียวกันที่ค้างอยู่ ใช้ผลร่วมกัน (กดโหลดซ้ำ/หลายจอถามพร้อมกัน จะไม่กลายเป็นหลายคำขอ)
+ * - โดน 429 → หยุด "ทั้งคิว" (ตาม Retry-After ถ้ามี ไม่มีก็ 5s แล้วเพิ่มเป็น 2 เท่า สูงสุด 60s)
+ *   พร้อม "บีบท่อ" ลงเหลือ 1 คำขอต่อครั้งและถ่างระยะห่างขึ้น แล้วค่อยๆ คลายเมื่อสำเร็จติดกันหลายครั้ง
+ *   (แหล่งข้อมูลส่วนใหญ่ไม่ได้ดูแค่จำนวนคำขอ แต่ดูความถี่ด้วย ยิงถี่ตอนเพิ่งโดนแบนคือต่ออายุแบนให้ตัวเอง)
+ * - ลองซ้ำให้เองสูงสุด 3 ครั้ง จึงไม่ต้องให้ผู้ใช้เห็น "HTTP 429" ยกเว้นแหล่งบล็อกยาวจริงๆ
  */
-const CONCURRENCY = 2;
-const MAX_RETRY = 4;
+const MAX_CONCURRENCY = 2;
+const MAX_RETRY = 3;
+/** สำเร็จติดกันกี่ครั้งถึงคลายท่อขึ้นหนึ่งขั้น */
+const RECOVER_AFTER = 6;
 let GAP_MS = 500;
 let BASE_PAUSE_MS = 5000;
 const MAX_PAUSE_MS = 60000;
+const MAX_GAP_FACTOR = 8;
 
-/** เทสต์เท่านั้น: ย่นเวลารอ */
-export function setLimiterTiming(t: { gapMs?: number; basePauseMs?: number }): void {
+/** เทสต์เท่านั้น: ย่นเวลารอ และคืนค่าสภาพท่อให้เริ่มใหม่สะอาดๆ */
+export function setLimiterTiming(t: { gapMs?: number; basePauseMs?: number; reset?: boolean }): void {
   if (t.gapMs !== undefined) GAP_MS = t.gapMs;
   if (t.basePauseMs !== undefined) BASE_PAUSE_MS = t.basePauseMs;
+  if (t.reset) {
+    strikes = 0;
+    gapFactor = 1;
+    limit = MAX_CONCURRENCY;
+    goodRun = 0;
+    pausedUntil = 0;
+  }
 }
 
 let active = 0;
 let lastStart = 0;
 let pausedUntil = 0;
 let strikes = 0;
+/** จำนวนที่ยอมให้ยิงพร้อมกันตอนนี้ (บีบลงเมื่อโดน 429) */
+let limit = MAX_CONCURRENCY;
+/** ตัวคูณระยะห่างระหว่างคำขอตอนนี้ */
+let gapFactor = 1;
+let goodRun = 0;
 const waiting: Array<() => void> = [];
+/**
+ * คำขออ่านที่ยังค้างอยู่ ต่อ URL — ใช้ผลร่วมกันแทนที่จะยิงซ้ำ
+ * สำเนาถูกทำทันทีที่คำตอบมาถึง (ก่อนใครอ่าน body) เพราะ Response อ่านได้ครั้งเดียว
+ */
+interface Shared {
+  promise: Promise<Response>;
+  waiters: number;
+  copies: Response[];
+}
+const inflight = new Map<string, Shared>();
 
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 async function acquire(): Promise<void> {
-  if (active >= CONCURRENCY) await new Promise<void>((r) => waiting.push(r));
+  while (active >= limit) await new Promise<void>((r) => waiting.push(r));
   active++;
   for (;;) {
     const now = Date.now();
-    const wait = Math.max(pausedUntil - now, lastStart + GAP_MS - now);
+    const wait = Math.max(pausedUntil - now, lastStart + GAP_MS * gapFactor - now);
     if (wait <= 0) break;
     await sleep(wait);
   }
@@ -41,17 +71,28 @@ function release(): void {
   waiting.shift()?.();
 }
 
-/** แหล่งบอกให้รอ (429) — หยุดคิวทั้งหมด */
+/** แหล่งบอกให้รอ (429) — หยุดคิวทั้งหมด แล้วบีบท่อให้แคบลง */
 export function backoff(retryAfterHeader: string | null): number {
   const hinted = retryAfterHeader ? Number(retryAfterHeader) * 1000 : NaN;
   const ms = Number.isFinite(hinted) && hinted > 0 ? Math.min(hinted, MAX_PAUSE_MS) : Math.min(BASE_PAUSE_MS * 2 ** strikes, MAX_PAUSE_MS);
   strikes = Math.min(strikes + 1, 4);
   pausedUntil = Math.max(pausedUntil, Date.now() + ms);
+  limit = 1;
+  gapFactor = Math.min(gapFactor * 2, MAX_GAP_FACTOR);
+  goodRun = 0;
   return ms;
 }
 
-/** ยิงผ่านคิว; 429 → รอแล้วยิงซ้ำให้เอง (คืน Response 429 สุดท้ายถ้ายังไม่ผ่านหลังครบจำนวน) */
-export async function limitedFetch(url: string, init?: RequestInit): Promise<Response> {
+/** สำเร็จติดกันพอสมควร → คลายท่อขึ้นทีละขั้น (ไม่กระโดดกลับไปเต็มที่ทันที) */
+function loosen(): void {
+  strikes = Math.max(0, strikes - 1);
+  if (++goodRun < RECOVER_AFTER) return;
+  goodRun = 0;
+  if (gapFactor > 1) gapFactor = Math.max(1, gapFactor / 2);
+  else if (limit < MAX_CONCURRENCY) limit++;
+}
+
+async function run(url: string, init?: RequestInit): Promise<Response> {
   for (let attempt = 0; ; attempt++) {
     await acquire();
     let res: Response;
@@ -69,10 +110,34 @@ export async function limitedFetch(url: string, init?: RequestInit): Promise<Res
       release();
     }
     if (res.status !== 429 || attempt >= MAX_RETRY) {
-      if (res.ok) strikes = Math.max(0, strikes - 1);
+      if (res.ok) loosen();
       return res;
     }
     backoff(res.headers.get('retry-after'));
+  }
+}
+
+/** ยิงผ่านคิว; 429 → รอแล้วยิงซ้ำให้เอง (คืน Response 429 สุดท้ายถ้ายังไม่ผ่านหลังครบจำนวน) */
+export async function limitedFetch(url: string, init?: RequestInit): Promise<Response> {
+  // มีแต่คำขออ่านอย่างเดียวในแอปนี้ คำขอที่ URL+header เหมือนกันจึงใช้ผลร่วมกันได้
+  const key = `${url}|${JSON.stringify(init?.headers ?? {})}`;
+  const shared = inflight.get(key);
+  if (shared) {
+    const mine = shared.waiters++;
+    await shared.promise;
+    return shared.copies[mine] ?? shared.promise;
+  }
+  const entry: Shared = { waiters: 0, copies: [], promise: Promise.resolve(new Response()) };
+  entry.promise = run(url, init).then((res) => {
+    // ทำสำเนาให้ผู้รอทุกคนตรงนี้ — ถ้ารอให้แต่ละคนไป clone เอง คนแรกอาจอ่าน body ไปแล้ว
+    entry.copies = typeof res.clone === 'function' ? Array.from({ length: entry.waiters }, () => res.clone()) : [];
+    return res;
+  });
+  inflight.set(key, entry);
+  try {
+    return await entry.promise;
+  } finally {
+    inflight.delete(key);
   }
 }
 

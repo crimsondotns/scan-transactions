@@ -55,7 +55,7 @@ export function Dashboard({ all, wallets, rows, feeds, chains, group, onGroup, i
                     <span className="spinner" aria-hidden="true" /> {t('recent.progress', { done: progress.done, total: progress.total })}
                   </>
                 ) : progress.stopped === 'rate' ? (
-                  <span className="error">{t('recent.rateLimited')}</span>
+                  <span className="error">{progress.retryIn > 0 ? t('recent.rateLimitedIn', { n: progress.retryIn }) : t('recent.rateLimited')}</span>
                 ) : progress.stopped === 'cancel' ? (
                   t('recent.cancelled')
                 ) : (

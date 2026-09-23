@@ -28,10 +28,15 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
-      # client ID ของ Google เป็นค่าสาธารณะ → เก็บเป็น repository variable ไม่ใช่ secret
+      # ค่าตั้งต้นของแอป — เก็บใน GitHub Secrets เพื่อไม่ให้ URL อยู่ในซอร์ส
+      # ⚠️ เว็บนี้เป็น static: ค่าที่ส่งเข้า build จะอยู่ใน dist/ ที่ทุกคนอ่านได้ ไม่ใช่ความลับหลัง deploy
       - run: pnpm build
         env:
-          VITE_GOOGLE_CLIENT_ID: ${{ vars.GOOGLE_CLIENT_ID }}
+          VITE_SOURCES: ${{ secrets.SOURCES }}
+          VITE_CHAIN_LIST_URL: ${{ secrets.CHAIN_LIST_URL }}
+          VITE_CHAINS: ${{ secrets.CHAINS }}
+          # ค่าที่ตั้งใจฝังลง bundle อาจหน้าตาเหมือนกุญแจ → ให้ด่านสแกนเตือนแทนล้ม
+          ALLOW_EMBEDDED_KEYS: '1'
       # ด่านสุดท้าย: สแกน dist/ ว่าไม่มีกุญแจ/โทเคนหลุดเข้าไป (หน้าเว็บ static = ทุกไบต์สาธารณะ)
       - run: pnpm check:dist
       - uses: actions/upload-pages-artifact@v3

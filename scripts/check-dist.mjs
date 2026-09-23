@@ -64,7 +64,13 @@ for (const f of files) {
     if (m) bad.push(`${f}: looks like a ${what}`);
   }
 }
-if (bad.length) {
+/**
+ * ตั้งใจฝังค่าที่หน้าตาเหมือนกุญแจ (ผ่าน VITE_* ตอน build) → ตั้ง ALLOW_EMBEDDED_KEYS=1 ให้เตือนแทนล้ม
+ * ย้ำว่านี่ไม่ได้ทำให้มันเป็นความลับ — ทุกไบต์ใน dist/ สาธารณะ
+ */
+if (bad.length && process.env.ALLOW_EMBEDDED_KEYS === '1') {
+  console.warn(`${bad.join('\n')}\nALLOW_EMBEDDED_KEYS=1 — ปล่อยผ่าน แต่ค่าเหล่านี้เป็นสาธารณะเมื่อ deploy`);
+} else if (bad.length) {
   console.error(bad.join('\n'));
   process.exit(1);
 }

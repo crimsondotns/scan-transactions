@@ -3,6 +3,7 @@
  * ไม่มีบัญชี ไม่มี sync: กระเป๋าและแหล่งข้อมูลอยู่บนเครื่องนี้เท่านั้น
  */
 import { useCallback, useSyncExternalStore } from 'react';
+import { configuredChainListUrl, configuredEndpoints, withConfiguredChains } from './config';
 
 export type Family = 'evm' | 'sol';
 
@@ -82,7 +83,8 @@ export function parseAddress(raw: string): { address: string; family: Family } |
 function load(): State {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return DEFAULT;
+    // เบราว์เซอร์นี้ยังไม่เคยมีข้อมูล → เริ่มจากค่าที่ตั้งไว้ตอน build (ถ้ามี) จากนั้นผู้ใช้แก้ได้เองตลอด
+    if (!raw) return { ...DEFAULT, settings: { ...DEFAULT.settings, endpoints: configuredEndpoints(), chainListUrl: configuredChainListUrl(), chains: withConfiguredChains([]) } };
     const parsed = JSON.parse(raw) as Record<string, unknown>;
     const wallets = Array.isArray(parsed.wallets) ? (parsed.wallets as Wallet[]) : [];
     const s = (parsed.settings ?? {}) as Partial<Settings> & { endpoint?: string };
@@ -94,7 +96,7 @@ function load(): State {
         const p = w && typeof w.address === 'string' ? parseAddress(w.address) : null;
         return p ? [{ id: p.address, label: w.label ?? '', address: p.address, family: p.family, enabled: w.enabled !== false }] : [];
       }),
-      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' ? s.chainListUrl : '', priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '', chains: Array.isArray(s.chains) ? (s.chains as ChainOverride[]).filter((c) => c && typeof c.id === 'string') : [] },
+      settings: { endpoints, pageSize: typeof s.pageSize === 'number' ? s.pageSize : 20, chainListUrl: typeof s.chainListUrl === 'string' && s.chainListUrl ? s.chainListUrl : configuredChainListUrl(), priceUrl: typeof s.priceUrl === 'string' ? s.priceUrl : '', hideScam: s.hideScam === true, slipShow: { ...SLIP_SHOW_DEFAULT, ...(typeof s.slipShow === 'object' && s.slipShow ? s.slipShow : {}) }, proxyUrl: typeof s.proxyUrl === 'string' ? s.proxyUrl : '', chains: withConfiguredChains(Array.isArray(s.chains) ? (s.chains as ChainOverride[]).filter((c) => c && typeof c.id === 'string') : []) },
     };
   } catch {
     return DEFAULT;

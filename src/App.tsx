@@ -15,10 +15,9 @@ import { DetailPanel } from './components/DetailPanel';
 import type { TxRow } from './feed';
 import { useChains } from './chains';
 import { SettingsDialog } from './components/SettingsDialog';
-import { AccountDialog } from './components/AccountDialog';
+import { DataDialog } from './components/DataDialog';
 import { VerifyDialog } from './components/VerifyDialog';
 import { parseShare } from './slip';
-import { parseSharePath } from './share';
 import { LangMenu } from './components/LangMenu';
 import { ThemeToggle } from './components/ThemeToggle';
 import { useModalLayer } from './modal';
@@ -30,16 +29,11 @@ export function App() {
   const { wallets, settings } = useStore();
   const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [accountOpen, setAccountOpen] = useState(false);
+  const [dataOpen, setDataOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   /* หน้า: / = แดชบอร์ด, /<id> = ธุรกรรมของกระเป๋า (v/ สงวนให้ลิงก์ตรวจสลิป) — path จริง (History API) ปุ่มย้อนกลับใช้ได้ */
   const route = useRoute();
-  const pageWallet = route && !route.startsWith('v/') && !route.startsWith('s/') ? decodeURIComponent(route) : null;
-  /* /s/<แพ็กเกจ>#<กุญแจ> = ลิงก์แพ็กเกจแชร์ → เปิดหน้าบัญชีพร้อมให้ตัดสินใจนำเข้า (กุญแจหลัง # ไม่เคยถูกส่งไปที่โฮสต์) */
-  const incomingShare = useMemo(() => parseSharePath(route, location.hash), [route]);
-  useEffect(() => {
-    if (incomingShare) setAccountOpen(true);
-  }, [incomingShare]);
+  const pageWallet = route && !route.startsWith('v/') ? decodeURIComponent(route) : null;
   /* /v/<code>[.<data>] = ลิงก์ตรวจสลิป → เปิดไดอะล็อกตรวจทับแดชบอร์ด */
   const share = useMemo(() => (route.startsWith('v/') ? parseShare(decodeURIComponent(route.slice(2))) : null), [route]);
   const [verifyOpen, setVerifyOpen] = useState(false);
@@ -146,7 +140,7 @@ export function App() {
         <button type="button" className="btn btn-icon" data-fn="verify" onClick={() => setVerifyOpen(true)} aria-label={t('slip.verify')} title={t('slip.verify')}>
           <Icon name="shield" />
         </button>
-        <button type="button" className="btn btn-icon" onClick={() => setAccountOpen(true)} aria-label={t('nav.account')} title={t('nav.account')}>
+        <button type="button" className="btn btn-icon" onClick={() => setDataOpen(true)} aria-label={t('nav.account')} title={t('nav.account')}>
           <Icon name="user" />
         </button>
         <button type="button" className="btn btn-icon" onClick={() => setSettingsOpen(true)} aria-label={t('nav.settings')} title={t('nav.settings')}>
@@ -212,14 +206,7 @@ export function App() {
       </div>
 
       <SettingsDialog open={settingsOpen} onClose={() => setSettingsOpen(false)} seenChains={seenChains} />
-      <AccountDialog
-        open={accountOpen}
-        incoming={incomingShare}
-        onClose={() => {
-          setAccountOpen(false);
-          if (incomingShare) navigate('', true);
-        }}
-      />
+      <DataDialog open={dataOpen} onClose={() => setDataOpen(false)} />
       <ImportDialog open={importing} onClose={() => setImporting(false)} />
       <VerifyDialog
         open={verifyOpen}

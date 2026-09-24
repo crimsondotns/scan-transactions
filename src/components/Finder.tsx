@@ -8,18 +8,85 @@ import type { Wallet } from '../store';
 import type { TxRow } from '../feed';
 import { shortAddr, shortHash } from '../format';
 import { tokenSummary } from '../flow';
+import { chainOf, type ChainInfo, type ChainMap } from '../chains';
 
 export interface Hit {
   key: string;
   kind: 'wallet' | 'token' | 'tx';
   label: string;
   sub: string;
+  /** เชนที่โหลดแล้วของกระเป๋านั้น — แสดงเป็นโลโก้เชนหลังชื่อ */
+  chains?: string[];
+  /** ตระกูลเชนของกระเป๋า (sol / erc20) — ใช้แสดง fallback เมื่อยังไม่มีธุรกรรม */
+  family?: string;
   go: () => void;
 }
 
 const LIMIT = { wallet: 5, token: 4, tx: 3 };
+const MAX_MARKS = 4;
 
-export function Finder({ wallets, rows, onWallet, onToken }: { wallets: Wallet[]; rows: TxRow[]; onWallet: (id: string) => void; onToken: (symbol: string, walletId: string | null) => void }) {
+/** ลองหาชื่อเชนได้หลายแบบ เพราะแต่ละ chain list ตั้งชื่อไม่เหมือนกัน */
+function findChain(chains: ChainMap, ids: string[]): ChainInfo | undefined {
+  for (const id of ids) {
+    const c = chainOf(chains, id);
+    if (c?.logo) return c;
+  }
+  return undefined;
+}
+
+/** ตัวเลือกสำรองตามตระกูลเชน — Solana ใช้ sol/solana, ERC-20 ใช้ eth/ethereum/mainnet */
+function fallbackCandidates(family: string): string[] {
+  return family === 'sol' ? ['sol', 'solana'] : ['eth', 'ethereum', 'mainnet'];
+}
+
+/** โลโก้เชนของกระเป๋า — ใช้ของจริงจากธุรกรรมที่โหลดแล้ว ถ้าไม่มีก็ใช้ไอคอนตระกูลเชนจางๆ แทน */
+function WalletMarks({ family, chainIds, chains }: { family: string; chainIds: string[]; chains: ChainMap }) {
+  // โหลดแล้ว → แสดงโลโก้เชนจริงจากธุรกรรม (แบบเดียวกับ WalletTable)
+  if (chainIds.length) {
+    return (
+      <span className="chain-marks">
+        {chainIds.slice(0, MAX_MARKS).map((id) => {
+          const c = chainOf(chains, id);
+          if (!c?.logo) return null;
+          return <img key={id} className="logo" src={c.logo} alt={c.name ?? id} width={18} height={18} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width: 18, height: 18 }} />;
+        })}
+      </span>
+    );
+  }
+
+  // ยังไม่โหลด → หาไอคอนตระกูลเชนจาก chain list (dimmed เพื่อบอกว่า "ยังไม่ยืนยัน")
+  const fb = findChain(chains, fallbackCandidates(family));
+  if (fb?.logo) {
+    return (
+      <span className="chain-marks" title={fb.name}>
+        <img className="logo" src={fb.logo} alt={fb.name} width={18} height={18} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width: 18, height: 18, opacity: 0.45 }} />
+      </span>
+    );
+  }
+
+  // Chain list ยังไม่มา → วงกลมสีเป็นทางเลือกสุดท้าย
+  const isSol = family === 'sol';
+  const label = isSol ? 'Solana' : 'ERC-20';
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      style={{
+        display: 'inline-block',
+        width: 12,
+        height: 12,
+        marginLeft: 6,
+        borderRadius: '50%',
+        verticalAlign: 'middle',
+        background: isSol ? 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)' : '#627EEA',
+        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',
+        opacity: 0.55,
+      }}
+    />
+  );
+}
+
+export function Finder({ wallets, rows, chains, onWallet, onToken }: { wallets: Wallet[]; rows: TxRow[]; chains: ChainMap; onWallet: (id: string) => void; onToken: (symbol: string, walletId: string | null) => void }) {
   const { t } = useI18n();
   const [q, setQ] = useState('');
   const [open, setOpen] = useState(false);
@@ -27,13 +94,33 @@ export function Finder({ wallets, rows, onWallet, onToken }: { wallets: Wallet[]
   const root = useRef<HTMLDivElement>(null);
   const listId = useId();
 
+  /** wallet id → chain ids ที่โหลดแล้ว (ไม่ซ้ำ) — เตรียมล่วงหน้าเพื่อไม่ให้ loop ซ้ำตอน render */
+  const chainsByWallet = useMemo(() => {
+    const m = new Map<string, string[]>();
+    for (const r of rows) {
+      const list = m.get(r.walletId);
+      if (!list) m.set(r.walletId, [r.chain]);
+      else if (!list.includes(r.chain)) list.push(r.chain);
+    }
+    return m;
+  }, [rows]);
+
   const hits = useMemo<Hit[]>(() => {
     const needle = q.trim().toLowerCase();
     if (!needle) return [];
     const out: Hit[] = [];
     for (const w of wallets) {
       if (out.length >= LIMIT.wallet) break;
-      if (w.label.toLowerCase().includes(needle) || w.address.toLowerCase().includes(needle)) out.push({ key: `w:${w.id}`, kind: 'wallet', label: w.label || shortAddr(w.address), sub: shortAddr(w.address), go: () => onWallet(w.id) });
+      if (w.label.toLowerCase().includes(needle) || w.address.toLowerCase().includes(needle))
+        out.push({
+          key: `w:${w.id}`,
+          kind: 'wallet',
+          label: w.label || shortAddr(w.address),
+          sub: shortAddr(w.address),
+          chains: chainsByWallet.get(w.id) ?? [],
+          family: w.family,
+          go: () => onWallet(w.id),
+        });
     }
     const tokens = tokenSummary(rows).filter((k) => k.symbol.toLowerCase().includes(needle) || (k.name ?? '').toLowerCase().includes(needle));
     for (const k of tokens.slice(0, LIMIT.token)) out.push({ key: `t:${k.symbol}`, kind: 'token', label: k.symbol, sub: k.name ?? k.chain, go: () => onToken(k.symbol, null) });
@@ -43,7 +130,7 @@ export function Finder({ wallets, rows, onWallet, onToken }: { wallets: Wallet[]
       out.push({ key: `x:${r.key}`, kind: 'tx', label: shortHash(r.hash), sub: `${t(`tx.type.${r.type}`)} · ${w?.label ?? shortAddr(r.walletId)}`, go: () => onWallet(r.walletId) });
     }
     return out;
-  }, [q, wallets, rows, onWallet, onToken, t]);
+  }, [q, wallets, rows, chainsByWallet, onWallet, onToken, t]);
 
   useEffect(() => {
     if (!open) return;
@@ -112,7 +199,10 @@ export function Finder({ wallets, rows, onWallet, onToken }: { wallets: Wallet[]
             hits.map((h, i) => (
               <button key={h.key} type="button" role="option" aria-selected={i === active} data-active={i === active} onMouseEnter={() => setActive(i)} onClick={() => pick(h)}>
                 <span className="act-text">
-                  <span className="act-title">{h.label}</span>
+                  <span className="act-title">
+                    {h.label}
+                    {h.kind === 'wallet' && h.family && <WalletMarks family={h.family} chainIds={h.chains ?? []} chains={chains} />}
+                  </span>
                   <span className="act-sub">{h.sub}</span>
                 </span>
                 <span className="kind">{t(`find.${h.kind}`)}</span>

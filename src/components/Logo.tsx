@@ -1,21 +1,23 @@
 /**
  * โลโก้โทเคน/เชน — โหลดจาก URL ที่แหล่งข้อมูลให้มา ถ้าไม่มีหรือโหลดไม่ได้
  * ใช้วงกลมตัวอักษรแรกแทน (สีกลางตามธีม ไม่มีสีตกแต่ง)
+ *
+ * IPFS gateway list อ่านจาก VITE_IPFS_GATEWAYS (คั่นด้วย ,) — inject ตอน build
+ * ถ้าไม่ตั้ง จะใช้แค่ URL ที่แหล่งข้อมูลให้มาตรงๆ
  */
 import { useState } from 'react';
 
-/** IPFS gateways ที่ยอมให้ hot-link จาก origin อื่น — เรียงตามความเร็ว/ความเสถียร */
-const IPFS_GATEWAYS = [
-  'https://ipfs.io/ipfs/',
-  'https://cloudflare-ipfs.com/ipfs/',
-  'https://dweb.link/ipfs/',
-  'https://w3s.link/ipfs/',
-  'https://nftstorage.link/ipfs/',
-  'https://gateway.pinata.cloud/ipfs/',
-];
+const env = (import.meta as unknown as { env?: { VITE_IPFS_GATEWAYS?: string } }).env;
+
+/** gateway ที่รองรับ cross-origin hot-link — มาจาก env ตอน build */
+const IPFS_GATEWAYS: string[] = (env?.VITE_IPFS_GATEWAYS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
 
 /** สลับไป gateway ถัดไปสำหรับ URL แบบ ipfs://<hash> หรือ https://<gateway>/ipfs/<hash> */
 function ipfsAlternatives(src: string): string[] {
+  if (!IPFS_GATEWAYS.length) return [];
   let hash: string | null = null;
   if (src.startsWith('ipfs://')) hash = src.slice(7);
   else {

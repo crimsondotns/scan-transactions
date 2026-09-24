@@ -41,7 +41,6 @@ const tokenPath = (symbol: string, walletId: string | null) => (walletId ? `${en
 export function App() {
   const { t } = useI18n();
   const { wallets, settings } = useStore();
-  // 👇 เพิ่ม fillMeta เข้าไปใน destructuring (จุดที่ 1)
   const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget, fillMeta } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -130,15 +129,22 @@ export function App() {
     return rows.filter((r) => ids.has(r.walletId));
   }, [rows, groupWallets]);
 
-  /* เปิดแดชบอร์ด → โหลดกระเป๋าที่ยังไม่มีข้อมูลแบบเว้นจังหวะ (5 ต่อชุด เว้น 2 วิ) เริ่มครั้งเดียวต่อชุดแหล่งข้อมูล */
-  const startedFor = useRef<string | null>(null);
-  useEffect(() => {
-    if (page !== 'dashboard' || !hasEndpoint || !active.length) return;
-    if (startedFor.current === epKey) return;
-    startedFor.current = epKey;
-    void loadStaggered(active);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, hasEndpoint, epKey, active.length]);
+  /*
+   * ปิด auto-load บนแดชบอร์ด — ไม่ยิง API จนกว่าผู้ใช้จะกดเอง
+   * โหลดเกิดขึ้นได้ 3 ทางเท่านั้น:
+   *   1) คลิกกระเป๋า → selectWallet → ensure(w)
+   *   2) กดปุ่ม "โหลดกลุ่ม" → loadGroup → loadStaggered
+   *   3) กดปุ่ม reload ในหน้ากระเป๋า → loadMany([w], 'reset')
+   *
+   * const startedFor = useRef<string | null>(null);
+   * useEffect(() => {
+   *   if (page !== 'dashboard' || !hasEndpoint || !active.length) return;
+   *   if (startedFor.current === epKey) return;
+   *   startedFor.current = epKey;
+   *   void loadStaggered(active);
+   *   // eslint-disable-next-line react-hooks/exhaustive-deps
+   * }, [page, hasEndpoint, epKey, active.length]);
+   */
 
   const walletRows = useMemo(() => (pageWallet ? rows.filter((r) => r.walletId === pageWallet) : rows), [rows, pageWallet]);
   const anyLoading = active.some((w) => feeds[w.id]?.loading);
@@ -270,7 +276,7 @@ export function App() {
                 hasMore={hasOlder(feeds[activeWalletObj.id])}
                 onMore={() => void loadMany([activeWalletObj], 'older')}
                 onReload={() => void loadMany([activeWalletObj], 'reset')}
-                onFetchMeta={fillMeta} /* 👈 จุดที่ 2: ส่ง fillMeta ลงไป */
+                onFetchMeta={fillMeta}
               />
             </div>
           ) : null}

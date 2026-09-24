@@ -8,7 +8,11 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["workerd"]
+  },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260923.1",
     "wrangler": "^4.0.0"
   }
 }

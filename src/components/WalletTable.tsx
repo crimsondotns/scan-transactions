@@ -225,7 +225,7 @@ export function WalletTable({ wallets, feeds, chains, activeId, onOpen, onSwitch
                           ))}
                         </span>
                       ) : (
-                        <span className="idle">{t('wallets.noTag')}</span>
+                         <span className="idle">—</span>
                       )}
                     </td>
                     <td>{loading ? <SkeletonBar width={64} /> : <WalletMarks family={w.family} chainIds={chainsOf(w)} chains={chains} />}</td>

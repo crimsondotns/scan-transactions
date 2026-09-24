@@ -2,7 +2,7 @@
  * หน้ากระเป๋าหนึ่งใบ — สรุปกระแสเงินของกระเป๋านี้ แล้วเลือกดูเป็นรายโทเคนหรือรายธุรกรรม
  * แท็กแก้ได้ตรงนี้ (ที่เดียวที่ตั้งได้) เพราะมันคือที่ที่ผู้ใช้กำลังดูกระเป๋าใบนั้นอยู่
  */
-import { useMemo, useState, useEffect } from 'react'; // 👈 เพิ่ม useEffect
+import { useMemo, useState, useEffect } from 'react';
 import type { TxRow } from '../feed';
 import type { ChainMap } from '../chains';
 import type { Wallet } from '../store';
@@ -20,7 +20,9 @@ import { Icon } from '../components/Icon';
 import { TagDialog } from '../components/TagDialog';
 
 // 👇 เพิ่ม onFetchMeta เข้าไปใน props
-export function WalletPage({ wallet, all, rows, chains, group, range, onRange, onBack, onWallet, onToken, selected, onSelect, loading, hasMore, onMore, onReload, onFetchMeta }: { 
+export function WalletPage({ 
+  wallet, all, rows, chains, group, range, onRange, onBack, onWallet, onToken, selected, onSelect, loading, hasMore, onMore, onReload, onFetchMeta 
+}: { 
   wallet: Wallet; 
   all: Wallet[]; 
   rows: TxRow[]; 
@@ -38,7 +40,7 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
   onMore: () => void; 
   onReload: () => void;
   onFetchMeta: (w: Wallet) => void; // 👈 Type ของฟังก์ชันที่ส่งมา
-}) {
+})   {
   const { t } = useI18n();
   const [tab, setTab] = useState<'tokens' | 'history'>('tokens');
   const [tagsOpen, setTagsOpen] = useState(false);

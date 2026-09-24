@@ -41,7 +41,8 @@ const tokenPath = (symbol: string, walletId: string | null) => (walletId ? `${en
 export function App() {
   const { t } = useI18n();
   const { wallets, settings } = useStore();
-  const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget } = useFeed(settings);
+  // 👇 เพิ่ม fillMeta เข้าไปใน destructuring (จุดที่ 1)
+  const { feeds, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget, fillMeta } = useFeed(settings);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importing, setImporting] = useState(false);
   const route = useRoute();
@@ -269,6 +270,7 @@ export function App() {
                 hasMore={hasOlder(feeds[activeWalletObj.id])}
                 onMore={() => void loadMany([activeWalletObj], 'older')}
                 onReload={() => void loadMany([activeWalletObj], 'reset')}
+                onFetchMeta={fillMeta} /* 👈 จุดที่ 2: ส่ง fillMeta ลงไป */
               />
             </div>
           ) : null}

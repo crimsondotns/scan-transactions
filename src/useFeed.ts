@@ -122,9 +122,10 @@ export function useFeed(settings: Settings) {
         return { ...s, [w.id]: { rows, next, errors, loading: false, loaded: true } };
       });
       inflight.current.delete(w.id);
-      /* โทเคนของเชนตระกูล Solana ไม่มีชื่อ/โลโก้มากับธุรกรรมเลย ต้องขอ metadata แยกเสมอ
-         รอบแรกพลาดได้ (429 / เน็ตสะดุด) แล้วจะค้างเป็นตัวย่อที่อยู่กับวงกลมตัวอักษรทั้งหน้า → ตามเก็บให้อีกสองรอบ */
-      void fillMeta(w);
+      
+      // 👇👇👇 แก้ไขตรงนี้: คอมเมนต์บรรทัดนี้ทิ้ง เพื่อไม่ให้ Fetch อัตโนมัติ 👇👇👇
+      // void fillMeta(w); 
+      // 👆👆👆 แก้ไขตรงนี้ 👆👆👆
     },
     [settings, fillMeta]
   );
@@ -201,7 +202,9 @@ export function useFeed(settings: Settings) {
     });
   }, []);
 
-  return { feeds, load, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget };
+  // 👇👇👇 แก้ไขตรงนี้: เพิ่ม fillMeta เข้าไปใน return 👇👇👇
+  return { feeds, load, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget, fillMeta };
+  // 👆👆👆 แก้ไขตรงนี้ 👆👆👆
 }
 
 export function hasOlder(f: WalletFeed | undefined): boolean {

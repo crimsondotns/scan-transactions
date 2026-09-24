@@ -2,7 +2,7 @@
  * หน้ากระเป๋าหนึ่งใบ — สรุปกระแสเงินของกระเป๋านี้ แล้วเลือกดูเป็นรายโทเคนหรือรายธุรกรรม
  * แท็กแก้ได้ตรงนี้ (ที่เดียวที่ตั้งได้) เพราะมันคือที่ที่ผู้ใช้กำลังดูกระเป๋าใบนั้นอยู่
  */
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react'; // 👈 เพิ่ม useEffect
 import type { TxRow } from '../feed';
 import type { ChainMap } from '../chains';
 import type { Wallet } from '../store';
@@ -19,7 +19,26 @@ import { Identicon } from '../components/Identicon';
 import { Icon } from '../components/Icon';
 import { TagDialog } from '../components/TagDialog';
 
-export function WalletPage({ wallet, all, rows, chains, group, range, onRange, onBack, onWallet, onToken, selected, onSelect, loading, hasMore, onMore, onReload }: { wallet: Wallet; all: Wallet[]; rows: TxRow[]; chains: ChainMap; group: GroupId; range: Range; onRange: (r: Range) => void; onBack: () => void; onWallet: (id: string) => void; onToken: (symbol: string) => void; selected: string | null; onSelect: (r: TxRow) => void; loading: boolean; hasMore: boolean; onMore: () => void; onReload: () => void }) {
+// 👇 เพิ่ม onFetchMeta เข้าไปใน props
+export function WalletPage({ wallet, all, rows, chains, group, range, onRange, onBack, onWallet, onToken, selected, onSelect, loading, hasMore, onMore, onReload, onFetchMeta }: { 
+  wallet: Wallet; 
+  all: Wallet[]; 
+  rows: TxRow[]; 
+  chains: ChainMap; 
+  group: GroupId; 
+  range: Range; 
+  onRange: (r: Range) => void; 
+  onBack: () => void; 
+  onWallet: (id: string) => void; 
+  onToken: (symbol: string) => void; 
+  selected: string | null; 
+  onSelect: (r: TxRow) => void; 
+  loading: boolean; 
+  hasMore: boolean; 
+  onMore: () => void; 
+  onReload: () => void;
+  onFetchMeta: (w: Wallet) => void; // 👈 Type ของฟังก์ชันที่ส่งมา
+}) {
   const { t } = useI18n();
   const [tab, setTab] = useState<'tokens' | 'history'>('tokens');
   const [tagsOpen, setTagsOpen] = useState(false);
@@ -29,6 +48,14 @@ export function WalletPage({ wallet, all, rows, chains, group, range, onRange, o
   const sums = useMemo(() => totals(ranged), [ranged]);
   const tokens = useMemo(() => tokenSummary(ranged), [ranged]);
   const pending = loading && rows.length === 0;
+
+  // 👇👇👇 เพิ่ม useEffect นี้ 👇👇👇
+  useEffect(() => {
+    if (wallet && tab === 'tokens') {
+      void onFetchMeta(wallet);
+    }
+  }, [wallet, tab, onFetchMeta]);
+  // 👆👆👆 เพิ่ม useEffect นี้ 👆👆👆
 
   return (
     <>

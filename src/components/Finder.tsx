@@ -25,23 +25,15 @@ export interface Hit {
 const LIMIT = { wallet: 5, token: 4, tx: 3 };
 const MAX_MARKS = 4;
 
-/** ลองหาชื่อเชนได้หลายแบบ เพราะแต่ละ chain list ตั้งชื่อไม่เหมือนกัน */
-function findChain(chains: ChainMap, ids: string[]): ChainInfo | undefined {
-  for (const id of ids) {
-    const c = chainOf(chains, id);
-    if (c?.logo) return c;
-  }
-  return undefined;
-}
+/** ชุด chain เริ่มต้นต่อตระกูล — โชว์ตอนยังไม่โหลดว่า wallet นี้อยู่บนเครือข่ายอะไรได้บ้าง */
+const DEFAULT_CHAINS: Record<string, string[]> = {
+  erc20: ['eth', 'arb', 'base', 'op', 'bsc'],
+  sol: ['sol'],
+};
 
-/** ตัวเลือกสำรองตามตระกูลเชน — Solana ใช้ sol/solana, ERC-20 ใช้ eth/ethereum/mainnet */
-function fallbackCandidates(family: string): string[] {
-  return family === 'sol' ? ['sol', 'solana'] : ['eth', 'ethereum', 'mainnet'];
-}
-
-/** โลโก้เชนของกระเป๋า — ใช้ของจริงจากธุรกรรมที่โหลดแล้ว ถ้าไม่มีก็ใช้ไอคอนตระกูลเชนจางๆ แทน */
+/** โลโก้เชนของกระเป๋า — ของจริงจากธุรกรรมที่โหลดแล้ว; ยังไม่โหลด → ชุด chain ของตระกูลนั้น */
 function WalletMarks({ family, chainIds, chains }: { family: string; chainIds: string[]; chains: ChainMap }) {
-  // โหลดแล้ว → แสดงโลโก้เชนจริงจากธุรกรรม (แบบเดียวกับ WalletTable)
+  // โหลดแล้ว → โลโก้เชนจริงจากธุรกรรม
   if (chainIds.length) {
     return (
       <span className="chain-marks">
@@ -54,17 +46,20 @@ function WalletMarks({ family, chainIds, chains }: { family: string; chainIds: s
     );
   }
 
-  // ยังไม่โหลด → หาไอคอนตระกูลเชนจาก chain list (dimmed เพื่อบอกว่า "ยังไม่ยืนยัน")
-  const fb = findChain(chains, fallbackCandidates(family));
-  if (fb?.logo) {
+  // ยังไม่โหลด → แสดงชุด chain เริ่มต้นของตระกูลนั้น
+  const defaults = DEFAULT_CHAINS[family] ?? [];
+  const infos = defaults.map((id) => chainOf(chains, id)).filter((c): c is ChainInfo => !!c?.logo);
+  if (infos.length) {
     return (
-      <span className="chain-marks" title={fb.name}>
-        <img className="logo" src={fb.logo} alt={fb.name} width={18} height={18} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width: 18, height: 18, opacity: 0.5 }} />
+      <span className="chain-marks">
+        {infos.slice(0, MAX_MARKS).map((c) => (
+          <img key={c.id} className="logo" src={c.logo!} alt={c.name} width={18} height={18} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width: 18, height: 18 }} />
+        ))}
       </span>
     );
   }
 
-  // Chain list ยังไม่มา → วงกลมสีเป็นทางเลือกสุดท้าย
+  // chain list ยังไม่มา → วงกลมสีตามตระกูล
   const isSol = family === 'sol';
   const label = isSol ? 'Solana' : 'ERC-20';
   return (
@@ -79,7 +74,6 @@ function WalletMarks({ family, chainIds, chains }: { family: string; chainIds: s
         verticalAlign: 'middle',
         background: isSol ? 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)' : '#627EEA',
         boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',
-        opacity: 0.6,
       }}
     />
   );

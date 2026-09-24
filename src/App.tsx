@@ -191,7 +191,7 @@ export function App() {
         </button>
         <ThemeToggle />
         <LangMenu />
-        <Finder wallets={wallets} rows={rows} onWallet={(id) => openWallet(id)} onToken={openToken} />
+        <Finder wallets={wallets} rows={rows} chains={chains} onWallet={(id) => openWallet(id)} onToken={openToken} />
       </header>
 
       <div className="layout">

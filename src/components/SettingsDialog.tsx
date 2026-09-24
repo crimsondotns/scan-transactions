@@ -46,6 +46,9 @@ function Group({ title, note, children }: { title: string; note?: string; childr
   );
 }
 
+/** ข้อมูลไฟล์ที่อ่านมาก่อนรู้ว่าเป็น encrypted หรือไม่ */
+type PendingImport = { file: File; salt?: string; payload?: string };
+
 export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { t } = useI18n();
   const { toast } = useToast();
@@ -61,8 +64,11 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
 
   // Import
   const [mode, setMode] = useState<Mode>('merge');
-  const [importPass, setImportPass] = useState('');
   const [importErr, setImportErr] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingImport | null>(null);
+  const [decOpen, setDecOpen] = useState(false);
+  const [decPass, setDecPass] = useState('');
+  const [decErr, setDecErr] = useState<string | null>(null);
 
   const data = (): PortableData => snapshot();
 
@@ -83,7 +89,6 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
       exportPlain();
       return;
     }
-    // encrypted → เปิด dialog ใส่รหัส
     setEncPass('');
     setEncConfirm('');
     setEncErr(null);
@@ -103,18 +108,12 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     void exportEncrypted(encPass);
   }
 
-  async function importBackup(file: File) {
+  /** นำเข้าข้อมูล (ไม่เข้ารหัส) — apply ทันที */
+  async function applyImport(raw: unknown) {
     setImportErr(null);
     try {
-      let raw: unknown = JSON.parse(await file.text());
-      if (raw && typeof raw === 'object' && (raw as { kind?: string }).kind === 'backup-encrypted') {
-        const { salt, payload } = raw as { salt: string; payload: string };
-        if (!importPass) return setImportErr(t('account.needPassphrase'));
-        raw = await decryptJson(await keyFromPassphrase(importPass, salt), payload);
-      }
       const incoming = readBackup(raw);
       if (mode === 'replace') {
-        // แหล่งข้อมูล/เชน ไม่ได้อยู่ในไฟล์สำรอง — เขียนทับด้วยของว่างไม่ได้ ต้องคงของที่มากับตัวเว็บไว้
         restore({ wallets: incoming.data.wallets, settings: { ...incoming.data.settings, endpoints: settings.endpoints, chainListUrl: settings.chainListUrl, chains: settings.chains } });
         toast(t('account.restored'));
       } else {
@@ -122,9 +121,46 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
         restore(merged);
         toast(t('account.merged', { n: added.wallets }));
       }
-      setImportPass('');
     } catch (e) {
       setImportErr(e instanceof BackupError ? t(`account.err.${e.code}`) : t('account.err.shape'));
+    }
+  }
+
+  /** ผู้ใช้เลือกไฟล์ → อ่าน → ตรวจว่าเข้ารหัสไหม → เปิด dialog หรือ import ทันที */
+  async function handleFilePick(file: File) {
+    setImportErr(null);
+    let raw: unknown;
+    try {
+      raw = JSON.parse(await file.text());
+    } catch {
+      setImportErr(t('account.err.shape'));
+      return;
+    }
+    if (raw && typeof raw === 'object' && (raw as { kind?: string }).kind === 'backup-encrypted') {
+      const { salt, payload } = raw as { salt: string; payload: string };
+      setPending({ file, salt, payload });
+      setDecPass('');
+      setDecErr(null);
+      setDecOpen(true);
+      return;
+    }
+    await applyImport(raw);
+  }
+
+  /** ยืนยัน decrypt แล้ว import */
+  async function confirmDecrypt() {
+    if (!pending?.salt || !pending?.payload) return;
+    if (decPass.length < 8) {
+      setDecErr(t('account.passTooShort'));
+      return;
+    }
+    try {
+      const raw = await decryptJson(await keyFromPassphrase(decPass, pending.salt), pending.payload);
+      setDecOpen(false);
+      setPending(null);
+      await applyImport(raw);
+    } catch {
+      setDecErr(t('account.err.shape'));
     }
   }
 
@@ -213,7 +249,6 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                         { value: 'replace' as const, label: t('account.replace') },
                       ]}
                     />
-                    <input className="input input-sm set-pass" type="password" value={importPass} onChange={(e) => setImportPass(e.target.value)} autoComplete="off" aria-label={t('account.passphrase')} />
                     <label className="btn btn-sm">
                       <Icon name="upload" />
                       {t('account.import')}
@@ -223,7 +258,7 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
                         className="file-hidden"
                         onChange={(e) => {
                           const f = e.target.files?.[0];
-                          if (f) void importBackup(f);
+                          if (f) void handleFilePick(f);
                           e.target.value = '';
                         }}
                       />
@@ -285,6 +320,59 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
           <button type="button" className="btn btn-primary" onClick={confirmEncrypt} disabled={encPass.length < 8 || encPass !== encConfirm}>
             <Icon name="lock" />
             {t('account.encrypt')}
+          </button>
+        </div>
+      </Dialog>
+
+      {/* Dialog ใส่รหัสผ่านสำหรับ Import encrypted — เปิดอัตโนมัติเมื่อเจอไฟล์เข้ารหัส */}
+      <Dialog
+        open={decOpen}
+        onClose={() => {
+          setDecOpen(false);
+          setPending(null);
+          setDecPass('');
+          setDecErr(null);
+        }}
+        title={t('account.decryptTitle')}
+      >
+        <div className="set-rows">
+          <Row title={t('account.passphrase')}>
+            <input
+              className="input set-pass"
+              type="password"
+              value={decPass}
+              onChange={(e) => {
+                setDecPass(e.target.value);
+                setDecErr(null);
+              }}
+              autoComplete="current-password"
+              autoFocus
+              aria-label={t('account.passphrase')}
+              style={{ width: 240, height: 28, padding: '2px 8px', fontSize: 13 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') confirmDecrypt();
+              }}
+            />
+          </Row>
+        </div>
+        {decErr && <span className="error">{decErr}</span>}
+        <p className="hint" style={{ marginTop: 6, marginBottom: 0, lineHeight: 1.35 }}>{t('account.decryptHint')}</p>
+        <div className="dlg-actions" style={{ marginTop: 12 }}>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              setDecOpen(false);
+              setPending(null);
+              setDecPass('');
+              setDecErr(null);
+            }}
+          >
+            {t('dialog.cancel')}
+          </button>
+          <button type="button" className="btn btn-primary" onClick={confirmDecrypt} disabled={decPass.length < 8}>
+            <Icon name="lock" />
+            {t('account.decrypt')}
           </button>
         </div>
       </Dialog>

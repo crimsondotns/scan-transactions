@@ -11,6 +11,7 @@
  *  - ไม่ log กุญแจ ไม่ส่งกุญแจกลับ ไม่ส่ง header ของปลายทางกลับนอกจาก content-type
  *  - จำกัดอัตราคำขอต่อ IP (best effort ในหน่วยความจำ หรือผ่าน binding RATE_LIMITER ถ้าผูกไว้)
  *  - Edge Cache (caches.default) — คำขอเดียวกันจากหลายคนในออฟฟิศใช้คำตอบร่วมกัน ลดโหลดปลายทาง
+ *  - Header เพิ่มเติมต่อ alias (UPSTREAM_<ALIAS>_HEADERS) — เลียนแบบเบราว์เซอร์ของปลายทางได้
  */
 import { allowedOrigin, carriesClientAuth, mapRoute, parseRoute, safeQuery, upstreamUrl } from './validate';
 
@@ -23,7 +24,7 @@ export interface Env {
   CACHE_TTL_SECONDS?: string;
   /** ตัวจำกัดอัตราของ Cloudflare ถ้าผูกไว้ */
   RATE_LIMITER?: { limit(o: { key: string }): Promise<{ success: boolean }> };
-  /** ต่อ alias: UPSTREAM_<ALIAS>_BASE (secret), _AUTH_HEADER (var), _KEY (secret), _ROUTES (secret, ไม่บังคับ) */
+  /** ต่อ alias: UPSTREAM_<ALIAS>_BASE (secret), _AUTH_HEADER (var), _KEY (secret), _ROUTES (secret, ไม่บังคับ), _HEADERS (secret, ไม่บังคับ) */
   [k: string]: unknown;
 }
 
@@ -101,10 +102,11 @@ export default {
     const query = safeQuery(url.searchParams);
     if (!query) return fail(400, 'query', origin);
 
-    const up = envStr(env, `UPSTREAM_${route.alias.toUpperCase()}_BASE`);
+    const aliasKey = route.alias.toUpperCase();
+    const up = envStr(env, `UPSTREAM_${aliasKey}_BASE`);
     if (!up) return fail(404, 'route', origin);
     // ชื่อเส้นทางที่ไคลเอนต์ใช้เป็นตัวอักษรกลางๆ แล้วมาแปลงเป็น path จริงที่นี่ (ถ้า alias นั้นตั้งตารางไว้)
-    const path = mapRoute(route.path, envStr(env, `UPSTREAM_${route.alias.toUpperCase()}_ROUTES`));
+    const path = mapRoute(route.path, envStr(env, `UPSTREAM_${aliasKey}_ROUTES`));
     if (path === null) return fail(404, 'route', origin);
     const target = upstreamUrl(up, path, query);
     if (!target) return fail(400, 'route', origin);
@@ -127,9 +129,24 @@ export default {
 
     // กุญแจถูกเติมที่นี่ — ไม่เคยผ่านเบราว์เซอร์และไม่ถูก log
     const headers: Record<string, string> = { accept: 'application/json' };
-    const authHeader = envStr(env, `UPSTREAM_${route.alias.toUpperCase()}_AUTH_HEADER`);
-    const key = envStr(env, `UPSTREAM_${route.alias.toUpperCase()}_KEY`);
+    const authHeader = envStr(env, `UPSTREAM_${aliasKey}_AUTH_HEADER`);
+    const key = envStr(env, `UPSTREAM_${aliasKey}_KEY`);
     if (authHeader && key) headers[authHeader.toLowerCase()] = key;
+
+    // Header เพิ่มเติมต่อ alias — เลียนแบบเบราว์เซอร์จริงของปลายทาง (origin/referer/user-agent/ฯลฯ)
+    // รูปแบบ secret: JSON string เช่น
+    //   {"origin":"https://rabby.io","referer":"https://rabby.io/","user-agent":"Mozilla/5.0 ...","accept-language":"en-US,en;q=0.9"}
+    const extraRaw = envStr(env, `UPSTREAM_${aliasKey}_HEADERS`);
+    if (extraRaw) {
+      try {
+        const parsed = JSON.parse(extraRaw) as Record<string, unknown>;
+        for (const [k, v] of Object.entries(parsed)) {
+          if (typeof v === 'string' && v !== '') headers[k.toLowerCase()] = v;
+        }
+      } catch {
+        // secret JSON ผิดรูปแบบ — ไม่ทำให้ Worker พัง แค่ไม่ใส่ header พิเศษ
+      }
+    }
 
     let res: Response;
     try {

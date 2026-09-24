@@ -4,26 +4,54 @@
  */
 import { useState } from 'react';
 
-/** Mockup badge สำหรับ EVM Chain (ไม่ใช้ URL ภายนอก — ใช้สีพื้นหลัง + สัญลักษณ์แทน) */
-const CHAIN_BADGES: Record<string, { color: string; glyph: string }> = {
-  ethereum: { color: '#627EEA', glyph: 'Ξ' },
-  eth: { color: '#627EEA', glyph: 'Ξ' },
-  bsc: { color: '#F0B90B', glyph: 'B' },
-  binance: { color: '#F0B90B', glyph: 'B' },
-  polygon: { color: '#8247E5', glyph: 'P' },
-  matic: { color: '#8247E5', glyph: 'P' },
-  arbitrum: { color: '#28A0F0', glyph: 'A' },
-  optimism: { color: '#FF0420', glyph: 'O' },
-  base: { color: '#0052FF', glyph: 'B' },
-  avalanche: { color: '#E84142', glyph: 'A' },
-  avax: { color: '#E84142', glyph: 'A' },
-};
+/** IPFS gateways ที่ยอมให้ hot-link จาก origin อื่น — เรียงตามความเร็ว/ความเสถียร */
+const IPFS_GATEWAYS = [
+  'https://ipfs.io/ipfs/',
+  'https://cloudflare-ipfs.com/ipfs/',
+  'https://dweb.link/ipfs/',
+  'https://w3s.link/ipfs/',
+  'https://nftstorage.link/ipfs/',
+  'https://gateway.pinata.cloud/ipfs/',
+];
+
+/** สลับไป gateway ถัดไปสำหรับ URL แบบ ipfs://<hash> หรือ https://<gateway>/ipfs/<hash> */
+function ipfsAlternatives(src: string): string[] {
+  let hash: string | null = null;
+  if (src.startsWith('ipfs://')) hash = src.slice(7);
+  else {
+    const m = /\/ipfs\/([^/?#]+)/.exec(src);
+    if (m) hash = m[1] ?? null;
+  }
+  if (!hash) return [];
+  return IPFS_GATEWAYS.map((g) => `${g}${hash}`);
+}
 
 export function Logo({ src, name, size = 20 }: { src: string | null; name: string; size?: number }) {
   const [broken, setBroken] = useState(false);
+  const [idx, setIdx] = useState(0);
   const letter = (name.trim()[0] ?? '?').toUpperCase();
+
   if (src && !broken) {
-    return <img className="logo" src={src} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setBroken(true)} style={{ width: size, height: size }} />;
+    const candidates = ipfsAlternatives(src);
+    const url = candidates.length > 0 ? (candidates[idx] ?? candidates[0]!) : src;
+
+    return (
+      <img
+        className="logo"
+        src={url}
+        alt=""
+        width={size}
+        height={size}
+        loading="lazy"
+        decoding="async"
+        referrerPolicy="no-referrer"
+        onError={() => {
+          if (candidates.length > 0 && idx + 1 < candidates.length) setIdx(idx + 1);
+          else setBroken(true);
+        }}
+        style={{ width: size, height: size }}
+      />
+    );
   }
   return (
     <span className="logo logo-fallback" aria-hidden="true" style={{ width: size, height: size, fontSize: Math.round(size * 0.5) }}>
@@ -32,40 +60,13 @@ export function Logo({ src, name, size = 20 }: { src: string | null; name: strin
   );
 }
 
-/** ป้ายเชนแบบ mockup — วงกลมสีแบรนด์ + สัญลักษณ์ ไม่ต้องโหลดจากที่ไหน */
-function ChainBadge({ name, size }: { name: string; size: number }) {
-  const badge = CHAIN_BADGES[name.toLowerCase()];
-  if (!badge) return <Logo src={null} name={name} size={size} />;
-  return (
-    <span
-      className="logo"
-      aria-hidden="true"
-      style={{
-        width: size,
-        height: size,
-        background: badge.color,
-        color: '#fff',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: Math.round(size * 0.55),
-        fontWeight: 700,
-        lineHeight: 1,
-      }}
-    >
-      {badge.glyph}
-    </span>
-  );
-}
-
 /** โทเคนซ้อนบนเชน (มุมขวาล่าง) */
 export function TokenLogo({ token, tokenName, chain, chainName, size = 28 }: { token: string | null; tokenName: string; chain: string | null; chainName: string; size?: number }) {
-  const badgeSize = Math.round(size * 0.57);
   return (
     <span className="logo-stack" style={{ width: size, height: size }}>
       <Logo src={token} name={tokenName} size={size} />
       <span className="logo-badge">
-        {chain ? <Logo src={chain} name={chainName} size={badgeSize} /> : <ChainBadge name={chainName} size={badgeSize} />}
+        <Logo src={chain} name={chainName} size={Math.round(size * 0.57)} />
       </span>
     </span>
   );

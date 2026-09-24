@@ -12,11 +12,74 @@ import { MoreSentinel } from './MoreSentinel';
 import { SkeletonBar } from './Skeleton';
 import { useStickyHead } from '../useStickyHead';
 import { Logo } from './Logo';
-import { chainOf, type ChainMap } from '../chains';
+import { chainOf, type ChainInfo, type ChainMap } from '../chains';
 import { lastTime, netUsd, signClassOf } from '../flow';
 
 type SortKey = 'label' | 'tag' | 'tx' | 'net' | 'last';
 const PAGE = 20;
+
+/** ลองหาชื่อเชนได้หลายแบบ เพราะแต่ละ chain list ตั้งชื่อไม่เหมือนกัน */
+function findChain(chains: ChainMap, ids: string[]): ChainInfo | undefined {
+  for (const id of ids) {
+    const c = chainOf(chains, id);
+    if (c?.logo) return c;
+  }
+  return undefined;
+}
+
+/** ตัวเลือกสำรองตามตระกูลเชน — Solana ใช้ sol/solana, ERC-20 ใช้ eth/ethereum/mainnet */
+function fallbackCandidates(family: string): string[] {
+  return family === 'sol' ? ['sol', 'solana'] : ['eth', 'ethereum', 'mainnet'];
+}
+
+/**
+ * โลโก้เชนในคอลัมน์ Support — กระเป๋าที่โหลดแล้วแสดงโลโก้เชนจริงจากธุรกรรม
+ * กระเป๋าที่ยังไม่โหลดแสดงไอคอนตระกูลเชนจางๆ (Solana/ETH) เพื่อให้รู้ว่าเป็นเครือข่ายไหน
+ * ถ้า chain list ยังไม่มา ใช้จุดสีตามตระกูลแทน
+ */
+function WalletMarks({ family, chainIds, chains }: { family: string; chainIds: string[]; chains: ChainMap }) {
+  // โหลดแล้ว → โลโก้เชนจริง
+  if (chainIds.length) {
+    return (
+      <span className="chain-marks">
+        {chainIds.slice(0, 5).map((c) => {
+          const info = chainOf(chains, c);
+          return <Logo key={c} src={info?.logo ?? null} name={info?.name ?? c} size={18} />;
+        })}
+        {chainIds.length > 5 && <span className="idle">+{chainIds.length - 5}</span>}
+      </span>
+    );
+  }
+
+  // ยังไม่โหลด → ไอคอนตระกูลเชนจางๆ จาก chain list
+  const fb = findChain(chains, fallbackCandidates(family));
+  if (fb?.logo) {
+    return (
+      <span className="chain-marks" title={fb.name} style={{ opacity: 0.45 }}>
+        <Logo src={fb.logo} name={fb.name} size={18} />
+      </span>
+    );
+  }
+
+  // chain list ยังไม่มา → วงกลมสีตามตระกูล
+  const isSol = family === 'sol';
+  const label = isSol ? 'Solana' : 'ERC-20';
+  return (
+    <span
+      title={label}
+      aria-label={label}
+      style={{
+        display: 'inline-block',
+        width: 14,
+        height: 14,
+        borderRadius: '50%',
+        background: isSol ? 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)' : '#627EEA',
+        boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',
+        opacity: 0.6,
+      }}
+    />
+  );
+}
 
 /**
  * ตารางกระเป๋าของกลุ่มที่เลือก — กระเป๋า · แท็ก · ธุรกรรม · สุทธิ · ล่าสุด
@@ -198,21 +261,7 @@ export function WalletTable({ wallets, feeds, chains, activeId, onOpen, onSwitch
                       )}
                     </td>
                     <td>
-                      {state === 'loading' ? (
-                        <SkeletonBar width={64} />
-                      ) : chainsOf(w).length === 0 ? (
-                        <span className="idle">—</span>
-                      ) : (
-                        <span className="chain-marks">
-                          {chainsOf(w)
-                            .slice(0, 5)
-                            .map((c) => {
-                              const info = chainOf(chains, c);
-                              return <Logo key={c} src={info?.logo ?? null} name={info?.name ?? c} size={18} />;
-                            })}
-                          {chainsOf(w).length > 5 && <span className="idle">+{chainsOf(w).length - 5}</span>}
-                        </span>
-                      )}
+                      {state === 'loading' ? <SkeletonBar width={64} /> : <WalletMarks family={w.family} chainIds={chainsOf(w)} chains={chains} />}
                     </td>
                     <td className="num">
                       {state === 'loading' ? (

@@ -15,7 +15,7 @@ export interface Hit {
   kind: 'wallet' | 'token' | 'tx';
   label: string;
   sub: string;
-  /** เชนที่โหลดแล้วของกระเป๋านั้น — แสดงเป็นโลโก้เชนหลังชื่อ */
+  /** เชนที่โหลดแล้วของกระเป๋านั้น — แสดงเป็นโลโก้เชนทางขวา */
   chains?: string[];
   /** ตระกูลเชนของกระเป๋า (sol / erc20) — ใช้แสดง fallback เมื่อยังไม่มีธุรกรรม */
   family?: string;
@@ -59,7 +59,7 @@ function WalletMarks({ family, chainIds, chains }: { family: string; chainIds: s
   if (fb?.logo) {
     return (
       <span className="chain-marks" title={fb.name}>
-        <img className="logo" src={fb.logo} alt={fb.name} width={18} height={18} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width: 18, height: 18, opacity: 0.45 }} />
+        <img className="logo" src={fb.logo} alt={fb.name} width={18} height={18} loading="lazy" decoding="async" referrerPolicy="no-referrer" style={{ width: 18, height: 18, opacity: 0.5 }} />
       </span>
     );
   }
@@ -73,14 +73,13 @@ function WalletMarks({ family, chainIds, chains }: { family: string; chainIds: s
       aria-label={label}
       style={{
         display: 'inline-block',
-        width: 12,
-        height: 12,
-        marginLeft: 6,
+        width: 14,
+        height: 14,
         borderRadius: '50%',
         verticalAlign: 'middle',
         background: isSol ? 'linear-gradient(135deg, #9945FF 0%, #14F195 100%)' : '#627EEA',
         boxShadow: 'inset 0 0 0 1px rgba(255,255,255,0.15)',
-        opacity: 0.55,
+        opacity: 0.6,
       }}
     />
   );
@@ -199,13 +198,16 @@ export function Finder({ wallets, rows, chains, onWallet, onToken }: { wallets: 
             hits.map((h, i) => (
               <button key={h.key} type="button" role="option" aria-selected={i === active} data-active={i === active} onMouseEnter={() => setActive(i)} onClick={() => pick(h)}>
                 <span className="act-text">
-                  <span className="act-title">
-                    {h.label}
-                    {h.kind === 'wallet' && h.family && <WalletMarks family={h.family} chainIds={h.chains ?? []} chains={chains} />}
-                  </span>
+                  <span className="act-title">{h.label}</span>
                   <span className="act-sub">{h.sub}</span>
                 </span>
-                <span className="kind">{t(`find.${h.kind}`)}</span>
+                {h.kind === 'wallet' && h.family ? (
+                  <span className="kind">
+                    <WalletMarks family={h.family} chainIds={h.chains ?? []} chains={chains} />
+                  </span>
+                ) : (
+                  <span className="kind">{t(`find.${h.kind}`)}</span>
+                )}
               </button>
             ))
           )}

@@ -18,14 +18,14 @@ export interface Progress {
 
 /* โหลดทีละ 3 กระเป๋าต่อชุด เว้น 3 วิระหว่างชุด — คิวคำขอ (limiter) เป็นคนคุมความถี่จริง
    ตรงนี้แค่ไม่ปล่อยงานเข้าคิวทีเดียวเป็นร้อย เพื่อให้กดยกเลิกแล้วหยุดได้จริง */
-const BATCH = 3;
-const BATCH_GAP_MS = 3000;
+const BATCH = 1;
+const BATCH_GAP_MS = 5000;
 /* แคชหน้าคำตอบในหน่วยความจำ — เปิดกระเป๋าเดิม/หน้าเดิมซ้ำใน 5 นาทีไม่ยิงใหม่ */
 const PAGE_CACHE_TTL_MS = 5 * 60_000;
 const PAGE_CACHE_MAX = 200;
 import { FeedError, applyTokenMeta, fetchPage, unknownTokens, type Cursor, type Page, type TokenMeta, type TxRow } from './feed';
 import { ensureTokenMeta } from './tokens';
-import { pausedFor } from './limiter';
+import { pausedFor, backoff } from './limiter';
 import type { Endpoint, Settings, Wallet } from './store';
 
 export interface WalletFeed {
@@ -202,8 +202,8 @@ export function useFeed(settings: Settings) {
         setProgress((p) => ({ ...p, done: Math.min(todo.length, i + batch.length) }));
         const limited = batch.some((w) => Object.values(latest.current[w.id]?.errors ?? {}).some((e) => e.kind === 'http' && e.status === 429));
         if (limited) {
-          // แหล่งข้อมูลกันไว้แล้ว — ยิงต่อมีแต่จะต่ออายุแบน หยุดตรงนี้และบอกผู้ใช้ว่าอีกนานแค่ไหนถึงลองใหม่ได้
-          setProgress((p) => ({ ...p, running: false, stopped: 'rate', retryIn: Math.ceil(pausedFor() / 1000) }));
+          const ms = backoff(null); // ตั้ง pause + บีบท่อ + บันทึก localStorage
+          setProgress((p) => ({ ...p, running: false, stopped: 'rate', retryIn: Math.ceil(ms / 1000) }));
           return;
         }
         if (i + BATCH < todo.length) {

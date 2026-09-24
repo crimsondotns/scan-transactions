@@ -15,8 +15,8 @@ const MAX_RETRY = 3;
 /** สำเร็จติดกันกี่ครั้งถึงคลายท่อขึ้นหนึ่งขั้น */
 const RECOVER_AFTER = 6;
 let GAP_MS = 500;
-let BASE_PAUSE_MS = 5000;
-const MAX_PAUSE_MS = 60000;
+let BASE_PAUSE_MS = 30000;
+const MAX_PAUSE_MS = 300000;
 const MAX_GAP_FACTOR = 8;
 
 /** คีย์ใน localStorage สำหรับซิงก์เวลาพักข้ามแท็บ (ทุกแท็บในเบราว์เซอร์เดียวกันใช้เน็ตเดียวกัน) */
@@ -133,27 +133,18 @@ function loosen(): void {
 }
 
 async function run(url: string, init?: RequestInit): Promise<Response> {
-  for (let attempt = 0; ; attempt++) {
-    await acquire();
-    let res: Response;
+  await acquire();
+  try {
     try {
-      try {
-        res = await fetch(url, init);
-      } catch (e) {
-        // ยิงตรงโดน CORS/เครือข่ายบล็อก → ลองผ่าน proxy ของ dev (ถ้ามี) ก่อนยอมแพ้
-        const alt = fallbackProxy(url);
-        if (!alt) throw e;
-        url = alt;
-        res = await fetch(url, init);
-      }
-    } finally {
-      release();
+      return await fetch(url, init);
+    } catch (e) {
+      // ยิงตรงโดน CORS/เครือข่ายบล็อก → ลองผ่าน proxy ของ dev (ถ้ามี) ก่อนยอมแพ้
+      const alt = fallbackProxy(url);
+      if (!alt) throw e;
+      return await fetch(alt, init);
     }
-    if (res.status !== 429 || attempt >= MAX_RETRY) {
-      if (res.ok) loosen();
-      return res;
-    }
-    backoff(res.headers.get('retry-after'));
+  } finally {
+    release();
   }
 }
 

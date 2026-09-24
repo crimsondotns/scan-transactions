@@ -16,6 +16,7 @@ import { downloadText } from '../download';
 
 type Tab = 'general' | 'data';
 type Mode = 'merge' | 'replace';
+type ExportMode = 'plain' | 'encrypted';
 
 const TABS = (t: (k: MessageKey) => string): Array<TabDef<Tab>> => [
   { id: 'general', label: t('settings.tab.general'), icon: 'settings' },
@@ -51,7 +52,14 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   const { wallets, settings, setPageSize, setHideScam, setSlipShow, restore } = useStore();
   const [tab, setTab] = useState<Tab>('general');
 
-  const [passphrase, setPassphrase] = useState('');
+  // Export
+  const [exportMode, setExportMode] = useState<ExportMode>('plain');
+  const [encOpen, setEncOpen] = useState(false);
+  const [encPass, setEncPass] = useState('');
+  const [encConfirm, setEncConfirm] = useState('');
+  const [encErr, setEncErr] = useState<string | null>(null);
+
+  // Import
   const [mode, setMode] = useState<Mode>('merge');
   const [importPass, setImportPass] = useState('');
   const [importErr, setImportErr] = useState<string | null>(null);
@@ -63,12 +71,36 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
     toast(t('account.exported'));
   }
 
-  async function exportEncrypted() {
+  async function exportEncrypted(pass: string) {
     const salt = randomSalt();
-    const payload = await encryptJson(await keyFromPassphrase(passphrase, salt), buildBackup(data()));
+    const payload = await encryptJson(await keyFromPassphrase(pass, salt), buildBackup(data()));
     downloadText(backupFilename(new Date(), true), JSON.stringify({ app: 'xcapscan', kind: 'backup-encrypted', v: 1, salt, payload }, null, 2));
-    setPassphrase('');
     toast(t('account.exported'));
+  }
+
+  function handleExportClick() {
+    if (exportMode === 'plain') {
+      exportPlain();
+      return;
+    }
+    // encrypted → เปิด dialog ใส่รหัส
+    setEncPass('');
+    setEncConfirm('');
+    setEncErr(null);
+    setEncOpen(true);
+  }
+
+  function confirmEncrypt() {
+    if (encPass.length < 8) {
+      setEncErr(t('account.passTooShort'));
+      return;
+    }
+    if (encPass !== encConfirm) {
+      setEncErr(t('account.passMismatch'));
+      return;
+    }
+    setEncOpen(false);
+    void exportEncrypted(encPass);
   }
 
   async function importBackup(file: File) {
@@ -97,113 +129,165 @@ export function SettingsDialog({ open, onClose }: { open: boolean; onClose: () =
   }
 
   return (
-    <Dialog open={open} onClose={onClose} title={t('settings.title')} wide>
-      <DialogTabs tabs={TABS(t)} active={tab} onChange={setTab} label={t('settings.title')}>
-        {tab === 'general' && (
-          <>
-            <Group title={t('settings.display')}>
-              <Row title={t('settings.pageSize')} desc={t('settings.pageSizeDesc')}>
-                <input
-                  id="set-page"
-                  name="pageSize"
-                  type="text"
-                  inputMode="numeric"
-                  className="input input-sm set-num"
-                  value={settings.pageSize}
-                  onChange={(e) => setPageSize(Math.min(200, Math.max(5, Number(e.target.value.replace(/\D/g, '')) || 0)))}
-                  aria-label={t('settings.pageSize')}
-                  autoComplete="off"
-                  spellCheck={false}
-                />
-              </Row>
-              <Row title={t('tx.hideScam')} desc={t('settings.hideScamDesc')}>
-                <button
-                  type="button"
-                  className="switch"
-                  role="switch"
-                  aria-checked={settings.hideScam}
-                  onClick={() => setHideScam(!settings.hideScam)}
-                  aria-label={t('tx.hideScam')}
-                  title={t('tx.hideScam')}
-                />
-              </Row>
-            </Group>
-
-            <Group title={t('settings.slip')} note={t('settings.slipNote')}>
-              {SLIP_FIELDS.map((f) => (
-                <Row key={f} title={t(`slipField.${f}`)}>
+    <>
+      <Dialog open={open} onClose={onClose} title={t('settings.title')} wide>
+        <DialogTabs tabs={TABS(t)} active={tab} onChange={setTab} label={t('settings.title')}>
+          {tab === 'general' && (
+            <>
+              <Group title={t('settings.display')}>
+                <Row title={t('settings.pageSize')} desc={t('settings.pageSizeDesc')}>
+                  <input
+                    id="set-page"
+                    name="pageSize"
+                    type="text"
+                    inputMode="numeric"
+                    className="input input-sm set-num"
+                    value={settings.pageSize}
+                    onChange={(e) => setPageSize(Math.min(200, Math.max(5, Number(e.target.value.replace(/\D/g, '')) || 0)))}
+                    aria-label={t('settings.pageSize')}
+                    autoComplete="off"
+                    spellCheck={false}
+                  />
+                </Row>
+                <Row title={t('tx.hideScam')} desc={t('settings.hideScamDesc')}>
                   <button
                     type="button"
                     className="switch"
                     role="switch"
-                    aria-checked={settings.slipShow[f]}
-                    onClick={() => setSlipShow(f, !settings.slipShow[f])}
-                    aria-label={t(`slipField.${f}`)}
-                    title={t(`slipField.${f}`)}
+                    aria-checked={settings.hideScam}
+                    onClick={() => setHideScam(!settings.hideScam)}
+                    aria-label={t('tx.hideScam')}
+                    title={t('tx.hideScam')}
                   />
                 </Row>
-              ))}
-            </Group>
-          </>
-        )}
+              </Group>
 
-        {tab === 'data' && (
-          <>
-            <Group title={t('account.data')} note={t('account.backupNote')}>
-              <Row title={t('account.export')} desc={t('account.dataWhere', { wallets: wallets.length, sources: settings.endpoints.length })}>
-                <button type="button" className="btn btn-sm btn-primary" onClick={exportPlain}>
-                  <Icon name="download" />
-                  {t('account.export')}
-                </button>
-              </Row>
-              <Row title={t('account.exportEncrypted')} desc={t('account.passphrase')}>
-                <span className="inline">
-                  <input className="input input-sm set-pass" type="password" value={passphrase} onChange={(e) => setPassphrase(e.target.value)} autoComplete="new-password" aria-label={t('account.passphrase')} />
-                  <button type="button" className="btn btn-sm" disabled={passphrase.length < 8} onClick={() => void exportEncrypted()}>
-                    <Icon name="lock" />
-                    {t('account.exportEncrypted')}
-                  </button>
-                </span>
-              </Row>
-              <Row title={t('account.import')} desc={t('account.importMode')}>
-                <span className="inline">
-                  <Dropdown
-                    size="sm"
-                    value={mode}
-                    onChange={setMode}
-                    label={t('account.importMode')}
-                    options={[
-                      { value: 'merge' as const, label: t('account.merge') },
-                      { value: 'replace' as const, label: t('account.replace') },
-                    ]}
-                  />
-                  <input className="input input-sm set-pass" type="password" value={importPass} onChange={(e) => setImportPass(e.target.value)} autoComplete="off" aria-label={t('account.passphrase')} />
-                  <label className="btn btn-sm">
-                    <Icon name="upload" />
-                    {t('account.import')}
-                    <input
-                      type="file"
-                      accept="application/json,.json"
-                      className="file-hidden"
-                      onChange={(e) => {
-                        const f = e.target.files?.[0];
-                        if (f) void importBackup(f);
-                        e.target.value = '';
-                      }}
+              <Group title={t('settings.slip')} note={t('settings.slipNote')}>
+                {SLIP_FIELDS.map((f) => (
+                  <Row key={f} title={t(`slipField.${f}`)}>
+                    <button
+                      type="button"
+                      className="switch"
+                      role="switch"
+                      aria-checked={settings.slipShow[f]}
+                      onClick={() => setSlipShow(f, !settings.slipShow[f])}
+                      aria-label={t(`slipField.${f}`)}
+                      title={t(`slipField.${f}`)}
                     />
-                  </label>
-                </span>
-              </Row>
-            </Group>
-            {importErr && <span className="error">{importErr}</span>}
-          </>
-        )}
-      </DialogTabs>
-      <div className="dlg-actions">
-        <button type="button" className="btn" onClick={onClose}>
-          {t('dialog.close')}
-        </button>
-      </div>
-    </Dialog>
+                  </Row>
+                ))}
+              </Group>
+            </>
+          )}
+
+          {tab === 'data' && (
+            <>
+              <Group title={t('account.data')} note={t('account.backupNote')}>
+                <Row title={t('account.export')} desc={t('account.dataWhere', { wallets: wallets.length, sources: settings.endpoints.length })}>
+                  <span className="inline">
+                    <Dropdown
+                      size="sm"
+                      value={exportMode}
+                      onChange={setExportMode}
+                      label={t('account.export')}
+                      options={[
+                        { value: 'plain' as const, label: t('account.export') },
+                        { value: 'encrypted' as const, label: t('account.exportEncrypted') },
+                      ]}
+                    />
+                    <button type="button" className="btn btn-sm btn-primary" onClick={handleExportClick}>
+                      <Icon name={exportMode === 'encrypted' ? 'lock' : 'download'} />
+                      {t('account.export')}
+                    </button>
+                  </span>
+                </Row>
+                <Row title={t('account.import')} desc={t('account.importMode')}>
+                  <span className="inline">
+                    <Dropdown
+                      size="sm"
+                      value={mode}
+                      onChange={setMode}
+                      label={t('account.importMode')}
+                      options={[
+                        { value: 'merge' as const, label: t('account.merge') },
+                        { value: 'replace' as const, label: t('account.replace') },
+                      ]}
+                    />
+                    <input className="input input-sm set-pass" type="password" value={importPass} onChange={(e) => setImportPass(e.target.value)} autoComplete="off" aria-label={t('account.passphrase')} />
+                    <label className="btn btn-sm">
+                      <Icon name="upload" />
+                      {t('account.import')}
+                      <input
+                        type="file"
+                        accept="application/json,.json"
+                        className="file-hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f) void importBackup(f);
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </span>
+                </Row>
+              </Group>
+              {importErr && <span className="error">{importErr}</span>}
+            </>
+          )}
+        </DialogTabs>
+        <div className="dlg-actions">
+          <button type="button" className="btn" onClick={onClose}>
+            {t('dialog.close')}
+          </button>
+        </div>
+      </Dialog>
+
+      {/* Dialog ใส่รหัสผ่านสำหรับ Export encrypted */}
+      <Dialog open={encOpen} onClose={() => setEncOpen(false)} title={t('account.exportEncrypted')}>
+        <div className="set-rows">
+          <Row title={t('account.passphrase')}>
+            <input
+              className="input set-pass"
+              type="password"
+              value={encPass}
+              onChange={(e) => {
+                setEncPass(e.target.value);
+                setEncErr(null);
+              }}
+              autoComplete="new-password"
+              autoFocus
+              aria-label={t('account.passphrase')}
+              style={{ width: 240, height: 28, padding: '2px 8px', fontSize: 13 }}
+            />
+          </Row>
+          <Row title={t('account.passConfirm')}>
+            <input
+              className="input set-pass"
+              type="password"
+              value={encConfirm}
+              onChange={(e) => {
+                setEncConfirm(e.target.value);
+                setEncErr(null);
+              }}
+              autoComplete="new-password"
+              aria-label={t('account.passConfirm')}
+              style={{ width: 240, height: 28, padding: '2px 8px', fontSize: 13 }}
+            />
+          </Row>
+        </div>
+        {encErr && <span className="error">{encErr}</span>}
+        <p className="hint" style={{ marginTop: 6, marginBottom: 0, lineHeight: 1.35 }}>{t('account.passWarn')}</p>
+        <p className="hint" style={{ marginTop: 2, marginBottom: 0, lineHeight: 1.35 }}>{t('account.passHint')}</p>
+        <div className="dlg-actions" style={{ marginTop: 12 }}>
+          <button type="button" className="btn" onClick={() => setEncOpen(false)}>
+            {t('dialog.close')}
+          </button>
+          <button type="button" className="btn btn-primary" onClick={confirmEncrypt} disabled={encPass.length < 8 || encPass !== encConfirm}>
+            <Icon name="lock" />
+            {t('account.encrypt')}
+          </button>
+        </div>
+      </Dialog>
+    </>
   );
 }

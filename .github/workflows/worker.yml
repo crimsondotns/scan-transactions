@@ -1,4 +1,3 @@
-# ความลับของปลายทาง (UPSTREAM_*) ตั้งผ่านหน้าเว็บ Cloudflare หรือ wrangler ไม่ต้องผ่าน CI
 name: Deploy API wrapper
 
 on:

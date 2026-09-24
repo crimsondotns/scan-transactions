@@ -11,8 +11,8 @@ const KEY_RE = /^[A-Za-z0-9_.\-[\]]{1,64}$/;
 /** พารามิเตอร์ที่ห้ามให้ไคลเอนต์ส่ง — กันไคลเอนต์แนบ/ทับกุญแจเอง (กุญแจต้องมาจากฝั่งเซิร์ฟเวอร์เท่านั้น) */
 const BANNED_KEYS = new Set(['key', 'apikey', 'api_key', 'apiKey'.toLowerCase(), 'token', 'access_token', 'authorization', 'auth', 'secret', 'signature']);
 const MAX_PARAMS = 20;
-const MAX_VALUE = 256;
-const MAX_QUERY = 1024;
+const MAX_VALUE = 4096;
+const MAX_QUERY = 16384;
 
 /** /s/<alias>/<path> → { alias, path } ; รูปแบบอื่นทั้งหมด = null (ไม่มีโหมดส่งต่อ URL อิสระ = ไม่เป็น open proxy) */
 export function parseRoute(pathname: string): { alias: string; path: string } | null {

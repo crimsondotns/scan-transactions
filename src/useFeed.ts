@@ -3,6 +3,7 @@
  * แถวจากหลายแหล่งรวมกันแล้วตัดซ้ำด้วย key; cursor/error เก็บแยกต่อแหล่ง
  * อยู่ในหน่วยความจำเท่านั้น (รีเฟรชแล้วโหลดใหม่) ไม่มีการจดธุรกรรมลงเครื่อง
  * โหลดแบบขี้เกียจ: ไม่ยิงตอนเปิดหน้า ยิงเฉพาะเมื่อผู้ใช้เลือกกระเป๋า และกระเป๋าที่โหลดแล้วใช้แคชในหน่วยความจำ
+ * เพิ่มแคชหน้าคำตอบ 5 นาที — คลิกกระเป๋าเดิม/หน้าก่อนหน้าซ้ำไม่ยิงใหม่ (ประหยัดโควตา public API)
  */
 import { useCallback, useRef, useState } from 'react';
 
@@ -19,7 +20,10 @@ export interface Progress {
    ตรงนี้แค่ไม่ปล่อยงานเข้าคิวทีเดียวเป็นร้อย เพื่อให้กดยกเลิกแล้วหยุดได้จริง */
 const BATCH = 3;
 const BATCH_GAP_MS = 3000;
-import { FeedError, applyTokenMeta, fetchPage, unknownTokens, type Cursor, type TokenMeta, type TxRow } from './feed';
+/* แคชหน้าคำตอบในหน่วยความจำ — เปิดกระเป๋าเดิม/หน้าเดิมซ้ำใน 5 นาทีไม่ยิงใหม่ */
+const PAGE_CACHE_TTL_MS = 5 * 60_000;
+const PAGE_CACHE_MAX = 200;
+import { FeedError, applyTokenMeta, fetchPage, unknownTokens, type Cursor, type Page, type TokenMeta, type TxRow } from './feed';
 import { ensureTokenMeta } from './tokens';
 import { pausedFor } from './limiter';
 import type { Endpoint, Settings, Wallet } from './store';
@@ -35,6 +39,27 @@ export interface WalletFeed {
 
 const EMPTY: WalletFeed = { rows: [], next: {}, errors: {}, loading: false, loaded: false };
 
+/* แคชหน้าคำตอบ — คีย์คือ (URL + ที่อยู่ + cursor) ต่อแหล่ง ค่าคือ Page ที่ normalize แล้ว */
+const pageCache = new Map<string, { page: Page; exp: number }>();
+
+function pageCacheGet(key: string): Page | null {
+  const hit = pageCache.get(key);
+  if (!hit) return null;
+  if (hit.exp <= Date.now()) {
+    pageCache.delete(key);
+    return null;
+  }
+  return hit.page;
+}
+
+function pageCacheSet(key: string, page: Page): void {
+  if (pageCache.size >= PAGE_CACHE_MAX) {
+    const first = pageCache.keys().next().value;
+    if (first !== undefined) pageCache.delete(first);
+  }
+  pageCache.set(key, { page, exp: Date.now() + PAGE_CACHE_TTL_MS });
+}
+
 export function endpointsFor(w: Wallet, settings: Settings): Endpoint[] {
   return settings.endpoints.filter((e) => e.enabled && e.family === w.family);
 }
@@ -48,6 +73,7 @@ export function useFeed(settings: Settings) {
   /**
    * เติมชื่อ/สัญลักษณ์/โลโก้ของโทเคนที่ยังไม่รู้จักในแถวที่โหลดมาแล้ว
    * เรียกซ้ำได้: ที่อยู่ที่เคยขอสำเร็จอยู่ในแคช จึงไม่ยิงซ้ำ ที่ยังไม่สำเร็จเท่านั้นที่ยิงใหม่
+   * หมายเหตุ: ไม่ถูกเรียกอัตโนมัติแล้ว — WalletPage เรียกเมื่อผู้ใช้เปิดแท็บ Tokens
    */
   const fillMeta = useCallback(
     async (w: Wallet, tries = 3, delay = 1200): Promise<void> => {
@@ -85,11 +111,19 @@ export function useFeed(settings: Settings) {
         eps.map(async (ep) => {
           const c = mode === 'older' ? cur.next[ep.id] : null;
           if (mode === 'older' && c === null) return { ep, page: null, error: null };
+
+          // ตรวจแคชก่อนยิงจริง — เปิดกระเป๋าเดิม/หน้าเดิมซ้ำใน 5 นาทีใช้ของเดิม
+          const ck = `${ep.url}|${w.address.toLowerCase()}|${c?.next ?? c?.start ?? 'first'}|${settings.pageSize}`;
+          const cached = pageCacheGet(ck);
+          if (cached) return { ep, page: cached, error: null };
+
           try {
             const page = await fetchPage(ep.url, w.id, w.address, c ?? null, settings.pageSize, { family: ep.family, authHeader: ep.authHeader, apiKey: ep.apiKey });
             // แหล่งที่ตั้ง URL metadata ไว้ → เติมชื่อ/สัญลักษณ์/โลโก้ของโทเคนที่ยังไม่รู้ก่อนแสดง
             const ids = ep.metaUrl ? unknownTokens(page.rows) : [];
-            return { ep, page: ids.length ? { ...page, rows: applyTokenMeta(page.rows, await ensureTokenMeta(ep, ids)) } : page, error: null };
+            const finalPage = (ids.length ? { ...page, rows: applyTokenMeta(page.rows, await ensureTokenMeta(ep, ids)) } : page) as Page;
+            pageCacheSet(ck, finalPage);
+            return { ep, page: finalPage, error: null };
           } catch (e) {
             return { ep, page: null, error: e instanceof FeedError ? e : new FeedError('net') };
           }
@@ -122,10 +156,7 @@ export function useFeed(settings: Settings) {
         return { ...s, [w.id]: { rows, next, errors, loading: false, loaded: true } };
       });
       inflight.current.delete(w.id);
-      
-      // 👇👇👇 แก้ไขตรงนี้: คอมเมนต์บรรทัดนี้ทิ้ง เพื่อไม่ให้ Fetch อัตโนมัติ 👇👇👇
-      // void fillMeta(w); 
-      // 👆👆👆 แก้ไขตรงนี้ 👆👆👆
+      // หมายเหตุ: ไม่เรียก fillMeta อัตโนมัติ — WalletPage เรียกเมื่อผู้ใช้เปิดแท็บ Tokens
     },
     [settings, fillMeta]
   );
@@ -145,7 +176,7 @@ export function useFeed(settings: Settings) {
     [load]
   );
 
-  /* โหลดแบบเว้นจังหวะ: ทีละ 5 กระเป๋าพร้อมกัน เว้น 2 วิ แล้วชุดถัดไป — เหมือนคนกดทีละอัน กัน rate limit
+  /* โหลดแบบเว้นจังหวะ: ทีละ 3 กระเป๋าพร้อมกัน เว้น 3 วิ แล้วชุดถัดไป — เหมือนคนกดทีละอัน กัน rate limit
      หยุดเองเมื่อเจอ 429 และผู้ใช้ยกเลิกได้ */
   const [progress, setProgress] = useState<Progress>({ done: 0, total: 0, running: false, stopped: null, retryIn: 0 });
   const cancelRef = useRef(false);
@@ -158,6 +189,12 @@ export function useFeed(settings: Settings) {
       for (let i = 0; i < todo.length; i += BATCH) {
         if (cancelRef.current) {
           setProgress((p) => ({ ...p, running: false, stopped: 'cancel' }));
+          return;
+        }
+        // คิวถูกพักอยู่ (จากที่อื่นในเบราว์เซอร์นี้ prolong ไว้) → อัปเดตตัวเลขแล้วหยุดรอ
+        const wait0 = pausedFor();
+        if (wait0 > 0) {
+          setProgress((p) => ({ ...p, running: false, stopped: 'rate', retryIn: Math.ceil(wait0 / 1000) }));
           return;
         }
         const batch = todo.slice(i, i + BATCH);
@@ -193,7 +230,10 @@ export function useFeed(settings: Settings) {
   );
 
   /** ล้างแคชทั้งหมด (แหล่งข้อมูลเปลี่ยน) — ไม่โหลดใหม่เอง รอผู้ใช้เลือกกระเป๋า */
-  const reset = useCallback(() => setFeeds({}), []);
+  const reset = useCallback(() => {
+    setFeeds({});
+    pageCache.clear();
+  }, []);
 
   const forget = useCallback((id: string) => {
     setFeeds((s) => {
@@ -202,9 +242,7 @@ export function useFeed(settings: Settings) {
     });
   }, []);
 
-  // 👇👇👇 แก้ไขตรงนี้: เพิ่ม fillMeta เข้าไปใน return 👇👇👇
   return { feeds, load, loadMany, loadStaggered, cancelStaggered, progress, ensure, reset, forget, fillMeta };
-  // 👆👆👆 แก้ไขตรงนี้ 👆👆👆
 }
 
 export function hasOlder(f: WalletFeed | undefined): boolean {

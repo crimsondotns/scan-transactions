@@ -8,6 +8,7 @@ import { fallbackProxy } from './proxy';
  *   พร้อม "บีบท่อ" ลงเหลือ 1 คำขอต่อครั้งและถ่างระยะห่างขึ้น แล้วค่อยๆ คลายเมื่อสำเร็จติดกันหลายครั้ง
  *   (แหล่งข้อมูลส่วนใหญ่ไม่ได้ดูแค่จำนวนคำขอ แต่ดูความถี่ด้วย ยิงถี่ตอนเพิ่งโดนแบนคือต่ออายุแบนให้ตัวเอง)
  * - ลองซ้ำให้เองสูงสุด 3 ครั้ง จึงไม่ต้องให้ผู้ใช้เห็น "HTTP 429" ยกเว้นแหล่งบล็อกยาวจริงๆ
+ * - ซิงก์เวลาพักข้ามแท็บผ่าน localStorage — เปิดแท็บใหม่ระหว่างที่แท็บอื่นพักอยู่ จะไม่ยิงซ้ำ
  */
 const MAX_CONCURRENCY = 2;
 const MAX_RETRY = 3;
@@ -18,18 +19,8 @@ let BASE_PAUSE_MS = 5000;
 const MAX_PAUSE_MS = 60000;
 const MAX_GAP_FACTOR = 8;
 
-/** เทสต์เท่านั้น: ย่นเวลารอ และคืนค่าสภาพท่อให้เริ่มใหม่สะอาดๆ */
-export function setLimiterTiming(t: { gapMs?: number; basePauseMs?: number; reset?: boolean }): void {
-  if (t.gapMs !== undefined) GAP_MS = t.gapMs;
-  if (t.basePauseMs !== undefined) BASE_PAUSE_MS = t.basePauseMs;
-  if (t.reset) {
-    strikes = 0;
-    gapFactor = 1;
-    limit = MAX_CONCURRENCY;
-    goodRun = 0;
-    pausedUntil = 0;
-  }
-}
+/** คีย์ใน localStorage สำหรับซิงก์เวลาพักข้ามแท็บ (ทุกแท็บในเบราว์เซอร์เดียวกันใช้เน็ตเดียวกัน) */
+const LS_PAUSE_KEY = 'xcap:limiter:pausedUntil';
 
 let active = 0;
 let lastStart = 0;
@@ -41,6 +32,54 @@ let limit = MAX_CONCURRENCY;
 let gapFactor = 1;
 let goodRun = 0;
 const waiting: Array<() => void> = [];
+
+/* โหลดค่าที่ค้างไว้จาก localStorage (เช่น เปิดแท็บใหม่ระหว่างที่แท็บอื่นพักอยู่) */
+try {
+  const saved = localStorage.getItem(LS_PAUSE_KEY);
+  if (saved) pausedUntil = Number(saved) || 0;
+} catch {
+  /* localStorage ใช้ไม่ได้ (โหมดส่วนตัว) → เก็บในหน่วยความจำอย่างเดียว */
+}
+
+/* แท็บอื่น prolong เวลา → รับรู้ทันที ไม่ต้องรอจังหวะ pausedFor() */
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key !== LS_PAUSE_KEY || !e.newValue) return;
+    const v = Number(e.newValue) || 0;
+    if (v > pausedUntil) pausedUntil = v;
+  });
+}
+
+function persistPausedUntil(): void {
+  try {
+    localStorage.setItem(LS_PAUSE_KEY, String(pausedUntil));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearPausedUntil(): void {
+  pausedUntil = 0;
+  try {
+    localStorage.removeItem(LS_PAUSE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+/** เทสต์เท่านั้น: ย่นเวลารอ และคืนค่าสภาพท่อให้เริ่มใหม่สะอาดๆ */
+export function setLimiterTiming(t: { gapMs?: number; basePauseMs?: number; reset?: boolean }): void {
+  if (t.gapMs !== undefined) GAP_MS = t.gapMs;
+  if (t.basePauseMs !== undefined) BASE_PAUSE_MS = t.basePauseMs;
+  if (t.reset) {
+    strikes = 0;
+    gapFactor = 1;
+    limit = MAX_CONCURRENCY;
+    goodRun = 0;
+    clearPausedUntil();
+  }
+}
+
 /**
  * คำขออ่านที่ยังค้างอยู่ ต่อ URL — ใช้ผลร่วมกันแทนที่จะยิงซ้ำ
  * สำเนาถูกทำทันทีที่คำตอบมาถึง (ก่อนใครอ่าน body) เพราะ Response อ่านได้ครั้งเดียว
@@ -71,12 +110,13 @@ function release(): void {
   waiting.shift()?.();
 }
 
-/** แหล่งบอกให้รอ (429) — หยุดคิวทั้งหมด แล้วบีบท่อให้แคบลง */
+/** แหล่งบอกให้รอ (429) — หยุดคิวทั้งหมด แล้วบีบท่อให้แคบลง + ซิงก์ข้ามแท็บ */
 export function backoff(retryAfterHeader: string | null): number {
   const hinted = retryAfterHeader ? Number(retryAfterHeader) * 1000 : NaN;
   const ms = Number.isFinite(hinted) && hinted > 0 ? Math.min(hinted, MAX_PAUSE_MS) : Math.min(BASE_PAUSE_MS * 2 ** strikes, MAX_PAUSE_MS);
   strikes = Math.min(strikes + 1, 4);
   pausedUntil = Math.max(pausedUntil, Date.now() + ms);
+  persistPausedUntil();
   limit = 1;
   gapFactor = Math.min(gapFactor * 2, MAX_GAP_FACTOR);
   goodRun = 0;
@@ -141,7 +181,16 @@ export async function limitedFetch(url: string, init?: RequestInit): Promise<Res
   }
 }
 
-/** ให้เทสต์/ฟีเจอร์อื่นดูว่าตอนนี้ถูกพักอยู่ไหม */
+/** ให้เทสต์/ฟีเจอร์อื่นดูว่าตอนนี้ถูกพักอยู่ไหม — อ่านจาก localStorage ด้วย แท็บอื่น prolong ได้ */
 export function pausedFor(): number {
+  try {
+    const saved = localStorage.getItem(LS_PAUSE_KEY);
+    if (saved) {
+      const v = Number(saved) || 0;
+      if (v > pausedUntil) pausedUntil = v;
+    }
+  } catch {
+    /* ignore */
+  }
   return Math.max(0, pausedUntil - Date.now());
 }
